@@ -227,11 +227,14 @@ func TestSuiteForSelectsSafeAndFullRunModes(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(safe.Tests) != 43 ||
-		safe.Tests[2].ID != ctap23.TestIDAuthrGeneric1P3 ||
-		safe.Tests[3].ID != ctap23.TestIDAuthrMakeCredReq2F3 ||
-		safe.Tests[4].ID != ctap23.TestIDAuthrMakeCredReq3F4 ||
-		safe.Tests[5].ID != ctap23.TestIDAuthrClientPIN1GetRetriesP4 ||
+	if len(safe.Tests) != 78 ||
+		safe.Tests[0].ID != ctap23.TestIDHID1P1 ||
+		safe.Tests[16].ID != ctap23.TestIDHID1F4 ||
+		safe.Tests[17].ID != ctap23.TestIDNFC1P1 ||
+		safe.Tests[21].ID != ctap23.TestIDNFC1F4 ||
+		safe.Tests[22].ID != ctap23.TestIDBLE1P1 ||
+		safe.Tests[31].ID != ctap23.TestIDBLE1P10 ||
+		safe.Tests[34].ID != ctap23.TestIDAuthrGeneric1P3 ||
 		safe.Tests[len(safe.Tests)-1].ID != ctap23.TestIDMetadataStmt1P43 {
 		t.Fatalf("safe tests = %#v", safe.Tests)
 	}
@@ -243,36 +246,32 @@ func TestSuiteForSelectsSafeAndFullRunModes(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(full.Tests) != 152 ||
-		full.Tests[5].ID != ctap23.TestIDAuthrMakeCredReq1P1 ||
-		full.Tests[45].ID != ctap23.TestIDAuthrMakeCredReq6F1 ||
-		full.Tests[46].ID != ctap23.TestIDAuthrMakeCredResp1P01 ||
-		full.Tests[51].ID != ctap23.TestIDAuthrMakeCredResp1F01 ||
-		full.Tests[52].ID != ctap23.TestIDAuthrGetAssertionReq1P1 ||
-		full.Tests[58].ID != ctap23.TestIDAuthrGetAssertionReq1F6 ||
-		full.Tests[59].ID != ctap23.TestIDAuthrGetAssertionReq2P1 ||
-		full.Tests[61].ID != ctap23.TestIDAuthrGetAssertionReq2P3 ||
-		full.Tests[62].ID != ctap23.TestIDAuthrGetAssertionReq3P1 ||
-		full.Tests[68].ID != ctap23.TestIDAuthrGetAssertionReq3F6 ||
-		full.Tests[69].ID != ctap23.TestIDAuthrGetAssertionResp1P1 ||
-		full.Tests[73].ID != ctap23.TestIDAuthrGetAssertionResp1F1 ||
-		full.Tests[74].ID != ctap23.TestIDAuthrClientPIN1KeyAgreementP1 ||
-		full.Tests[75].ID != ctap23.TestIDAuthrClientPIN1NewPINP1 ||
-		full.Tests[81].ID != ctap23.TestIDAuthrClientPIN1NewPINF1 ||
-		full.Tests[82].ID != ctap23.TestIDAuthrClientPIN1PinPolicyP1 ||
-		full.Tests[86].ID != ctap23.TestIDAuthrClientPIN1PinPolicyF4 ||
-		full.Tests[87].ID != ctap23.TestIDAuthrClientPIN1GetRetriesP1 ||
-		full.Tests[90].ID != ctap23.TestIDAuthrClientPIN1GetRetriesP4 ||
-		full.Tests[91].ID != ctap23.TestIDAuthrClientPIN2KeyAgreementP1 ||
-		full.Tests[92].ID != ctap23.TestIDAuthrClientPIN2NewPINP1 ||
-		full.Tests[95].ID != ctap23.TestIDAuthrClientPIN2NewPINP4 ||
-		full.Tests[96].ID != ctap23.TestIDAuthrClientPIN2GetPINTokenP1 ||
-		full.Tests[103].ID != ctap23.TestIDAuthrClientPIN2GetPINTokenF5 ||
-		full.Tests[104].ID != ctap23.TestIDAuthrClientPIN2PinPolicyP1 ||
-		full.Tests[109].ID != ctap23.TestIDAuthrClientPIN2PinPolicyF5 ||
-		full.Tests[110].ID != ctap23.TestIDAuthrClientPIN2GetRetriesP1 ||
-		full.Tests[len(full.Tests)-1].ID != ctap23.TestIDMetadataStmt1P43 {
-		t.Fatalf("full tests = %#v", full.Tests)
+	boundaries := map[int]conformance.TestID{
+		0:   ctap23.TestIDHID1P1,
+		18:  ctap23.TestIDHID1F4,
+		19:  ctap23.TestIDNFC1P1,
+		26:  ctap23.TestIDNFC1F4,
+		27:  ctap23.TestIDBLE1P1,
+		36:  ctap23.TestIDBLE1P10,
+		37:  ctap23.TestIDAuthrGeneric1P1,
+		111: ctap23.TestIDAuthrReset1P1,
+		112: ctap23.TestIDResidentKeyP1,
+		118: ctap23.TestIDEnterpriseAttestationP1,
+		126: ctap23.TestIDEnterpriseAttestationF6,
+		127: ctap23.TestIDHMACSecretP1,
+		254: ctap23.TestIDLargeBlobs1P1,
+		257: ctap23.TestIDLargeBlobs1P4,
+	}
+	if len(full.Tests) != 295 {
+		t.Fatalf("full tests = %d, want 295", len(full.Tests))
+	}
+	for index, want := range boundaries {
+		if full.Tests[index].ID != want {
+			t.Fatalf("full test %d = %q, want %q", index, full.Tests[index].ID, want)
+		}
+	}
+	if full.Tests[len(full.Tests)-1].ID != ctap23.TestIDMetadataStmt1P43 {
+		t.Fatalf("last full test = %q", full.Tests[len(full.Tests)-1].ID)
 	}
 
 	if _, err := ctap23.SuiteFor(ctap23.RunMode("invalid"), ctap23.Config{}); err == nil {

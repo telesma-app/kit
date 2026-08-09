@@ -19,16 +19,24 @@ import (
 
 func TestConformanceTransportMapsRuntimeAttachments(t *testing.T) {
 	tests := []struct {
-		mode apptransport.Mode
-		want ctap23.AuthenticatorTransport
+		mode        apptransport.Mode
+		environment ConformanceEnvironment
+		want        ctap23.AuthenticatorTransport
 	}{
 		{mode: apptransport.ModeHID, want: ctap23.AuthenticatorTransportHID},
 		{mode: apptransport.ModeWindowsProxy, want: ctap23.AuthenticatorTransportHID},
 		{mode: apptransport.ModeSmartCard, want: ctap23.AuthenticatorTransportNFC},
+		{
+			mode: apptransport.ModeHID,
+			environment: ConformanceEnvironment{
+				BLESessionProvider: func(context.Context, func(context.Context, ctap23.BLESession) error) error { return nil },
+			},
+			want: ctap23.AuthenticatorTransportBLE,
+		},
 	}
 
 	for _, test := range tests {
-		if got := conformanceTransport(test.mode); got != test.want {
+		if got := conformanceTransport(test.mode, test.environment); got != test.want {
 			t.Fatalf("conformanceTransport(%q) = %q, want %q", test.mode, got, test.want)
 		}
 	}
@@ -314,6 +322,26 @@ func TestConformanceConfigPowerCycleBoundary(t *testing.T) {
 	})
 }
 
+func TestConformanceConfigPreservesEnvironmentDeclarations(t *testing.T) {
+	enabled := true
+	runner := NewRunner(Environment{})
+	config := runner.conformanceConfig(ConformanceEnvironment{}, ctap23.RunRequest{
+		LargeBlobEnabledByDefault: &enabled,
+		AccountSelectionDisplay:   ctap23.AccountSelectionDisplayPresent,
+		SecurityProfile:           ctap23.SecurityProfileEnterprise,
+	})
+
+	if config.LargeBlobEnabledByDefault != &enabled {
+		t.Fatal("large-blob default policy declaration was not preserved")
+	}
+	if config.AccountSelectionDisplay != ctap23.AccountSelectionDisplayPresent {
+		t.Fatalf("account-selection display = %q", config.AccountSelectionDisplay)
+	}
+	if config.SecurityProfile != ctap23.SecurityProfileEnterprise {
+		t.Fatalf("security profile = %q", config.SecurityProfile)
+	}
+}
+
 func TestConformanceConfigTemporaryPINAndUVInteractions(t *testing.T) {
 	pin := []byte("123456")
 	interactions := &conformanceInteractionStub{response: model.InteractionResponse{PIN: pin}}
@@ -372,6 +400,73 @@ func TestConformanceConfigTemporaryPINAndUVInteractionErrors(t *testing.T) {
 	}
 	if err := config.UVConfigurator(t.Context(), []byte("borrowed")); !errors.Is(err, cause) {
 		t.Fatalf("UV configuration error = %v, want %v", err, cause)
+	}
+	if err := config.BiometricSampleProvider(t.Context()); !errors.Is(err, cause) {
+		t.Fatalf("biometric sample interaction error = %v, want %v", err, cause)
+	}
+	if err := config.PrepareAccountSelection(t.Context(), ctap23.AccountSelectionRequest{}); !errors.Is(err, cause) {
+		t.Fatalf("account-selection interaction error = %v, want %v", err, cause)
+	}
+}
+
+func TestConformanceConfigBiometricSampleInteraction(t *testing.T) {
+	interactions := &conformanceInteractionStub{}
+	runner := NewRunner(Environment{
+		Selected:     report.DeviceReport{Attachment: report.AttachmentReport{ID: "biometric-target"}},
+		Interactions: interactions,
+	})
+	config := runner.conformanceConfig(ConformanceEnvironment{}, ctap23.RunRequest{})
+
+	if err := config.BiometricSampleProvider(t.Context()); err != nil {
+		t.Fatal(err)
+	}
+	if len(interactions.requests) != 1 {
+		t.Fatalf("interaction requests = %d, want 1", len(interactions.requests))
+	}
+	request := interactions.requests[0]
+	if request.Kind != model.InteractionKindUserVerification || !request.Destructive {
+		t.Fatalf("biometric sample interaction = %#v", request)
+	}
+	if request.Message != "Present the requested fingerprint sample to authenticator biometric-target." {
+		t.Fatalf("biometric sample message = %q", request.Message)
+	}
+	if request.UVModality == nil || *request.UVModality != protocol.UserVerifyFingerprintInternal {
+		t.Fatalf("biometric sample modality = %#v", request.UVModality)
+	}
+}
+
+func TestConformanceConfigAccountSelectionInteraction(t *testing.T) {
+	interactions := &conformanceInteractionStub{}
+	runner := NewRunner(Environment{
+		Selected:     report.DeviceReport{Attachment: report.AttachmentReport{ID: "selection-target"}},
+		Interactions: interactions,
+	})
+	config := runner.conformanceConfig(ConformanceEnvironment{}, ctap23.RunRequest{})
+	request := ctap23.AccountSelectionRequest{
+		RPID:        "selection.example",
+		UserID:      []byte{1, 2, 3},
+		Name:        "account",
+		DisplayName: "Account",
+	}
+
+	if err := config.PrepareAccountSelection(t.Context(), request); err != nil {
+		t.Fatal(err)
+	}
+	if len(interactions.requests) != 1 {
+		t.Fatalf("interaction requests = %d, want 1", len(interactions.requests))
+	}
+	interaction := interactions.requests[0]
+	if interaction.Kind != model.InteractionKindAccountSelection || !interaction.Destructive {
+		t.Fatalf("account-selection interaction = %#v", interaction)
+	}
+	if interaction.Message != "Select the requested account on authenticator selection-target." {
+		t.Fatalf("account-selection message = %q", interaction.Message)
+	}
+	preview, ok := interaction.Preview.(ctap23.AccountSelectionRequest)
+	if !ok || preview.RPID != request.RPID ||
+		!slices.Equal(preview.UserID, request.UserID) ||
+		preview.Name != request.Name || preview.DisplayName != request.DisplayName {
+		t.Fatalf("account-selection preview = %#v, want %#v", interaction.Preview, request)
 	}
 }
 

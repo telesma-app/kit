@@ -3,6 +3,8 @@ package ctap23
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
+	"slices"
 
 	ctaptransport "github.com/telesma-app/ctap/transport"
 	"github.com/telesma-app/kit/conformance"
@@ -13,6 +15,10 @@ const (
 	authrReset1RPID       = "reset-1.ctap23-conformance.example"
 
 	TestIDAuthrReset1P1 conformance.TestID = "fido.ctap2.3.authr-reset-1.p-1"
+)
+
+var authrReset1PostResetClientDataHash = sha256.Sum256(
+	[]byte("ctap23 Authr-Reset-1 post-reset GetAssertion"),
 )
 
 func authrReset1Tests(config Config) []conformance.Test {
@@ -117,6 +123,10 @@ func authrReset1Tests(config Config) []conformance.Test {
 				Name:       "Authorize a post-reset GetAssertion request",
 				References: []conformance.RequirementRef{getAssertionReference},
 				Run: func(ctx context.Context) error {
+					fixture.Request.ClientDataHash = slices.Clone(
+						authrReset1PostResetClientDataHash[:],
+					)
+
 					return fixture.refreshAuthorization(ctx, test, config, &fixture.Request)
 				},
 			}) {

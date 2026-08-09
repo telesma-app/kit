@@ -22,6 +22,11 @@ import (
 // replaceable authenticator connection.
 type ConformanceEnvironment struct {
 	CBOR ctaptransport.CBOR
+	// Raw transport providers temporarily detach the normal CTAP connection,
+	// lend one exclusive observation session, and rebind before returning.
+	HIDSessionProvider ctap23.HIDSessionProvider
+	NFCCardProvider    ctap23.NFCCardProvider
+	BLESessionProvider ctap23.BLESessionProvider
 	// Current returns capabilities from one currently installed authenticator
 	// connection generation. Rebindable runtimes resolve it for every callback
 	// so reset and token-provider fallback operations never retain a superseded
@@ -61,9 +66,15 @@ func (r Runner) conformanceConfig(
 	request ctap23.RunRequest,
 ) ctap23.Config {
 	config := ctap23.Config{
-		Metadata:   request.Metadata,
-		Transport:  conformanceTransport(r.env.Selected.Attachment.Transport),
-		Featureful: request.Featureful,
+		Metadata:                  request.Metadata,
+		Transport:                 conformanceTransport(r.env.Selected.Attachment.Transport, environment),
+		Featureful:                request.Featureful,
+		AccountSelectionDisplay:   request.AccountSelectionDisplay,
+		SecurityProfile:           request.SecurityProfile,
+		LargeBlobEnabledByDefault: request.LargeBlobEnabledByDefault,
+		HIDSessionProvider:        environment.HIDSessionProvider,
+		NFCCardProvider:           environment.NFCCardProvider,
+		BLESessionProvider:        environment.BLESessionProvider,
 		TokenProvider: func(
 			ctx context.Context,
 			_ *client.Client,
@@ -86,6 +97,27 @@ func (r Runner) conformanceConfig(
 		},
 		TemporaryPINProvider: r.conformanceTemporaryPIN,
 		UVConfigurator:       r.conformanceUVConfigurator,
+		BiometricSampleProvider: func(ctx context.Context) error {
+			modality := protocol.UserVerifyFingerprintInternal
+			_, err := r.env.Interactions.RequestInteraction(ctx, model.InteractionRequest{
+				Kind:        model.InteractionKindUserVerification,
+				Message:     "Present the requested fingerprint sample to authenticator " + string(r.env.Selected.Attachment.ID) + ".",
+				Destructive: true,
+				UVModality:  &modality,
+			})
+
+			return err
+		},
+		PrepareAccountSelection: func(ctx context.Context, request ctap23.AccountSelectionRequest) error {
+			_, err := r.env.Interactions.RequestInteraction(ctx, model.InteractionRequest{
+				Kind:        model.InteractionKindAccountSelection,
+				Message:     "Select the requested account on authenticator " + string(r.env.Selected.Attachment.ID) + ".",
+				Destructive: true,
+				Preview:     request,
+			})
+
+			return err
+		},
 	}
 	if environment.PowerCycle != nil {
 		config.PowerCycler = func(ctx context.Context) error {
@@ -140,7 +172,19 @@ func (r Runner) conformanceUVConfigurator(ctx context.Context, _ []byte) error {
 	return err
 }
 
-func conformanceTransport(mode apptransport.Mode) ctap23.AuthenticatorTransport {
+func conformanceTransport(
+	mode apptransport.Mode,
+	environment ConformanceEnvironment,
+) ctap23.AuthenticatorTransport {
+	if environment.BLESessionProvider != nil {
+		return ctap23.AuthenticatorTransportBLE
+	}
+	if environment.NFCCardProvider != nil {
+		return ctap23.AuthenticatorTransportNFC
+	}
+	if environment.HIDSessionProvider != nil {
+		return ctap23.AuthenticatorTransportHID
+	}
 	if mode == apptransport.ModeSmartCard {
 		return ctap23.AuthenticatorTransportNFC
 	}

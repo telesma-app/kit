@@ -24,15 +24,22 @@ var ctap2EncMode = func() cbor.EncMode {
 func ctap2WireFields(operation string, request any) map[uint64]any {
 	encoded, err := ctap2EncMode.Marshal(request)
 	if err != nil {
+		clear(encoded)
+
 		panic(fmt.Sprintf("ctap23: encode trusted %s fixture: %v", operation, err))
 	}
+	defer clear(encoded)
 
 	var fields map[uint64]any
 	if err := getInfoDecMode.Unmarshal(encoded, &fields); err != nil {
+		clearCTAP2WireValue(fields)
+
 		panic(fmt.Sprintf("ctap23: decode trusted %s fixture: %v", operation, err))
 	}
 	for key, value := range fields {
-		fields[key] = normalizeCTAP2WireValue(value)
+		normalized := normalizeCTAP2WireValue(value)
+		clearCTAP2WireValue(value)
+		fields[key] = normalized
 	}
 
 	return fields
@@ -46,31 +53,56 @@ func exchangeCTAP2(
 ) (ctaptransport.CBORResponse, error) {
 	body, err := ctap2EncMode.Marshal(request)
 	if err != nil {
+		clear(body)
+
 		return ctaptransport.CBORResponse{}, fmt.Errorf(
 			"ctap23: encode %s request: %w",
 			command,
 			err,
 		)
 	}
+	defer clear(body)
 
-	response, err := device.CBOR(ctx, slices.Concat([]byte{byte(command)}, body))
+	commandData := slices.Concat([]byte{byte(command)}, body)
+	defer clear(commandData)
+
+	response, err := device.CBOR(ctx, commandData)
 	if err != nil {
+		clearCTAP2ResponseData(response)
+
 		return ctaptransport.CBORResponse{}, err
 	}
 
-	return ctaptransport.ValidateCBORResponse(command, response)
+	validated, err := ctaptransport.ValidateCBORResponse(command, response)
+	if err != nil {
+		clearCTAP2ResponseData(response)
+
+		return ctaptransport.CBORResponse{}, err
+	}
+
+	return validated, nil
+}
+
+func clearCTAP2ResponseData(response ctaptransport.CBORResponse) {
+	clear(response.Data)
 }
 
 func validateCanonicalCTAP2Response(operation string, data []byte) error {
 	var value any
+	defer func() {
+		clearCTAP2WireValue(value)
+	}()
 	if err := getInfoDecMode.Unmarshal(data, &value); err != nil {
 		return conformance.Failf("invalid %s response CBOR: %v", operation, err)
 	}
 
 	canonical, err := ctap2EncMode.Marshal(value)
 	if err != nil {
+		clear(canonical)
+
 		return conformance.Failf("invalid %s response value: %v", operation, err)
 	}
+	defer clear(canonical)
 	if !bytes.Equal(data, canonical) {
 		return conformance.Failf("%s response is not CTAP2 canonical CBOR", operation)
 	}
@@ -91,6 +123,9 @@ func validateRequiredCBORFields(
 	required []requiredCBORField,
 ) error {
 	var fields map[uint64]cbor.RawMessage
+	defer func() {
+		clearCTAP2RawFields(fields)
+	}()
 	if err := getInfoDecMode.Unmarshal(data, &fields); err != nil {
 		return conformance.Failf("invalid %s response CBOR: %v", operation, err)
 	}
@@ -147,6 +182,41 @@ func normalizeCTAP2WireValue(value any) any {
 		return result
 	default:
 		return value
+	}
+}
+
+func clearCTAP2WireValue(value any) {
+	switch value := value.(type) {
+	case []byte:
+		clear(value)
+	case cbor.RawMessage:
+		clear(value)
+	case []any:
+		for _, item := range value {
+			clearCTAP2WireValue(item)
+		}
+	case map[string]any:
+		for key, item := range value {
+			clearCTAP2WireValue(item)
+			delete(value, key)
+		}
+	case map[uint64]any:
+		for key, item := range value {
+			clearCTAP2WireValue(item)
+			delete(value, key)
+		}
+	case map[any]any:
+		for key, item := range value {
+			clearCTAP2WireValue(item)
+			delete(value, key)
+		}
+	}
+}
+
+func clearCTAP2RawFields(fields map[uint64]cbor.RawMessage) {
+	for key, raw := range fields {
+		clear(raw)
+		delete(fields, key)
 	}
 }
 

@@ -6,6 +6,7 @@ import (
 	"crypto/sha256"
 	"errors"
 	"fmt"
+	"iter"
 	"slices"
 	"strings"
 	"testing"
@@ -50,11 +51,70 @@ func TestAuthrClientPIN2PermissionsExactMarkersReferencesAndLifecycleContract(t 
 		}
 	}
 
-	assertClientPIN2HasReferenceSection(t, tests[0], "6.5.5.7")
-	assertClientPIN2HasReferenceSection(t, tests[1], "6.1")
-	assertClientPIN2HasReferenceSection(t, tests[2], "6.2")
-	assertClientPIN2HasReferenceSection(t, tests[3], "6.8.3")
+	for _, test := range tests {
+		assertClientPIN2HasReferenceSection(t, test, "6.5.5.7.2")
+		assertClientPIN2HasReferenceSection(t, test, "6.5.7")
+	}
+	assertClientPIN2HasReferenceSection(t, tests[1], "6.1.2")
+	assertClientPIN2HasReferenceSection(t, tests[2], "6.1.2")
+	assertClientPIN2HasReferenceSection(t, tests[2], "6.2.2")
+	assertClientPIN2HasReferenceSection(t, tests[3], "6.8.2")
 	assertClientPIN2HasReferenceSection(t, tests[4], "6.11.4")
+	for _, reference := range tests[3].References {
+		if reference.Section == "6.8.3" {
+			t.Fatalf("P-4 retains obsolete enumerate-RPs reference: %#v", reference)
+		}
+	}
+
+	exact := []struct {
+		got     conformance.RequirementRef
+		section string
+		clause  string
+		anchor  string
+		level   conformance.RequirementLevel
+	}{
+		{
+			got:     clientPIN2PermissionsOperationReference(),
+			section: "6.5.5.7.2",
+			clause:  "get-pin-uv-auth-token-using-pin-with-permissions",
+			anchor:  "#getPinUvAuthTokenUsingPinWithPermissions",
+			level:   conformance.RequirementConstraint,
+		},
+		{
+			got:     clientPIN2PermissionsTokenLengthReference(),
+			section: "6.5.7",
+			clause:  "protocol-two-pin-uv-auth-token-length",
+			anchor:  "#pinProto2",
+			level:   conformance.RequirementMust,
+		},
+		{
+			got:     clientPIN2PermissionsMakeCredentialUVReference(),
+			section: "6.1.2",
+			clause:  "pin-uv-authenticated-make-credential-sets-uv",
+			anchor:  "#op-makecred-step-performBuiltInUv",
+			level:   conformance.RequirementMust,
+		},
+		{
+			got:     clientPIN2PermissionsGetAssertionUVReference(),
+			section: "6.2.2",
+			clause:  "pin-uv-authenticated-get-assertion-sets-uv",
+			anchor:  "#op-getassert-step-performBuiltInUv",
+			level:   conformance.RequirementMust,
+		},
+		{
+			got:     clientPIN2PermissionsPCMRReference(),
+			section: "6.8.2",
+			clause:  "get-creds-metadata-pcmr-authorization",
+			anchor:  "#getCredsMetadata",
+			level:   conformance.RequirementConstraint,
+		},
+	}
+	for _, want := range exact {
+		if want.got.Section != want.section || want.got.Clause != want.clause ||
+			!strings.HasSuffix(want.got.URL, want.anchor) || want.got.Level != want.level {
+			t.Fatalf("reference = %#v, want section/clause/anchor/level %s/%s/%s/%s", want.got, want.section, want.clause, want.anchor, want.level)
+		}
+	}
 }
 
 func TestAuthrClientPIN2PermissionsP1UsesExactAdvertisedMaskAndRPID(t *testing.T) {
@@ -62,6 +122,7 @@ func TestAuthrClientPIN2PermissionsP1UsesExactAdvertisedMaskAndRPID(t *testing.T
 	result, suppliedPIN := runClientPIN2Permissions(t, fixture, Config{}, TestIDAuthrClientPIN2PermissionsP1)
 	assertClientPIN2PermissionsStatus(t, result, conformance.StatusPassed)
 	assertClientPIN2PermissionsLifecycle(t, result, fixture, suppliedPIN)
+	assertClientPIN2PermissionsStepReferences(t, result, "client-pin2-permissions.p-1.issue", "6.5.5.7.2", "6.5.7")
 
 	want := protocol.PermissionMakeCredential |
 		protocol.PermissionGetAssertion |
@@ -107,7 +168,10 @@ func TestAuthrClientPIN2PermissionsP1PresenceAndZeroMaskSemantics(t *testing.T) 
 
 		result, suppliedPIN := runClientPIN2Permissions(t, fixture, Config{}, TestIDAuthrClientPIN2PermissionsP1)
 		assertClientPIN2PermissionsStatus(t, result, conformance.StatusSkipped)
-		assertClientPIN2PermissionsLifecycle(t, result, fixture, suppliedPIN)
+		assertClientPIN2PermissionsNoMutation(t, fixture)
+		if suppliedPIN != nil {
+			t.Fatalf("TemporaryPIN provider returned %x before zero-mask skip", suppliedPIN)
+		}
 		if len(fixture.permissionScopes) != 0 {
 			t.Fatalf("permission requests = %v, want none", fixture.permissionScopes)
 		}
@@ -119,6 +183,7 @@ func TestAuthrClientPIN2PermissionsP2UsesMCOnlyImmediatelyForDiscoverableCredent
 	result, suppliedPIN := runClientPIN2Permissions(t, fixture, Config{}, TestIDAuthrClientPIN2PermissionsP2)
 	assertClientPIN2PermissionsStatus(t, result, conformance.StatusPassed)
 	assertClientPIN2PermissionsLifecycle(t, result, fixture, suppliedPIN)
+	assertClientPIN2PermissionsStepReferences(t, result, "client-pin2-permissions.p-2.make-credential", "6.5.5.7.2", "6.5.7", "6.1.2")
 
 	if !slices.Equal(fixture.permissionScopes, []protocol.Permission{protocol.PermissionMakeCredential}) ||
 		!slices.Equal(fixture.permissionRPIDs, []string{clientPIN2PermissionsRPID}) {
@@ -144,6 +209,8 @@ func TestAuthrClientPIN2PermissionsP3OwnCredentialAndFreshGAToken(t *testing.T) 
 	result, suppliedPIN := runClientPIN2Permissions(t, fixture, Config{}, TestIDAuthrClientPIN2PermissionsP3)
 	assertClientPIN2PermissionsStatus(t, result, conformance.StatusPassed)
 	assertClientPIN2PermissionsLifecycle(t, result, fixture, suppliedPIN)
+	assertClientPIN2PermissionsStepReferences(t, result, "client-pin2-permissions.p-3.make-credential", "6.5.5.7.2", "6.5.7", "6.1.2")
+	assertClientPIN2PermissionsStepReferences(t, result, "client-pin2-permissions.p-3.get-assertion", "6.5.5.7.2", "6.5.7", "6.2.2")
 
 	if !slices.Equal(fixture.permissionScopes, []protocol.Permission{
 		protocol.PermissionMakeCredential,
@@ -165,6 +232,7 @@ func TestAuthrClientPIN2PermissionsP4UsesPCMROnlyWithoutRPID(t *testing.T) {
 	result, suppliedPIN := runClientPIN2Permissions(t, fixture, Config{}, TestIDAuthrClientPIN2PermissionsP4)
 	assertClientPIN2PermissionsStatus(t, result, conformance.StatusPassed)
 	assertClientPIN2PermissionsLifecycle(t, result, fixture, suppliedPIN)
+	assertClientPIN2PermissionsStepReferences(t, result, "client-pin2-permissions.p-4.credentials-metadata", "6.5.5.7.2", "6.5.7", "6.8.2")
 
 	if !slices.Equal(fixture.permissionScopes, []protocol.Permission{protocol.PermissionPersistentCredentialManagementReadOnly}) ||
 		!slices.Equal(fixture.permissionRPIDs, []string{""}) || fixture.credentialsMetadataCalls != 1 ||
@@ -197,10 +265,10 @@ func TestAuthrClientPIN2PermissionsP4PreconditionSkipsBeforeMutation(t *testing.
 func TestAuthrClientPIN2PermissionsF1RequiresExactPolicyViolation(t *testing.T) {
 	t.Run("policy violation passes", func(t *testing.T) {
 		fixture := newClientPIN2PermissionsAuthenticator(t)
-		fixture.pin = []byte("9876")
 		result, suppliedPIN := runClientPIN2Permissions(t, fixture, Config{}, TestIDAuthrClientPIN2PermissionsF1)
 		assertClientPIN2PermissionsStatus(t, result, conformance.StatusPassed)
 		assertClientPIN2PermissionsLifecycle(t, result, fixture, suppliedPIN)
+		assertClientPIN2PermissionsStepReferences(t, result, "client-pin2-permissions.f-1.force-change", "6.5.5.7.2", "6.5.7", "6.11.4")
 		if !slices.Equal(fixture.permissionScopes, []protocol.Permission{
 			protocol.PermissionAuthenticatorConfiguration,
 			protocol.PermissionAuthenticatorConfiguration,
@@ -211,7 +279,6 @@ func TestAuthrClientPIN2PermissionsF1RequiresExactPolicyViolation(t *testing.T) 
 
 	t.Run("PIN_INVALID is not accepted", func(t *testing.T) {
 		fixture := newClientPIN2PermissionsAuthenticator(t)
-		fixture.pin = []byte("9876")
 		fixture.forcePINChangeStatus = ctaptransport.CTAP2_ERR_PIN_INVALID
 		result, suppliedPIN := runClientPIN2Permissions(t, fixture, Config{}, TestIDAuthrClientPIN2PermissionsF1)
 		assertClientPIN2PermissionsStatus(t, result, conformance.StatusFailed)
@@ -226,17 +293,18 @@ func TestAuthrClientPIN2PermissionsF1FullSetMinProfilePreflight(t *testing.T) {
 		configure  func(*clientPIN2PermissionsAuthenticator)
 		wantStatus conformance.Status
 		message    string
+		mutates    bool
 	}{
 		{
-			name: "no existing PIN",
+			name: "initial clientPin false is applicable",
 			configure: func(*clientPIN2PermissionsAuthenticator) {
 			},
-			wantStatus: conformance.StatusSkipped,
+			wantStatus: conformance.StatusPassed,
+			mutates:    true,
 		},
 		{
 			name: "setMinPINLength disabled",
 			configure: func(fixture *clientPIN2PermissionsAuthenticator) {
-				fixture.pin = []byte("9876")
 				fixture.setMinEnabled = false
 			},
 			wantStatus: conformance.StatusSkipped,
@@ -244,7 +312,6 @@ func TestAuthrClientPIN2PermissionsF1FullSetMinProfilePreflight(t *testing.T) {
 		{
 			name: "authnrCfg disabled",
 			configure: func(fixture *clientPIN2PermissionsAuthenticator) {
-				fixture.pin = []byte("9876")
 				fixture.authenticatorConfigEnabled = false
 			},
 			wantStatus: conformance.StatusFailed,
@@ -253,7 +320,6 @@ func TestAuthrClientPIN2PermissionsF1FullSetMinProfilePreflight(t *testing.T) {
 		{
 			name: "setMin command absent",
 			configure: func(fixture *clientPIN2PermissionsAuthenticator) {
-				fixture.pin = []byte("9876")
 				fixture.configCommands = []protocol.ConfigSubCommand{protocol.ConfigSubCommandToggleAlwaysUv}
 			},
 			wantStatus: conformance.StatusFailed,
@@ -265,9 +331,13 @@ func TestAuthrClientPIN2PermissionsF1FullSetMinProfilePreflight(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			fixture := newClientPIN2PermissionsAuthenticator(t)
 			test.configure(fixture)
-			result, _ := runClientPIN2Permissions(t, fixture, Config{}, TestIDAuthrClientPIN2PermissionsF1)
+			result, suppliedPIN := runClientPIN2Permissions(t, fixture, Config{}, TestIDAuthrClientPIN2PermissionsF1)
 			assertClientPIN2PermissionsStatus(t, result, test.wantStatus)
-			assertClientPIN2PermissionsNoMutation(t, fixture)
+			if test.mutates {
+				assertClientPIN2PermissionsLifecycle(t, result, fixture, suppliedPIN)
+			} else {
+				assertClientPIN2PermissionsNoMutation(t, fixture)
+			}
 			if test.message != "" {
 				assertClientPIN2PermissionsMessage(t, result, test.message)
 			}
@@ -383,6 +453,124 @@ func TestAuthrClientPIN2PermissionsTokenLengthStatusAndTransportClassification(t
 	})
 }
 
+func TestAuthrClientPIN2PermissionsDownstreamNonconformance(t *testing.T) {
+	tests := []struct {
+		name               string
+		id                 conformance.TestID
+		configure          func(*clientPIN2PermissionsAuthenticator)
+		message            string
+		wantMakeCalls      int
+		wantAssertionCalls int
+	}{
+		{
+			name: "P-2 MakeCredential CTAP failure",
+			id:   TestIDAuthrClientPIN2PermissionsP2,
+			configure: func(fixture *clientPIN2PermissionsAuthenticator) {
+				fixture.makeCredentialStatus = ctaptransport.CTAP2_ERR_PIN_AUTH_INVALID
+			},
+			message:       "CTAP2_ERR_PIN_AUTH_INVALID",
+			wantMakeCalls: 1,
+		},
+		{
+			name: "P-2 MakeCredential missing UV",
+			id:   TestIDAuthrClientPIN2PermissionsP2,
+			configure: func(fixture *clientPIN2PermissionsAuthenticator) {
+				fixture.makeCredentialMissingUV = true
+			},
+			message:       "no UV-verified credential ID",
+			wantMakeCalls: 1,
+		},
+		{
+			name: "P-3 MakeCredential CTAP failure",
+			id:   TestIDAuthrClientPIN2PermissionsP3,
+			configure: func(fixture *clientPIN2PermissionsAuthenticator) {
+				fixture.makeCredentialStatus = ctaptransport.CTAP2_ERR_PIN_AUTH_INVALID
+			},
+			message:       "CTAP2_ERR_PIN_AUTH_INVALID",
+			wantMakeCalls: 1,
+		},
+		{
+			name: "P-3 MakeCredential missing UV",
+			id:   TestIDAuthrClientPIN2PermissionsP3,
+			configure: func(fixture *clientPIN2PermissionsAuthenticator) {
+				fixture.makeCredentialMissingUV = true
+			},
+			message:       "no UV-verified credential ID",
+			wantMakeCalls: 1,
+		},
+		{
+			name: "P-3 GetAssertion CTAP failure",
+			id:   TestIDAuthrClientPIN2PermissionsP3,
+			configure: func(fixture *clientPIN2PermissionsAuthenticator) {
+				fixture.getAssertionStatus = ctaptransport.CTAP2_ERR_PIN_AUTH_INVALID
+			},
+			message:            "CTAP2_ERR_PIN_AUTH_INVALID",
+			wantMakeCalls:      1,
+			wantAssertionCalls: 1,
+		},
+		{
+			name: "P-3 GetAssertion missing UV",
+			id:   TestIDAuthrClientPIN2PermissionsP3,
+			configure: func(fixture *clientPIN2PermissionsAuthenticator) {
+				fixture.getAssertionMissingUV = true
+			},
+			message:            "UV flag is false",
+			wantMakeCalls:      1,
+			wantAssertionCalls: 1,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			fixture := newClientPIN2PermissionsAuthenticator(t)
+			test.configure(fixture)
+			result, suppliedPIN := runClientPIN2Permissions(t, fixture, Config{}, test.id)
+			assertClientPIN2PermissionsStatus(t, result, conformance.StatusFailed)
+			assertClientPIN2PermissionsMessage(t, result, test.message)
+			assertClientPIN2PermissionsLifecycle(t, result, fixture, suppliedPIN)
+			if fixture.makeCredentialCalls != test.wantMakeCalls || fixture.getAssertionCalls != test.wantAssertionCalls {
+				t.Fatalf("downstream calls = make %d/get %d, want %d/%d", fixture.makeCredentialCalls, fixture.getAssertionCalls, test.wantMakeCalls, test.wantAssertionCalls)
+			}
+		})
+	}
+}
+
+func TestClientPIN2ValidateAssertionsRejectsEmptySequence(t *testing.T) {
+	var assertions iter.Seq2[protocol.AuthenticatorGetAssertionResponse, error] = func(func(protocol.AuthenticatorGetAssertionResponse, error) bool) {}
+	err := clientPIN2ValidateAssertions(assertions)
+	var assertion *conformance.AssertionError
+	if !errors.As(err, &assertion) {
+		t.Fatalf("error = %v, want assertion failure for no assertion", err)
+	}
+	if !strings.Contains(fmt.Sprint(err), "returned no assertion") {
+		t.Fatalf("error = %v, want assertion failure for no assertion", err)
+	}
+}
+
+func TestAuthrClientPIN2PermissionsP4GetCredsMetadataFailure(t *testing.T) {
+	fixture := newClientPIN2PermissionsAuthenticator(t)
+	fixture.credentialsMetadataStatus = ctaptransport.CTAP2_ERR_PIN_AUTH_INVALID
+	result, suppliedPIN := runClientPIN2Permissions(t, fixture, Config{}, TestIDAuthrClientPIN2PermissionsP4)
+	assertClientPIN2PermissionsStatus(t, result, conformance.StatusFailed)
+	assertClientPIN2PermissionsMessage(t, result, "CTAP2_ERR_PIN_AUTH_INVALID")
+	assertClientPIN2PermissionsLifecycle(t, result, fixture, suppliedPIN)
+	if fixture.credentialsMetadataCalls != 1 {
+		t.Fatalf("GetCredsMetadata calls = %d, want 1", fixture.credentialsMetadataCalls)
+	}
+}
+
+func TestAuthrClientPIN2PermissionsF1AuthenticatorConfigFailure(t *testing.T) {
+	fixture := newClientPIN2PermissionsAuthenticator(t)
+	fixture.authenticatorConfigStatus = ctaptransport.CTAP2_ERR_PIN_AUTH_INVALID
+	result, suppliedPIN := runClientPIN2Permissions(t, fixture, Config{}, TestIDAuthrClientPIN2PermissionsF1)
+	assertClientPIN2PermissionsStatus(t, result, conformance.StatusFailed)
+	assertClientPIN2PermissionsMessage(t, result, "CTAP2_ERR_PIN_AUTH_INVALID")
+	assertClientPIN2PermissionsLifecycle(t, result, fixture, suppliedPIN)
+	if fixture.configCalls != 0 || !slices.Equal(fixture.operations, []string{"token:32", "config"}) {
+		t.Fatalf("config failure flow = calls %d/operations %v", fixture.configCalls, fixture.operations)
+	}
+}
+
 func runClientPIN2Permissions(
 	t *testing.T,
 	fixture *clientPIN2PermissionsAuthenticator,
@@ -453,6 +641,36 @@ func assertClientPIN2PermissionsMessage(t *testing.T, result conformance.SuiteRe
 	t.Fatalf("steps = %#v, want message containing %q", result.Tests[0].Steps, substring)
 }
 
+func assertClientPIN2PermissionsStepReferences(
+	t *testing.T,
+	result conformance.SuiteResult,
+	stepID conformance.StepID,
+	sections ...string,
+) {
+	t.Helper()
+
+	for _, step := range result.Tests[0].Steps {
+		if step.ID != stepID {
+			continue
+		}
+		for _, section := range sections {
+			found := false
+			for _, reference := range step.References {
+				if reference.Section == section {
+					found = true
+					break
+				}
+			}
+			if !found {
+				t.Fatalf("step %s references = %#v, want section %s", stepID, step.References, section)
+			}
+		}
+
+		return
+	}
+	t.Fatalf("steps = %#v, want step %s", result.Tests[0].Steps, stepID)
+}
+
 func assertClientPIN2PermissionsLifecycle(
 	t *testing.T,
 	result conformance.SuiteResult,
@@ -478,8 +696,21 @@ func assertClientPIN2PermissionsLifecycle(
 func assertClientPIN2PermissionsNoMutation(t *testing.T, fixture *clientPIN2PermissionsAuthenticator) {
 	t.Helper()
 
-	if fixture.powerCycles != 0 || fixture.resets != 0 || fixture.setPINCalls != 0 {
-		t.Fatalf("preflight mutated state: cycles=%d resets=%d setPIN=%d", fixture.powerCycles, fixture.resets, fixture.setPINCalls)
+	if fixture.powerCycles != 0 || fixture.resets != 0 || fixture.setPINCalls != 0 ||
+		fixture.configCalls != 0 || fixture.makeCredentialCalls != 0 || fixture.getAssertionCalls != 0 ||
+		fixture.credentialsMetadataCalls != 0 || len(fixture.permissionScopes) != 0 || len(fixture.operations) != 0 {
+		t.Fatalf(
+			"preflight mutated state: cycles=%d resets=%d setPIN=%d config=%d make=%d get=%d metadata=%d scopes=%v operations=%v",
+			fixture.powerCycles,
+			fixture.resets,
+			fixture.setPINCalls,
+			fixture.configCalls,
+			fixture.makeCredentialCalls,
+			fixture.getAssertionCalls,
+			fixture.credentialsMetadataCalls,
+			fixture.permissionScopes,
+			fixture.operations,
+		)
 	}
 }
 
@@ -500,6 +731,7 @@ type clientPIN2PermissionsAuthenticator struct {
 	makeCredentialStatus        ctaptransport.StatusCode
 	getAssertionStatus          ctaptransport.StatusCode
 	credentialsMetadataStatus   ctaptransport.StatusCode
+	authenticatorConfigStatus   ctaptransport.StatusCode
 	transportErrorCommand       protocol.Command
 	permissionScopes            []protocol.Permission
 	permissionRPIDs             []string
@@ -513,6 +745,8 @@ type clientPIN2PermissionsAuthenticator struct {
 	makeCredentialExact         bool
 	getAssertionExact           bool
 	credentialsMetadataExact    bool
+	makeCredentialMissingUV     bool
+	getAssertionMissingUV       bool
 }
 
 func newClientPIN2PermissionsAuthenticator(t *testing.T) *clientPIN2PermissionsAuthenticator {
@@ -573,6 +807,10 @@ func (a *clientPIN2PermissionsAuthenticator) CBOR(
 		response = a.credentialsMetadataResponse(request[1:])
 	case protocol.AuthenticatorConfig:
 		a.operations = append(a.operations, "config")
+		if a.authenticatorConfigStatus != ctaptransport.CTAP2_OK {
+			response = ctaptransport.CBORResponse{StatusCode: a.authenticatorConfigStatus}
+			break
+		}
 
 		return a.clientPIN2NewPINAuthenticator.CBOR(ctx, request)
 	default:
@@ -706,7 +944,9 @@ func (a *clientPIN2PermissionsAuthenticator) makeCredentialResponse(bodyBytes []
 	}
 
 	authData := getAssertionFixtureMakeCredentialAuthData(a.t, a.credentialID)
-	authData[32] |= byte(protocol.AuthDataFlagUserVerified)
+	if !a.makeCredentialMissingUV {
+		authData[32] |= byte(protocol.AuthDataFlagUserVerified)
+	}
 
 	return a.success(map[uint64]any{
 		1: "none",
@@ -740,7 +980,9 @@ func (a *clientPIN2PermissionsAuthenticator) getAssertionResponse(bodyBytes []by
 	}
 
 	authData := getAssertionFixtureAuthData()
-	authData[32] |= byte(protocol.AuthDataFlagUserVerified)
+	if !a.getAssertionMissingUV {
+		authData[32] |= byte(protocol.AuthDataFlagUserVerified)
+	}
 
 	return a.success(map[uint64]any{
 		1: credential.PublicKeyCredentialDescriptor{

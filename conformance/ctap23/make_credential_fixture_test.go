@@ -336,6 +336,94 @@ func TestMakeCredentialFixtureMakeCredentialClassifiesWireFailures(t *testing.T)
 	})
 }
 
+func TestMakeCredentialFixtureOwnsWireResponseAndReturnsDecodedResponse(t *testing.T) {
+	authData := bytes.Repeat([]byte{0x7a}, 37)
+	authData[32] = 0
+	wireData := marshalMakeCredentialFixture(t, protocol.AuthenticatorMakeCredentialResponse{
+		Format:                   attestation.AttestationStatementFormatIdentifierNone,
+		AuthDataRaw:              authData,
+		AttestationStatement:     map[string]any{"sig": []byte{0x31, 0x32}},
+		LargeBlobKey:             bytes.Repeat([]byte{0x41}, 32),
+		UnsignedExtensionOutputs: map[extension.ExtensionIdentifier]any{"fixture": []byte{0x51, 0x52}},
+	})
+	retainedWireData := wireData
+
+	response, err := (makeCredentialFixture{}).makeCredential(
+		t.Context(),
+		makeCredentialFixtureCBORFunc(func(context.Context, []byte) (ctaptransport.CBORResponse, error) {
+			return ctaptransport.CBORResponse{StatusCode: ctaptransport.CTAP2_OK, Data: wireData}, nil
+		}),
+		protocol.AuthenticatorMakeCredentialRequest{},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertMakeCredentialFixtureBytesCleared(t, "wire response", retainedWireData)
+	if !bytes.Equal(response.AuthDataRaw, authData) {
+		t.Fatalf("decoded authData = %x, want %x", response.AuthDataRaw, authData)
+	}
+
+	retainedAuthData := response.AuthDataRaw
+	retainedLargeBlobKey := response.LargeBlobKey
+	retainedAttestation := response.AttestationStatement["sig"].([]byte)
+	retainedUnsigned := response.UnsignedExtensionOutputs["fixture"].([]byte)
+	clearMakeCredentialResponse(&response)
+	assertMakeCredentialFixtureBytesCleared(t, "decoded authData", retainedAuthData)
+	assertMakeCredentialFixtureBytesCleared(t, "decoded largeBlobKey", retainedLargeBlobKey)
+	assertMakeCredentialFixtureBytesCleared(t, "decoded attestation statement", retainedAttestation)
+	assertMakeCredentialFixtureBytesCleared(t, "decoded unsigned extension output", retainedUnsigned)
+	if response.AuthDataRaw != nil || response.AuthData != nil || response.LargeBlobKey != nil ||
+		response.AttestationStatement != nil || response.UnsignedExtensionOutputs != nil {
+		t.Fatalf("cleared response retains mutable data: %#v", response)
+	}
+}
+
+func TestMakeCredentialFixtureClearsWireResponseOnDecodeAndValidationErrors(t *testing.T) {
+	for _, testCase := range []struct {
+		name     string
+		response any
+	}{
+		{
+			name: "validation error",
+			response: map[uint64]any{
+				1: false,
+				2: make([]byte, 37),
+			},
+		},
+		{
+			name: "decode error after authData allocation",
+			response: map[uint64]any{
+				1: string(attestation.AttestationStatementFormatIdentifierNone),
+				2: bytes.Repeat([]byte{0x61}, 37),
+				3: false,
+			},
+		},
+	} {
+		t.Run(testCase.name, func(t *testing.T) {
+			wireData := marshalMakeCredentialFixture(t, testCase.response)
+			retainedWireData := wireData
+			_, err := (makeCredentialFixture{}).makeCredential(
+				t.Context(),
+				makeCredentialFixtureCBORFunc(func(
+					context.Context,
+					[]byte,
+				) (ctaptransport.CBORResponse, error) {
+					return ctaptransport.CBORResponse{
+						StatusCode: ctaptransport.CTAP2_OK,
+						Data:       wireData,
+					}, nil
+				}),
+				protocol.AuthenticatorMakeCredentialRequest{},
+			)
+			var assertion *conformance.AssertionError
+			if !errors.As(err, &assertion) {
+				t.Fatalf("error = %#v, want AssertionError", err)
+			}
+			assertMakeCredentialFixtureBytesCleared(t, "wire response", retainedWireData)
+		})
+	}
+}
+
 func TestPrepareMakeCredentialFixtureUsesUnauthenticatedES256Fallback(t *testing.T) {
 	device := &makeCredentialFixtureDevice{
 		t: t,
@@ -769,5 +857,13 @@ func assertMakeCredentialFixtureZeroed(t *testing.T, secret []byte) {
 
 	if slices.ContainsFunc(secret, func(value byte) bool { return value != 0 }) {
 		t.Fatal("PIN/UV token was not zeroed")
+	}
+}
+
+func assertMakeCredentialFixtureBytesCleared(t *testing.T, name string, value []byte) {
+	t.Helper()
+
+	if slices.ContainsFunc(value, func(b byte) bool { return b != 0 }) {
+		t.Fatalf("%s was not cleared", name)
 	}
 }

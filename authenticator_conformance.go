@@ -33,9 +33,12 @@ func (a *Authenticator) RunCTAP23Conformance(
 		appoperation.ConformanceCTAP23,
 		func(runner workflow.Runner, ctx context.Context) (conformance.SuiteResult, error) {
 			return runner.RunCTAP23Conformance(ctx, workflow.ConformanceEnvironment{
-				CBOR:       a.cbor,
-				Current:    a.currentConformanceCapabilities,
-				PowerCycle: a.conformancePowerCycler(),
+				CBOR:               a.cbor,
+				Current:            a.currentConformanceCapabilities,
+				PowerCycle:         a.conformancePowerCycler(),
+				HIDSessionProvider: request.HIDSessionProvider,
+				NFCCardProvider:    request.NFCCardProvider,
+				BLESessionProvider: request.BLESessionProvider,
 			}, request)
 		},
 		opts...,

@@ -143,10 +143,9 @@
         "conformance/ctap23/hid_1_p_01_10.go"
       ],
       "testFiles": [
-        "conformance/ctap23/hid_1_p_01_10_test.go"
+        "conformance/ctap23/hid_1_test.go"
       ],
-      "status": "blocked",
-      "blockedReason": "TestContext exposes only CTAP CBOR; raw HID frames, channels, keepalive, cancellation, lock, and idle reads are unavailable"
+      "status": "merged"
     },
     {
       "id": "ctap23-hid-1-p-11-f-4",
@@ -189,8 +188,7 @@
       "testFiles": [
         "conformance/ctap23/hid_1_p_11_f_4_test.go"
       ],
-      "status": "blocked",
-      "blockedReason": "TestContext exposes only CTAP CBOR; raw HID frames, channels, keepalive, cancellation, lock, and idle reads are unavailable"
+      "status": "merged"
     },
     {
       "id": "ctap23-nfc-1",
@@ -236,8 +234,7 @@
       "testFiles": [
         "conformance/ctap23/nfc_1_test.go"
       ],
-      "status": "blocked",
-      "blockedReason": "runtime does not expose SELECT responses, arbitrary short or extended APDUs, malformed APDUs, or status words"
+      "status": "merged"
     },
     {
       "id": "ctap23-ble-1",
@@ -277,8 +274,7 @@
       "testFiles": [
         "conformance/ctap23/ble_1_test.go"
       ],
-      "status": "blocked",
-      "blockedReason": "no BLE opener, GATT discovery, or BLE CTAP framing boundary exists"
+      "status": "merged"
     },
     {
       "id": "ctap23-authr-generic-1",
@@ -838,7 +834,7 @@
       "testFiles": [
         "conformance/ctap23/authr_reset_1_test.go"
       ],
-      "status": "review"
+      "status": "merged"
     },
     {
       "id": "ctap23-resident-key",
@@ -875,8 +871,7 @@
       "testFiles": [
         "conformance/ctap23/resident_key_test.go"
       ],
-      "status": "blocked",
-      "blockedReason": "the suite has no explicit authenticator-display capability, which is required to select the mutually exclusive no-display and display case groups without guessing"
+      "status": "merged"
     },
     {
       "id": "ctap23-enteprise-attestation",
@@ -911,12 +906,12 @@
         "ctap23-persistent-token-reset-environment"
       ],
       "implementationFiles": [
-        "conformance/ctap23/enteprise_attestation.go"
+        "conformance/ctap23/enterprise_attestation.go"
       ],
       "testFiles": [
-        "conformance/ctap23/enteprise_attestation_test.go"
+        "conformance/ctap23/enterprise_attestation_test.go"
       ],
-      "status": "blocked"
+      "status": "merged"
     },
     {
       "id": "ctap23-hmac-secret",
@@ -963,8 +958,7 @@
       "testFiles": [
         "conformance/ctap23/hmac_secret_test.go"
       ],
-      "status": "blocked",
-      "blockedReason": "suite cannot require or observe PIN/UV protocol 1 and lacks a presence-preserving authenticator-data extension view"
+      "status": "merged"
     },
     {
       "id": "ctap23-hmac-secret2",
@@ -1011,8 +1005,7 @@
       "testFiles": [
         "conformance/ctap23/hmac_secret2_test.go"
       ],
-      "status": "blocked",
-      "blockedReason": "suite cannot require or observe PIN/UV protocol 2 and lacks a presence-preserving authenticator-data extension view"
+      "status": "merged"
     },
     {
       "id": "ctap23-hmac-secret-mc",
@@ -1063,8 +1056,7 @@
       "testFiles": [
         "conformance/ctap23/hmac_secret_mc_test.go"
       ],
-      "status": "blocked",
-      "blockedReason": "protocol-aware crypto boundary is absent and the assigned source uses an undefined RP ID"
+      "status": "merged"
     },
     {
       "id": "ctap23-cred-protect",
@@ -1111,8 +1103,7 @@
       "testFiles": [
         "conformance/ctap23/cred_protect_test.go"
       ],
-      "status": "blocked",
-      "blockedReason": "alwaysUV mutation and restoration are not exposed through a runtime-coherent conformance callback"
+      "status": "merged"
     },
     {
       "id": "ctap23-cred-blob",
@@ -1151,7 +1142,7 @@
       "testFiles": [
         "conformance/ctap23/cred_blob_test.go"
       ],
-      "status": "blocked"
+      "status": "merged"
     },
     {
       "id": "ctap23-large-blob",
@@ -1201,8 +1192,7 @@
       "testFiles": [
         "conformance/ctap23/large_blob_test.go"
       ],
-      "status": "blocked",
-      "blockedReason": "default large-blob behavior requires an injected tri-state declaration"
+      "status": "merged"
     },
     {
       "id": "ctap23-large-blob-key",
@@ -1246,8 +1236,7 @@
       "testFiles": [
         "conformance/ctap23/large_blob_key_test.go"
       ],
-      "status": "blocked",
-      "blockedReason": "the assigned source compares an undefined value; normative fresh-key inequality requires adjudication"
+      "status": "merged"
     },
     {
       "id": "ctap23-min-pinlength",
@@ -1285,13 +1274,14 @@
         "ctap23-feature-profile-environment"
       ],
       "implementationFiles": [
-        "conformance/ctap23/min_pinlength.go"
+        "conformance/ctap23/extension_pin_policy_fixture.go",
+        "conformance/ctap23/min_pin_length.go"
       ],
       "testFiles": [
-        "conformance/ctap23/min_pinlength_test.go"
+        "conformance/ctap23/extension_pin_policy_fixture_test.go",
+        "conformance/ctap23/min_pin_length_test.go"
       ],
-      "status": "blocked",
-      "blockedReason": "runtime-coherent minimum-PIN RPID mutation and reset are absent, and the assigned source uses undefined options"
+      "status": "merged"
     },
     {
       "id": "ctap23-pin-complexity-policy",
@@ -1334,8 +1324,7 @@
       "testFiles": [
         "conformance/ctap23/pin_complexity_policy_test.go"
       ],
-      "status": "blocked",
-      "blockedReason": "runtime-coherent RPID policy mutation and reset are absent, and the assigned source uses undefined options"
+      "status": "merged"
     },
     {
       "id": "ctap23-third-party-payment",
@@ -1374,7 +1363,7 @@
       "testFiles": [
         "conformance/ctap23/third_party_payment_test.go"
       ],
-      "status": "blocked"
+      "status": "merged"
     },
     {
       "id": "ctap23-uvm",
@@ -1412,8 +1401,7 @@
       "testFiles": [
         "conformance/ctap23/uvm_test.go"
       ],
-      "status": "blocked",
-      "blockedReason": "typed extension API has no UVM fields and the built-in UV permission environment is not yet available"
+      "status": "merged"
     },
     {
       "id": "ctap23-authr-client-pin1-key-agreement",
@@ -1731,7 +1719,7 @@
       "testFiles": [
         "conformance/ctap23/authr_client_pin2_get_pin_uv_auth_token_using_pin_with_permissions_test.go"
       ],
-      "status": "review"
+      "status": "merged"
     },
     {
       "id": "ctap23-authr-client-pin2-get-pin-uv-auth-token-using-uv-with-permissions",
@@ -1771,7 +1759,7 @@
       "testFiles": [
         "conformance/ctap23/authr_client_pin2_get_pin_uv_auth_token_using_uv_with_permissions_test.go"
       ],
-      "status": "active"
+      "status": "merged"
     },
     {
       "id": "ctap23-authr-client-pin2-pin-policy",
@@ -1891,8 +1879,7 @@
       "testFiles": [
         "conformance/ctap23/credential_management_enumerate_rps_test.go"
       ],
-      "status": "blocked",
-      "blockedReason": "generic PIN-or-UV permission-token and discoverable-credential fixtures are not yet available"
+      "status": "merged"
     },
     {
       "id": "ctap23-credential-management-enumerate-credentials",
@@ -1929,8 +1916,7 @@
       "testFiles": [
         "conformance/ctap23/credential_management_enumerate_credentials_test.go"
       ],
-      "status": "blocked",
-      "blockedReason": "generic PIN-or-UV permission-token and discoverable-credential fixtures are not yet available"
+      "status": "merged"
     },
     {
       "id": "ctap23-credential-management-update-and-delete",
@@ -1966,8 +1952,7 @@
       "testFiles": [
         "conformance/ctap23/credential_management_update_and_delete_test.go"
       ],
-      "status": "blocked",
-      "blockedReason": "generic PIN-or-UV permission-token and discoverable-credential fixtures are not yet available"
+      "status": "merged"
     },
     {
       "id": "ctap23-authenticator-config",
@@ -2006,8 +1991,7 @@
       "testFiles": [
         "conformance/ctap23/authenticator_config_test.go"
       ],
-      "status": "blocked",
-      "blockedReason": "generic PIN-or-UV permission-token and reset/provision interaction environment are not yet available"
+      "status": "merged"
     },
     {
       "id": "ctap23-bio-enroll-bio-mod-and-sensor-info",
@@ -2040,8 +2024,7 @@
       "testFiles": [
         "conformance/ctap23/bio_enroll_bio_mod_and_sensor_info_test.go"
       ],
-      "status": "blocked",
-      "blockedReason": "reset and verification provisioning environment is not yet available"
+      "status": "merged"
     },
     {
       "id": "ctap23-bio-enroll-enroll",
@@ -2072,13 +2055,14 @@
         "ctap23-persistent-token-reset-environment"
       ],
       "implementationFiles": [
+        "conformance/ctap23/bio_enrollment_fixture.go",
         "conformance/ctap23/bio_enroll_enroll.go"
       ],
       "testFiles": [
+        "conformance/ctap23/bio_enrollment_fixture_test.go",
         "conformance/ctap23/bio_enroll_enroll_test.go"
       ],
-      "status": "blocked",
-      "blockedReason": "biometric capture interaction environment is not yet exposed to the suite"
+      "status": "merged"
     },
     {
       "id": "ctap23-bio-enroll-enumerate-rename-remove",
@@ -2115,8 +2099,7 @@
       "testFiles": [
         "conformance/ctap23/bio_enroll_enumerate_rename_remove_test.go"
       ],
-      "status": "blocked",
-      "blockedReason": "biometric capture interaction environment is not yet exposed to the suite"
+      "status": "merged"
     },
     {
       "id": "ctap23-large-blobs-1",
@@ -2154,8 +2137,7 @@
       "testFiles": [
         "conformance/ctap23/large_blobs_1_test.go"
       ],
-      "status": "blocked",
-      "blockedReason": "large-blob-write permission-token and reset/provision environment are not yet available"
+      "status": "merged"
     },
     {
       "id": "ctap23-metadata-stmt-1-01-14",

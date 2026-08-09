@@ -39,7 +39,7 @@ import (
 
 func TestRunCTAP23ConformanceSafeUsesSelectedAuthenticatorWithoutReset(t *testing.T) {
 	info := facadeConformanceInfo()
-	raw := newFacadeConformanceCBOR(t, info, info, info)
+	raw := newFacadeConformanceCBOR(t, info, info, info, info, info, info)
 	device := &facadeConformanceAuthenticator{info: info}
 	opened := openFacadeConformanceAuthenticator(t, device, raw)
 
@@ -54,23 +54,29 @@ func TestRunCTAP23ConformanceSafeUsesSelectedAuthenticatorWithoutReset(t *testin
 	if err != nil {
 		t.Fatal(err)
 	}
-	if result.Status != conformance.StatusPassed || len(result.Tests) != 43 {
-		t.Fatalf("result = %#v, want 43 safe tests", result)
+	if result.Status != conformance.StatusPassed || len(result.Tests) != 78 {
+		t.Fatalf("result = %#v, want 78 safe tests", result)
 	}
-	if result.Tests[2].ID != ctap23.TestIDAuthrGeneric1P3 || result.Tests[2].Status != conformance.StatusSkipped {
-		t.Fatalf("P-3 result = %#v", result.Tests[2])
+	if result.Tests[0].ID != ctap23.TestIDHID1P1 || result.Tests[0].Status != conformance.StatusSkipped {
+		t.Fatalf("HID P-1 result = %#v", result.Tests[0])
 	}
-	if result.Tests[3].ID != ctap23.TestIDAuthrMakeCredReq2F3 || result.Tests[3].Status != conformance.StatusSkipped {
-		t.Fatalf("MakeCredential Req-2 F-3 result = %#v", result.Tests[3])
+	if result.Tests[34].ID != ctap23.TestIDAuthrGeneric1P3 || result.Tests[34].Status != conformance.StatusSkipped {
+		t.Fatalf("P-3 result = %#v", result.Tests[34])
 	}
-	if result.Tests[4].ID != ctap23.TestIDAuthrMakeCredReq3F4 || result.Tests[4].Status != conformance.StatusSkipped {
-		t.Fatalf("MakeCredential Req-3 F-4 result = %#v", result.Tests[4])
+	if result.Tests[35].ID != ctap23.TestIDAuthrMakeCredReq2F3 || result.Tests[35].Status != conformance.StatusSkipped {
+		t.Fatalf("MakeCredential Req-2 F-3 result = %#v", result.Tests[35])
 	}
-	if result.Tests[5].ID != ctap23.TestIDAuthrClientPIN1GetRetriesP4 || result.Tests[5].Status != conformance.StatusSkipped {
-		t.Fatalf("ClientPIN1 P-4 result = %#v", result.Tests[5])
+	if result.Tests[36].ID != ctap23.TestIDAuthrMakeCredReq3F4 || result.Tests[36].Status != conformance.StatusSkipped {
+		t.Fatalf("MakeCredential Req-3 F-4 result = %#v", result.Tests[36])
 	}
-	if result.Tests[40].ID != ctap23.TestIDMetadataStmt1P41 || result.Tests[40].Status != conformance.StatusSkipped {
-		t.Fatalf("metadata P-41 result = %#v", result.Tests[40])
+	if result.Tests[37].ID != ctap23.TestIDCredBlobP1 || result.Tests[37].Status != conformance.StatusSkipped {
+		t.Fatalf("credBlob P-1 result = %#v", result.Tests[37])
+	}
+	if result.Tests[38].ID != ctap23.TestIDAuthrClientPIN1GetRetriesP4 || result.Tests[38].Status != conformance.StatusSkipped {
+		t.Fatalf("ClientPIN1 P-4 result = %#v", result.Tests[38])
+	}
+	if result.Tests[75].ID != ctap23.TestIDMetadataStmt1P41 || result.Tests[75].Status != conformance.StatusSkipped {
+		t.Fatalf("metadata P-41 result = %#v", result.Tests[75])
 	}
 	if slices.ContainsFunc(result.Tests, func(result conformance.TestResult) bool { return result.Destructive }) {
 		t.Fatalf("safe result contains a destructive test: %#v", result.Tests)
@@ -78,8 +84,8 @@ func TestRunCTAP23ConformanceSafeUsesSelectedAuthenticatorWithoutReset(t *testin
 	if device.resetCalls != 0 || device.setPINCalls != 0 || device.pinTokenCalls != 0 {
 		t.Fatalf("destructive calls = reset %d, set PIN %d, token %d", device.resetCalls, device.setPINCalls, device.pinTokenCalls)
 	}
-	if len(raw.commands) != 3 {
-		t.Fatalf("raw commands = %x, want three GetInfo commands", raw.commands)
+	if len(raw.commands) != 6 {
+		t.Fatalf("raw commands = %x, want six GetInfo commands", raw.commands)
 	}
 }
 
@@ -104,7 +110,7 @@ func TestRunCTAP23ConformanceFullRoutesPINAndResetThroughRuntime(t *testing.T) {
 	identifierAfter := [aes.BlockSize]byte{5, 6, 7, 8}
 	stateBefore := [aes.BlockSize]byte{9, 10, 11, 12}
 	stateAfter := [aes.BlockSize]byte{13, 14, 15, 16}
-	infos := make([]protocol.AuthenticatorGetInfoResponse, 159)
+	infos := make([]protocol.AuthenticatorGetInfoResponse, 267)
 	for index := range infos {
 		infos[index] = initial
 		infos[index].Options = maps.Clone(initial.Options)
@@ -119,7 +125,7 @@ func TestRunCTAP23ConformanceFullRoutesPINAndResetThroughRuntime(t *testing.T) {
 				attestation.AttestationStatementFormatIdentifierNone,
 			}
 		}
-		if index >= 51 && index <= 153 {
+		if index >= 51 && index <= 212 {
 			infos[index].Algorithms = []credential.PublicKeyCredentialParameters{{
 				Type:      credential.PublicKeyCredentialTypePublicKey,
 				Algorithm: cose.AlgorithmES256,
@@ -129,7 +135,23 @@ func TestRunCTAP23ConformanceFullRoutesPINAndResetThroughRuntime(t *testing.T) {
 				attestation.AttestationStatementFormatIdentifierNone,
 			}
 		}
-		if index >= 110 && index <= 112 || index >= 154 {
+		// The six hmacSecret cases are intentionally inapplicable in this
+		// facade-routing fixture; their protocol-1 crypto is covered by the
+		// package's deterministic authenticator. Keeping protocol 2 advertised
+		// preserves the profile needed by every following shard.
+		if index >= 89 && index <= 94 {
+			infos[index].PinUvAuthProtocols = []protocol.PinUvAuthProtocol{
+				protocol.PinUvAuthProtocolTwo,
+			}
+		}
+		// The strict protocol-2 hmacSecret2 cases are likewise skipped by
+		// advertising only protocol 1 for their applicability reads.
+		if index >= 95 && index <= 100 {
+			infos[index].PinUvAuthProtocols = []protocol.PinUvAuthProtocol{
+				protocol.PinUvAuthProtocolOne,
+			}
+		}
+		if index >= 169 && index <= 171 || index >= 233 {
 			delete(infos[index].Options, protocol.OptionClientPIN)
 		}
 
@@ -204,12 +226,13 @@ func TestRunCTAP23ConformanceFullRoutesPINAndResetThroughRuntime(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(result.Tests) != 152 {
-		t.Fatalf("tests = %d, want 152", len(result.Tests))
+	if len(result.Tests) != 295 {
+		t.Fatalf("tests = %d, want 295", len(result.Tests))
 	}
 	for _, testResult := range result.Tests {
 		want := conformance.StatusPassed
 		if testResult.ID == ctap23.TestIDAuthrMakeCredReq2F3 ||
+			facadeNewPortSkip(testResult.ID) ||
 			testResult.ID == ctap23.TestIDAuthrMakeCredReq3F4 ||
 			testResult.ID == ctap23.TestIDAuthrMakeCredReq6P2 ||
 			testResult.ID == ctap23.TestIDAuthrMakeCredResp1P04 ||
@@ -228,12 +251,75 @@ func TestRunCTAP23ConformanceFullRoutesPINAndResetThroughRuntime(t *testing.T) {
 			testResult.ID == ctap23.TestIDAuthrClientPIN2GetPINTokenF3 ||
 			testResult.ID == ctap23.TestIDAuthrClientPIN2GetPINTokenF4 ||
 			testResult.ID == ctap23.TestIDAuthrClientPIN2GetPINTokenF5 ||
+			testResult.ID == ctap23.TestIDAuthrClientPIN2PermissionsF1 ||
+			testResult.ID == ctap23.TestIDAuthrClientPIN2PermissionsP4 ||
+			testResult.ID == ctap23.TestIDAuthrClientPIN2UVPermissionsP1 ||
+			testResult.ID == ctap23.TestIDAuthrClientPIN2UVPermissionsP2 ||
+			testResult.ID == ctap23.TestIDAuthrClientPIN2UVPermissionsP3 ||
+			testResult.ID == ctap23.TestIDAuthrClientPIN2UVPermissionsP4 ||
 			testResult.ID == ctap23.TestIDAuthrClientPIN2PinPolicyF4 ||
 			testResult.ID == ctap23.TestIDAuthrClientPIN2GetRetriesP1 ||
 			testResult.ID == ctap23.TestIDAuthrClientPIN2GetRetriesP2 ||
 			testResult.ID == ctap23.TestIDAuthrClientPIN2GetRetriesP3 ||
 			testResult.ID == ctap23.TestIDAuthrClientPIN2GetRetriesP4 ||
 			testResult.ID == ctap23.TestIDAuthrClientPIN2GetRetriesP5 ||
+			testResult.ID == ctap23.TestIDHMACSecretP1 ||
+			testResult.ID == ctap23.TestIDHMACSecretP2 ||
+			testResult.ID == ctap23.TestIDHMACSecretP3 ||
+			testResult.ID == ctap23.TestIDHMACSecretF1 ||
+			testResult.ID == ctap23.TestIDHMACSecretF2 ||
+			testResult.ID == ctap23.TestIDHMACSecretF3 ||
+			testResult.ID == ctap23.TestIDLargeBlobP1 ||
+			testResult.ID == ctap23.TestIDLargeBlobP2 ||
+			testResult.ID == ctap23.TestIDLargeBlobP3 ||
+			testResult.ID == ctap23.TestIDLargeBlobP4 ||
+			testResult.ID == ctap23.TestIDLargeBlobP5 ||
+			testResult.ID == ctap23.TestIDLargeBlobP6 ||
+			testResult.ID == ctap23.TestIDLargeBlobP7 ||
+			testResult.ID == ctap23.TestIDLargeBlobF1 ||
+			testResult.ID == ctap23.TestIDLargeBlobF2 ||
+			testResult.ID == ctap23.TestIDLargeBlobF3 ||
+			testResult.ID == ctap23.TestIDLargeBlobF4 ||
+			testResult.ID == ctap23.TestIDLargeBlobF5 ||
+			testResult.ID == ctap23.TestIDLargeBlobKeyP1 ||
+			testResult.ID == ctap23.TestIDLargeBlobKeyP2 ||
+			testResult.ID == ctap23.TestIDLargeBlobKeyF1 ||
+			testResult.ID == ctap23.TestIDLargeBlobKeyF2 ||
+			testResult.ID == ctap23.TestIDLargeBlobKeyF3 ||
+			testResult.ID == ctap23.TestIDLargeBlobKeyF4 ||
+			testResult.ID == ctap23.TestIDMinPINLengthP1 ||
+			testResult.ID == ctap23.TestIDMinPINLengthF1 ||
+			testResult.ID == ctap23.TestIDPINComplexityPolicyP1 ||
+			testResult.ID == ctap23.TestIDPINComplexityPolicyP2 ||
+			testResult.ID == ctap23.TestIDCredentialManagementEnumerateRPsP1 ||
+			testResult.ID == ctap23.TestIDCredentialManagementEnumerateRPsP2 ||
+			testResult.ID == ctap23.TestIDCredentialManagementEnumerateRPsP3 ||
+			testResult.ID == ctap23.TestIDCredentialManagementEnumerateRPsP4 ||
+			testResult.ID == ctap23.TestIDCredentialManagementEnumerateRPsP5 ||
+			testResult.ID == ctap23.TestIDCredentialManagementEnumerateRPsP6 ||
+			testResult.ID == ctap23.TestIDCredentialManagementEnumerateCredentialsP1 ||
+			testResult.ID == ctap23.TestIDCredentialManagementEnumerateCredentialsP2 ||
+			testResult.ID == ctap23.TestIDCredentialManagementEnumerateCredentialsP3 ||
+			testResult.ID == ctap23.TestIDCredentialManagementUpdateAndDeleteP1 ||
+			testResult.ID == ctap23.TestIDCredentialManagementUpdateAndDeleteP2 ||
+			testResult.ID == ctap23.TestIDAuthenticatorConfigP1 ||
+			testResult.ID == ctap23.TestIDAuthenticatorConfigP2 ||
+			testResult.ID == ctap23.TestIDAuthenticatorConfigP3 ||
+			testResult.ID == ctap23.TestIDAuthenticatorConfigP4 ||
+			testResult.ID == ctap23.TestIDAuthenticatorConfigP5 ||
+			testResult.ID == ctap23.TestIDAuthenticatorConfigP6 ||
+			testResult.ID == ctap23.TestIDAuthenticatorConfigP7 ||
+			testResult.ID == ctap23.TestIDBioEnrollBioModAndSensorInfoP1 ||
+			testResult.ID == ctap23.TestIDBioEnrollBioModAndSensorInfoP2 ||
+			testResult.ID == ctap23.TestIDBioEnrollEnrollP1 ||
+			testResult.ID == ctap23.TestIDBioEnrollEnrollP2 ||
+			testResult.ID == ctap23.TestIDBioEnrollEnumerateRenameRemoveP1 ||
+			testResult.ID == ctap23.TestIDBioEnrollEnumerateRenameRemoveP2 ||
+			testResult.ID == ctap23.TestIDBioEnrollEnumerateRenameRemoveP3 ||
+			testResult.ID == ctap23.TestIDLargeBlobs1P1 ||
+			testResult.ID == ctap23.TestIDLargeBlobs1P2 ||
+			testResult.ID == ctap23.TestIDLargeBlobs1P3 ||
+			testResult.ID == ctap23.TestIDLargeBlobs1P4 ||
 			testResult.ID == ctap23.TestIDMetadataStmt1P41 {
 			want = conformance.StatusSkipped
 		}
@@ -244,16 +330,22 @@ func TestRunCTAP23ConformanceFullRoutesPINAndResetThroughRuntime(t *testing.T) {
 	if result.Status != conformance.StatusPassed {
 		t.Fatalf("suite status = %q, want %q", result.Status, conformance.StatusPassed)
 	}
+	definitions := ctap23.Suite(ctap23.Config{}).Tests
 	for index, testResult := range result.Tests {
-		wantDestructive := index >= 3 && index <= 18 ||
-			index >= 20 && index <= 89 && index != 23 ||
-			index >= 91 && index <= 114
-		if testResult.Destructive != wantDestructive {
-			t.Fatalf("test %q destructive = %t, want %t", testResult.ID, testResult.Destructive, wantDestructive)
+		if testResult.ID != definitions[index].ID ||
+			testResult.Destructive != definitions[index].Destructive {
+			t.Fatalf(
+				"test %d = %q destructive %t, want %q destructive %t",
+				index,
+				testResult.ID,
+				testResult.Destructive,
+				definitions[index].ID,
+				definitions[index].Destructive,
+			)
 		}
 	}
-	if device.resetCalls != 174 || device.setPINCalls != 31 || device.pinTokenCalls != 53 {
-		t.Fatalf("runtime calls = reset %d, set PIN %d, token %d; want 174, 31, 53", device.resetCalls, device.setPINCalls, device.pinTokenCalls)
+	if device.resetCalls != 183 || device.setPINCalls != 33 || device.pinTokenCalls != 56 {
+		t.Fatalf("runtime calls = reset %d, set PIN %d, token %d; want 183, 33, 56", device.resetCalls, device.setPINCalls, device.pinTokenCalls)
 	}
 	interactionCounts := map[model.InteractionKind]int{}
 	for index, interaction := range interactions {
@@ -263,18 +355,18 @@ func TestRunCTAP23ConformanceFullRoutesPINAndResetThroughRuntime(t *testing.T) {
 			t.Fatalf("interaction %d of kind %q is not marked destructive", index, interaction.Kind)
 		}
 	}
-	if interactionCounts[model.InteractionKindPIN] != 65 ||
-		interactionCounts[model.InteractionKindTouch] != 174 ||
-		interactionCounts[model.InteractionKindPowerCycle] != 236 {
-		t.Fatalf("interaction counts = %v, want PIN 65, touch 174, power cycle 236", interactionCounts)
+	if interactionCounts[model.InteractionKindPIN] != 71 ||
+		interactionCounts[model.InteractionKindTouch] != 183 ||
+		interactionCounts[model.InteractionKindPowerCycle] != 246 {
+		t.Fatalf("interaction counts = %v, want PIN 71, touch 183, power cycle 246", interactionCounts)
 	}
-	if len(raw.commands) != 315 ||
-		raw.getInfoCalls != 159 ||
-		raw.makeCredentialCalls != 71 ||
-		raw.getAssertionCalls != 25 ||
-		raw.clientPINCalls != 60 {
+	if len(raw.commands) != 443 ||
+		raw.getInfoCalls != 267 ||
+		raw.makeCredentialCalls != 74 ||
+		raw.getAssertionCalls != 28 ||
+		raw.clientPINCalls != 74 {
 		t.Fatalf(
-			"raw commands = %d (GetInfo %d, MakeCredential %d, GetAssertion %d, ClientPIN %d), want 315 (159, 71, 25, 60)",
+			"raw commands = %d (GetInfo %d, MakeCredential %d, GetAssertion %d, ClientPIN %d), want 443 (267, 74, 28, 74)",
 			len(raw.commands),
 			raw.getInfoCalls,
 			raw.makeCredentialCalls,
@@ -284,6 +376,90 @@ func TestRunCTAP23ConformanceFullRoutesPINAndResetThroughRuntime(t *testing.T) {
 	}
 	if !slices.Equal(device.token, wantToken) {
 		t.Fatal("device-owned token was mutated")
+	}
+}
+
+func facadeNewPortSkip(id conformance.TestID) bool {
+	switch id {
+	case ctap23.TestIDHID1P1,
+		ctap23.TestIDHID1P2,
+		ctap23.TestIDHID1P3,
+		ctap23.TestIDHID1P4,
+		ctap23.TestIDHID1P5,
+		ctap23.TestIDHID1P6,
+		ctap23.TestIDHID1P7,
+		ctap23.TestIDHID1P8,
+		ctap23.TestIDHID1P9,
+		ctap23.TestIDHID1P10,
+		ctap23.TestIDHID1P11,
+		ctap23.TestIDHID1P12,
+		ctap23.TestIDHID1P13,
+		ctap23.TestIDHID1P14,
+		ctap23.TestIDHID1P15,
+		ctap23.TestIDHID1F1,
+		ctap23.TestIDHID1F2,
+		ctap23.TestIDHID1F3,
+		ctap23.TestIDHID1F4,
+		ctap23.TestIDNFC1P1,
+		ctap23.TestIDNFC1P2,
+		ctap23.TestIDNFC1P3,
+		ctap23.TestIDNFC1P4,
+		ctap23.TestIDNFC1F1,
+		ctap23.TestIDNFC1F2,
+		ctap23.TestIDNFC1F3,
+		ctap23.TestIDNFC1F4,
+		ctap23.TestIDBLE1P1,
+		ctap23.TestIDBLE1P2,
+		ctap23.TestIDBLE1P3,
+		ctap23.TestIDBLE1P4,
+		ctap23.TestIDBLE1P5,
+		ctap23.TestIDBLE1P6,
+		ctap23.TestIDBLE1P7,
+		ctap23.TestIDBLE1P8,
+		ctap23.TestIDBLE1P9,
+		ctap23.TestIDBLE1P10,
+		ctap23.TestIDResidentKeyP1,
+		ctap23.TestIDResidentKeyP2,
+		ctap23.TestIDResidentKeyP3,
+		ctap23.TestIDResidentKeyP4,
+		ctap23.TestIDResidentKeyP5,
+		ctap23.TestIDResidentKeyP6,
+		ctap23.TestIDEnterpriseAttestationP1,
+		ctap23.TestIDEnterpriseAttestationP2,
+		ctap23.TestIDEnterpriseAttestationP3,
+		ctap23.TestIDEnterpriseAttestationF1,
+		ctap23.TestIDEnterpriseAttestationF2,
+		ctap23.TestIDEnterpriseAttestationF3,
+		ctap23.TestIDEnterpriseAttestationF4,
+		ctap23.TestIDEnterpriseAttestationF5,
+		ctap23.TestIDEnterpriseAttestationF6,
+		ctap23.TestIDHMACSecret2P1,
+		ctap23.TestIDHMACSecret2P2,
+		ctap23.TestIDHMACSecret2P3,
+		ctap23.TestIDHMACSecret2F1,
+		ctap23.TestIDHMACSecret2F2,
+		ctap23.TestIDHMACSecret2F3,
+		ctap23.TestIDHMACSecretMCP1,
+		ctap23.TestIDHMACSecretMCP2,
+		ctap23.TestIDHMACSecretMCP3,
+		ctap23.TestIDHMACSecretMCF1,
+		ctap23.TestIDHMACSecretMCF2,
+		ctap23.TestIDHMACSecretMCF3,
+		ctap23.TestIDHMACSecretMCF4,
+		ctap23.TestIDCredProtectP1,
+		ctap23.TestIDCredProtectP2,
+		ctap23.TestIDCredProtectP3,
+		ctap23.TestIDCredProtectP4,
+		ctap23.TestIDCredBlobP1,
+		ctap23.TestIDCredBlobP2,
+		ctap23.TestIDCredBlobP3,
+		ctap23.TestIDThirdPartyPaymentP1,
+		ctap23.TestIDThirdPartyPaymentP2,
+		ctap23.TestIDThirdPartyPaymentF1,
+		ctap23.TestIDUVMP1:
+		return true
+	default:
+		return false
 	}
 }
 
@@ -510,10 +686,15 @@ func newFacadeFullConformanceCBOR(
 	appendStatuses(7, ctaptransport.CTAP2_OK)
 	// GetAssertion Resp-1 provisions one credential independently per marker.
 	appendStatuses(5, ctaptransport.CTAP2_OK)
+	// Reset-1 creates one credential before proving reset invalidation.
+	appendStatuses(1, ctaptransport.CTAP2_OK)
 	// ClientPIN1 NewPIN P-4/P-5 each create one UV-authenticated credential.
 	appendStatuses(2, ctaptransport.CTAP2_OK)
 	// ClientPIN2 GetPinToken P-2/P-3 each create one credential with a fresh
 	// legacy protocol-2 token. The remaining negative feature cases skip.
+	appendStatuses(2, ctaptransport.CTAP2_OK)
+	// ClientPIN2 PIN-permissions P-2/P-3 each create an independently
+	// authorized discoverable credential.
 	appendStatuses(2, ctaptransport.CTAP2_OK)
 
 	transport := &facadeFullConformanceCBOR{
@@ -547,7 +728,12 @@ func newFacadeFullConformanceCBOR(
 			ctaptransport.CTAP2_OK,
 			ctaptransport.CTAP2_OK,
 			ctaptransport.CTAP2_OK,
+			// Reset-1 proves the credential before reset and its absence after reset.
 			ctaptransport.CTAP2_OK,
+			ctaptransport.CTAP2_ERR_NO_CREDENTIALS,
+			ctaptransport.CTAP2_OK,
+			ctaptransport.CTAP2_OK,
+			// ClientPIN2 PIN-permissions P-3 proves its fresh ga token.
 			ctaptransport.CTAP2_OK,
 		},
 	}
@@ -619,9 +805,23 @@ func (cbor *facadeFullConformanceCBOR) clientPINResponse(
 		cbor.replaceClientPIN(cbor.decryptClientPIN(request.PinUvAuthProtocol, sharedSecret, request.NewPinEnc))
 
 		return ctaptransport.CBORResponse{StatusCode: ctaptransport.CTAP2_OK}
-	case protocol.ClientPINSubCommandGetPinToken:
+	case protocol.ClientPINSubCommandGetPinToken,
+		protocol.ClientPINSubCommandGetPinUvAuthTokenUsingPinWithPermissions:
 		if !cbor.matchesClientPINHash(request.PinUvAuthProtocol, sharedSecret, request.PinHashEnc) {
-			cbor.t.Fatal("getPinToken pinHashEnc does not match the configured PIN")
+			cbor.t.Fatalf("%s pinHashEnc does not match the configured PIN", request.SubCommand)
+		}
+		if request.SubCommand == protocol.ClientPINSubCommandGetPinUvAuthTokenUsingPinWithPermissions {
+			if request.Permissions == protocol.PermissionNone {
+				cbor.t.Fatal("permission token request has no permissions")
+			}
+			rpBound := request.Permissions&(protocol.PermissionMakeCredential|protocol.PermissionGetAssertion) != 0
+			if rpBound != (request.RPID != "") {
+				cbor.t.Fatalf(
+					"permission token request permissions = %s, RP ID = %q",
+					request.Permissions,
+					request.RPID,
+				)
+			}
 		}
 		encrypted, err := cbor.encryptClientPIN(request.PinUvAuthProtocol, sharedSecret, cbor.clientPINToken)
 		if err != nil {
@@ -782,6 +982,17 @@ func (cbor *facadeFullConformanceCBOR) CBOR(
 
 		response := cbor.infos[cbor.getInfoCalls]
 		cbor.getInfoCalls++
+		if len(cbor.clientPIN) != 0 {
+			var info protocol.AuthenticatorGetInfoResponse
+			if err := fxcbor.Unmarshal(response, &info); err != nil {
+				cbor.t.Fatalf("decode GetInfo response: %v", err)
+			}
+			if _, present := info.Options[protocol.OptionClientPIN]; present {
+				info.Options = maps.Clone(info.Options)
+				info.Options[protocol.OptionClientPIN] = true
+				response = encodeFacadeConformanceCBOR(cbor.t, info)
+			}
+		}
 
 		return ctaptransport.CBORResponse{StatusCode: ctaptransport.CTAP2_OK, Data: response}, nil
 	case protocol.AuthenticatorClientPIN:
@@ -796,7 +1007,11 @@ func (cbor *facadeFullConformanceCBOR) CBOR(
 		if status == ctaptransport.CTAP2_OK {
 			var request protocol.AuthenticatorMakeCredentialRequest
 			if err := fxcbor.Unmarshal(data[1:], &request); err != nil {
-				cbor.t.Fatalf("decode MakeCredential request: %v", err)
+				cbor.t.Fatalf(
+					"decode MakeCredential request after %d GetInfo calls: %v",
+					cbor.getInfoCalls,
+					err,
+				)
 			}
 			response.Data, cbor.credentialPrivateKey = facadeConformanceMakeCredentialResponse(cbor.t, request)
 		}

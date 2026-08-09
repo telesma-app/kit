@@ -12,6 +12,7 @@ const (
 	InteractionKindUserVerificationConfiguration InteractionKind = "user-verification-configuration"
 	InteractionKindPowerCycle                    InteractionKind = "power-cycle"
 	InteractionKindTouch                         InteractionKind = "touch"
+	InteractionKindAccountSelection              InteractionKind = "account-selection"
 )
 
 type InteractionRequest struct {

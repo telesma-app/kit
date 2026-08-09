@@ -33,6 +33,75 @@ var (
 	}
 )
 
+// prepareAuthorizedMakeCredentialRequest builds one valid request without
+// resetting the authenticator. It is used by flows whose already-configured
+// state or raw transport lease must survive request preparation.
+func prepareAuthorizedMakeCredentialRequest(
+	ctx context.Context,
+	test *conformance.TestContext,
+	config Config,
+	rpID string,
+) (protocol.AuthenticatorMakeCredentialRequest, error) {
+	_, info, err := readGetInfo(ctx, test.CBOR())
+	if err != nil {
+		return protocol.AuthenticatorMakeCredentialRequest{}, err
+	}
+	algorithms, err := makeCredentialFixtureAlgorithms(info.Algorithms)
+	if err != nil {
+		return protocol.AuthenticatorMakeCredentialRequest{}, err
+	}
+	request := protocol.AuthenticatorMakeCredentialRequest{
+		ClientDataHash: slices.Clone(makeCredentialFixtureClientDataHash[:]),
+		RP: credential.PublicKeyCredentialRpEntity{
+			ID:   rpID,
+			Name: makeCredentialFixtureRPName,
+		},
+		User: credential.PublicKeyCredentialUserEntity{
+			ID:          slices.Clone(makeCredentialFixtureUserID[:]),
+			Name:        makeCredentialFixtureUserName,
+			DisplayName: makeCredentialFixtureUserDisplayName,
+		},
+		PubKeyCredParams: algorithms,
+	}
+	if config.TokenProvider == nil {
+		clearAuthorizedMakeCredentialRequest(&request)
+		return protocol.AuthenticatorMakeCredentialRequest{}, errors.New(
+			"ctap23: PIN/UV token provider is required for MakeCredential",
+		)
+	}
+	authorization, err := config.TokenProvider(ctx, test.Client(), PinUvAuthTokenRequest{
+		Permission: protocol.PermissionMakeCredential,
+		RPID:       rpID,
+	})
+	if err != nil {
+		clear(authorization.Value)
+		clearAuthorizedMakeCredentialRequest(&request)
+		return protocol.AuthenticatorMakeCredentialRequest{}, err
+	}
+	defer clear(authorization.Value)
+	if err := validatePinUvAuthorization(info, authorization); err != nil {
+		clearAuthorizedMakeCredentialRequest(&request)
+		return protocol.AuthenticatorMakeCredentialRequest{}, err
+	}
+	request.PinUvAuthParam = ctapcrypto.Authenticate(
+		authorization.Protocol,
+		authorization.Value,
+		request.ClientDataHash,
+	)
+	request.PinUvAuthProtocol = authorization.Protocol
+
+	return request, nil
+}
+
+func clearAuthorizedMakeCredentialRequest(request *protocol.AuthenticatorMakeCredentialRequest) {
+	clear(request.ClientDataHash)
+	request.ClientDataHash = nil
+	clear(request.User.ID)
+	request.User.ID = nil
+	clear(request.PinUvAuthParam)
+	request.PinUvAuthParam = nil
+}
+
 // makeCredentialFixture owns the authorization token and a valid baseline
 // request for one authenticatorMakeCredential conformance test.
 type makeCredentialFixture struct {
@@ -141,6 +210,7 @@ func (f makeCredentialFixture) makeCredential(
 			err,
 		)
 	}
+	defer clearCTAP2ResponseData(wireResponse)
 
 	return decodeMakeCredentialResponse(wireResponse.Data)
 }
@@ -155,6 +225,8 @@ func decodeMakeCredentialResponse(data []byte) (protocol.AuthenticatorMakeCreden
 
 	var response protocol.AuthenticatorMakeCredentialResponse
 	if err := getInfoDecMode.Unmarshal(data, &response); err != nil {
+		clearMakeCredentialResponse(&response)
+
 		return protocol.AuthenticatorMakeCredentialResponse{}, conformance.Failf(
 			"invalid authenticatorMakeCredential response CBOR: %v",
 			err,
@@ -162,6 +234,8 @@ func decodeMakeCredentialResponse(data []byte) (protocol.AuthenticatorMakeCreden
 	}
 	authData, err := protocol.ParseMakeCredentialAuthData(response.AuthDataRaw)
 	if err != nil {
+		clearMakeCredentialResponse(&response)
+
 		return protocol.AuthenticatorMakeCredentialResponse{}, conformance.Failf(
 			"invalid authenticatorMakeCredential authData: %v",
 			err,
@@ -170,6 +244,37 @@ func decodeMakeCredentialResponse(data []byte) (protocol.AuthenticatorMakeCreden
 	response.AuthData = &authData
 
 	return response, nil
+}
+
+// clearMakeCredentialResponse releases mutable buffers owned by a decoded
+// authenticatorMakeCredential response. Callers own successful decoded
+// responses returned by makeCredential.
+func clearMakeCredentialResponse(response *protocol.AuthenticatorMakeCredentialResponse) {
+	clear(response.AuthDataRaw)
+	response.AuthDataRaw = nil
+	clear(response.LargeBlobKey)
+	response.LargeBlobKey = nil
+	clearCTAP2WireValue(response.AttestationStatement)
+	response.AttestationStatement = nil
+	for identifier, output := range response.UnsignedExtensionOutputs {
+		clearCTAP2WireValue(output)
+		delete(response.UnsignedExtensionOutputs, identifier)
+	}
+	response.UnsignedExtensionOutputs = nil
+	if response.AuthData != nil {
+		clear(response.AuthData.RPIDHash)
+		response.AuthData.RPIDHash = nil
+		if response.AuthData.AttestedCredentialData != nil {
+			clear(response.AuthData.AttestedCredentialData.CredentialID)
+			response.AuthData.AttestedCredentialData.CredentialID = nil
+		}
+		if response.AuthData.Extensions != nil {
+			clear(response.AuthData.Extensions.CreateHMACSecretMCOutput.HMACSecret)
+			response.AuthData.Extensions.CreateHMACSecretMCOutput.HMACSecret = nil
+		}
+	}
+	response.AuthData = nil
+	response.ExtensionOutputs = nil
 }
 
 // rawFields returns a new decoded wire tree on every call, so an individual
@@ -268,14 +373,22 @@ func validatePinUvAuthorization(
 	info protocol.AuthenticatorGetInfoResponse,
 	authorization PinUvAuthToken,
 ) error {
-	if len(authorization.Value) == 0 {
-		return fmt.Errorf("ctap23: PIN/UV token provider returned an empty token")
-	}
 	if authorization.Protocol != protocol.PinUvAuthProtocolOne &&
 		authorization.Protocol != protocol.PinUvAuthProtocolTwo {
 		return fmt.Errorf(
 			"ctap23: PIN/UV token provider returned unsupported protocol %d",
 			authorization.Protocol,
+		)
+	}
+	validLength := len(authorization.Value) == 32
+	if authorization.Protocol == protocol.PinUvAuthProtocolOne {
+		validLength = len(authorization.Value) == 16 || len(authorization.Value) == 32
+	}
+	if !validLength {
+		return fmt.Errorf(
+			"ctap23: PIN/UV protocol %d token is %d bytes, want a valid protocol token",
+			authorization.Protocol,
+			len(authorization.Value),
 		)
 	}
 	if !slices.Contains(info.PinUvAuthProtocols, authorization.Protocol) {

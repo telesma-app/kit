@@ -40,27 +40,28 @@ type clientPIN2UVPermissionsSession struct {
 
 func authrClientPIN2GetPinUvAuthTokenUsingUvWithPermissionsTests(config Config) []conformance.Test {
 	permissionsReference := clientPIN2UVPermissionsReference()
-	makeCredentialReference := authrMakeCredReq1CommandReference()
-	getAssertionReference := authrGetAssertionReq1CommandReference()
-	credentialManagementReference := clientPIN2NewPINCredentialManagementReference()
+	tokenReference := clientPIN2UVPermissionsTokenReference()
+	makeCredentialReference := clientPIN2UVPermissionsMakeCredentialReference()
+	getAssertionReference := clientPIN2UVPermissionsGetAssertionReference()
+	credentialManagementReference := clientPIN2PermissionsPCMRReference()
 	cases := []clientPIN2UVPermissionsCase{
 		{
 			id:         TestIDAuthrClientPIN2UVPermissionsP1,
 			marker:     "P-1",
 			name:       "Issue a protocol 2 built-in-UV token with all advertised UV permissions",
-			references: []conformance.RequirementRef{permissionsReference},
+			references: []conformance.RequirementRef{permissionsReference, tokenReference},
 			run: func(test *conformance.TestContext, session clientPIN2UVPermissionsSession) {
 				test.Step(conformance.Step{
 					ID:         "client-pin2-uv-permissions.p-1.issue",
 					Name:       "Request the combined advertised built-in-UV permission scope",
-					References: []conformance.RequirementRef{permissionsReference},
+					References: []conformance.RequirementRef{permissionsReference, tokenReference},
 					Run: func(ctx context.Context) error {
 						permissions, err := clientPIN2AdvertisedUVPermissions(session.fields)
 						if err != nil {
 							return err
 						}
 
-						token, err := clientPIN2IssueUVPermissionToken(
+						token, err := clientPIN2ValidatedUVPermissionToken(
 							ctx,
 							test.Client(),
 							permissions,
@@ -68,10 +69,10 @@ func authrClientPIN2GetPinUvAuthTokenUsingUvWithPermissionsTests(config Config) 
 						)
 						defer clear(token)
 						if err != nil {
-							return unexpectedCTAPStatus("authenticatorClientPIN getPinUvAuthTokenUsingUvWithPermissions", err)
+							return err
 						}
 
-						return clientPIN2ValidatePermissionToken(token)
+						return nil
 					},
 				})
 			},
@@ -80,42 +81,16 @@ func authrClientPIN2GetPinUvAuthTokenUsingUvWithPermissionsTests(config Config) 
 			id:         TestIDAuthrClientPIN2UVPermissionsP2,
 			marker:     "P-2",
 			name:       "Use a makeCredential-only protocol 2 built-in-UV token",
-			references: []conformance.RequirementRef{permissionsReference, makeCredentialReference},
+			references: []conformance.RequirementRef{permissionsReference, tokenReference, makeCredentialReference},
 			run: func(test *conformance.TestContext, session clientPIN2UVPermissionsSession) {
 				test.Step(conformance.Step{
 					ID:         "client-pin2-uv-permissions.p-2.make-credential",
 					Name:       "Immediately create a same-RP credential with a makeCredential-only token",
-					References: []conformance.RequirementRef{permissionsReference, makeCredentialReference},
+					References: []conformance.RequirementRef{permissionsReference, tokenReference, makeCredentialReference},
 					Run: func(ctx context.Context) error {
-						token, err := clientPIN2IssueUVPermissionToken(
-							ctx,
-							test.Client(),
-							protocol.PermissionMakeCredential,
-							clientPIN2UVPermissionsRPID,
-						)
-						if err != nil {
-							clear(token)
+						_, err := clientPIN2UVCreateCredential(ctx, test, session.info)
 
-							return unexpectedCTAPStatus("authenticatorClientPIN getPinUvAuthTokenUsingUvWithPermissions", err)
-						}
-						if err := clientPIN2ValidatePermissionToken(token); err != nil {
-							clear(token)
-
-							return err
-						}
-
-						response, commandErr := clientPIN2UVMakeCredential(ctx, test.CBOR(), token, session.info)
-						clear(token)
-						if commandErr != nil {
-							return commandErr
-						}
-						if response.AuthData == nil || !response.AuthData.Flags.UserVerified() ||
-							response.AuthData.AttestedCredentialData == nil ||
-							len(response.AuthData.AttestedCredentialData.CredentialID) == 0 {
-							return conformance.Fail("authenticatorMakeCredential response has no UV-verified credential ID")
-						}
-
-						return nil
+						return err
 					},
 				})
 			},
@@ -124,44 +99,18 @@ func authrClientPIN2GetPinUvAuthTokenUsingUvWithPermissionsTests(config Config) 
 			id:         TestIDAuthrClientPIN2UVPermissionsP3,
 			marker:     "P-3",
 			name:       "Use fresh makeCredential and getAssertion protocol 2 built-in-UV tokens",
-			references: []conformance.RequirementRef{permissionsReference, makeCredentialReference, getAssertionReference},
+			references: []conformance.RequirementRef{permissionsReference, tokenReference, makeCredentialReference, getAssertionReference},
 			run: func(test *conformance.TestContext, session clientPIN2UVPermissionsSession) {
 				var credentialID []byte
 				if !test.Step(conformance.Step{
 					ID:         "client-pin2-uv-permissions.p-3.make-credential",
 					Name:       "Create this case's credential with a makeCredential-only token",
-					References: []conformance.RequirementRef{permissionsReference, makeCredentialReference},
+					References: []conformance.RequirementRef{permissionsReference, tokenReference, makeCredentialReference},
 					Run: func(ctx context.Context) error {
-						token, err := clientPIN2IssueUVPermissionToken(
-							ctx,
-							test.Client(),
-							protocol.PermissionMakeCredential,
-							clientPIN2UVPermissionsRPID,
-						)
-						if err != nil {
-							clear(token)
+						var err error
+						credentialID, err = clientPIN2UVCreateCredential(ctx, test, session.info)
 
-							return unexpectedCTAPStatus("authenticatorClientPIN getPinUvAuthTokenUsingUvWithPermissions", err)
-						}
-						if err := clientPIN2ValidatePermissionToken(token); err != nil {
-							clear(token)
-
-							return err
-						}
-
-						response, commandErr := clientPIN2UVMakeCredential(ctx, test.CBOR(), token, session.info)
-						clear(token)
-						if commandErr != nil {
-							return commandErr
-						}
-						if response.AuthData == nil || !response.AuthData.Flags.UserVerified() ||
-							response.AuthData.AttestedCredentialData == nil ||
-							len(response.AuthData.AttestedCredentialData.CredentialID) == 0 {
-							return conformance.Fail("authenticatorMakeCredential response has no UV-verified credential ID")
-						}
-						credentialID = slices.Clone(response.AuthData.AttestedCredentialData.CredentialID)
-
-						return nil
+						return err
 					},
 				}) {
 					return
@@ -170,29 +119,20 @@ func authrClientPIN2GetPinUvAuthTokenUsingUvWithPermissionsTests(config Config) 
 				test.Step(conformance.Step{
 					ID:         "client-pin2-uv-permissions.p-3.get-assertion",
 					Name:       "Get the new credential with a fresh getAssertion-only token",
-					References: []conformance.RequirementRef{permissionsReference, getAssertionReference},
+					References: []conformance.RequirementRef{permissionsReference, tokenReference, getAssertionReference},
 					Run: func(ctx context.Context) error {
-						token, err := clientPIN2IssueUVPermissionToken(
+						token, err := clientPIN2ValidatedUVPermissionToken(
 							ctx,
 							test.Client(),
 							protocol.PermissionGetAssertion,
 							clientPIN2UVPermissionsRPID,
 						)
+						defer clear(token)
 						if err != nil {
-							clear(token)
-
-							return unexpectedCTAPStatus("authenticatorClientPIN getPinUvAuthTokenUsingUvWithPermissions", err)
-						}
-						if err := clientPIN2ValidatePermissionToken(token); err != nil {
-							clear(token)
-
 							return err
 						}
 
-						commandErr := clientPIN2UVGetAssertion(ctx, test.CBOR(), token, credentialID)
-						clear(token)
-
-						return commandErr
+						return clientPIN2UVGetAssertion(ctx, test.CBOR(), token, credentialID)
 					},
 				})
 			},
@@ -201,35 +141,26 @@ func authrClientPIN2GetPinUvAuthTokenUsingUvWithPermissionsTests(config Config) 
 			id:               TestIDAuthrClientPIN2UVPermissionsP4,
 			marker:           "P-4",
 			name:             "Use a persistent credential-management read-only built-in-UV token",
-			references:       []conformance.RequirementRef{permissionsReference, credentialManagementReference},
+			references:       []conformance.RequirementRef{permissionsReference, tokenReference, credentialManagementReference},
 			requirePerCredRO: true,
 			run: func(test *conformance.TestContext, _ clientPIN2UVPermissionsSession) {
 				test.Step(conformance.Step{
 					ID:         "client-pin2-uv-permissions.p-4.credentials-metadata",
 					Name:       "Read credential metadata with a pcmr-only token",
-					References: []conformance.RequirementRef{permissionsReference, credentialManagementReference},
+					References: []conformance.RequirementRef{permissionsReference, tokenReference, credentialManagementReference},
 					Run: func(ctx context.Context) error {
-						token, err := clientPIN2IssueUVPermissionToken(
+						token, err := clientPIN2ValidatedUVPermissionToken(
 							ctx,
 							test.Client(),
 							protocol.PermissionPersistentCredentialManagementReadOnly,
-							clientPIN2UVPermissionsRPID,
+							"",
 						)
+						defer clear(token)
 						if err != nil {
-							clear(token)
-
-							return unexpectedCTAPStatus("authenticatorClientPIN getPinUvAuthTokenUsingUvWithPermissions", err)
-						}
-						if err := clientPIN2ValidatePermissionToken(token); err != nil {
-							clear(token)
-
 							return err
 						}
 
-						commandErr := clientPIN2UVGetCredsMetadata(ctx, test.CBOR(), token)
-						clear(token)
-
-						return commandErr
+						return clientPIN2UVGetCredsMetadata(ctx, test.CBOR(), token)
 					},
 				})
 			},
@@ -321,7 +252,7 @@ func clientPIN2UVPermissionsPerCredROStep(test *conformance.TestContext) conform
 	return conformance.Step{
 		ID:         "client-pin2-uv-permissions.per-cred-ro",
 		Name:       "Confirm persistent credential-management read-only support",
-		References: []conformance.RequirementRef{getInfoReference(), clientPIN2NewPINCredentialManagementReference()},
+		References: []conformance.RequirementRef{getInfoReference(), clientPIN2PermissionsPCMRReference()},
 		Run: func(ctx context.Context) error {
 			fields, _, err := readGetInfo(ctx, test.CBOR())
 			if err != nil {
@@ -536,6 +467,27 @@ func clientPIN2IssueUVPermissionToken(
 	)
 }
 
+func clientPIN2ValidatedUVPermissionToken(
+	ctx context.Context,
+	ctapClient *client.Client,
+	permissions protocol.Permission,
+	rpID string,
+) ([]byte, error) {
+	token, err := clientPIN2IssueUVPermissionToken(ctx, ctapClient, permissions, rpID)
+	if err != nil {
+		clear(token)
+
+		return nil, unexpectedCTAPStatus("authenticatorClientPIN getPinUvAuthTokenUsingUvWithPermissions", err)
+	}
+	if err := clientPIN2ValidatePermissionToken(token); err != nil {
+		clear(token)
+
+		return nil, err
+	}
+
+	return token, nil
+}
+
 func clientPIN2UVMakeCredential(
 	ctx context.Context,
 	device ctaptransport.CBOR,
@@ -564,7 +516,6 @@ func clientPIN2UVMakeCredential(
 			DisplayName: makeCredentialFixtureUserDisplayName,
 		},
 		PubKeyCredParams:  algorithms,
-		Options:           map[protocol.Option]bool{protocol.OptionResidentKeys: true},
 		PinUvAuthParam:    authParam,
 		PinUvAuthProtocol: protocol.PinUvAuthProtocolTwo,
 	})
@@ -589,6 +540,35 @@ func clientPIN2UVMakeCredential(
 	decoded.AuthData = &authData
 
 	return decoded, nil
+}
+
+func clientPIN2UVCreateCredential(
+	ctx context.Context,
+	test *conformance.TestContext,
+	info protocol.AuthenticatorGetInfoResponse,
+) ([]byte, error) {
+	token, err := clientPIN2ValidatedUVPermissionToken(
+		ctx,
+		test.Client(),
+		protocol.PermissionMakeCredential,
+		clientPIN2UVPermissionsRPID,
+	)
+	defer clear(token)
+	if err != nil {
+		return nil, err
+	}
+
+	response, err := clientPIN2UVMakeCredential(ctx, test.CBOR(), token, info)
+	if err != nil {
+		return nil, err
+	}
+	if response.AuthData == nil || !response.AuthData.Flags.UserVerified() ||
+		response.AuthData.AttestedCredentialData == nil ||
+		len(response.AuthData.AttestedCredentialData.CredentialID) == 0 {
+		return nil, conformance.Fail("authenticatorMakeCredential response has no UV-verified credential ID")
+	}
+
+	return response.AuthData.AttestedCredentialData.CredentialID, nil
 }
 
 func clientPIN2UVGetAssertion(
@@ -672,6 +652,39 @@ func clientPIN2UVPermissionsReference() conformance.RequirementRef {
 		Section:       "6.5.5.7.3",
 		Clause:        "get-pin-uv-auth-token-using-uv-with-permissions",
 		URL:           "https://fidoalliance.org/specs/fido-v2.3-ps-20260226/fido-client-to-authenticator-protocol-v2.3-ps-20260226.html#getPinUvAuthTokenUsingUvWithPermissions",
+		Level:         conformance.RequirementMust,
+	}
+}
+
+func clientPIN2UVPermissionsTokenReference() conformance.RequirementRef {
+	return conformance.RequirementRef{
+		ID:            "ctap-2.3-ps-20260226:6.5.7:protocol-two-token-length",
+		Specification: conformance.SpecificationCTAP23,
+		Section:       "6.5.7",
+		Clause:        "protocol-two-token-length",
+		URL:           "https://fidoalliance.org/specs/fido-v2.3-ps-20260226/fido-client-to-authenticator-protocol-v2.3-ps-20260226.html#pinProto2",
+		Level:         conformance.RequirementMust,
+	}
+}
+
+func clientPIN2UVPermissionsMakeCredentialReference() conformance.RequirementRef {
+	return conformance.RequirementRef{
+		ID:            "ctap-2.3-ps-20260226:6.1.2:uv-authorization-sets-uv-flag",
+		Specification: conformance.SpecificationCTAP23,
+		Section:       "6.1.2",
+		Clause:        "uv-authorization-sets-uv-flag",
+		URL:           "https://fidoalliance.org/specs/fido-v2.3-ps-20260226/fido-client-to-authenticator-protocol-v2.3-ps-20260226.html#op-makecred-step-performBuiltInUv",
+		Level:         conformance.RequirementMust,
+	}
+}
+
+func clientPIN2UVPermissionsGetAssertionReference() conformance.RequirementRef {
+	return conformance.RequirementRef{
+		ID:            "ctap-2.3-ps-20260226:6.2.2:uv-authorization-sets-uv-flag",
+		Specification: conformance.SpecificationCTAP23,
+		Section:       "6.2.2",
+		Clause:        "uv-authorization-sets-uv-flag",
+		URL:           "https://fidoalliance.org/specs/fido-v2.3-ps-20260226/fido-client-to-authenticator-protocol-v2.3-ps-20260226.html#op-getassert-step-performBuiltInUv",
 		Level:         conformance.RequirementMust,
 	}
 }

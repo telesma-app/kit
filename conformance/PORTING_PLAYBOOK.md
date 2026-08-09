@@ -10,16 +10,29 @@ the Go packages relevant to that script.
 - Pinned upstream artifact: `fido-conformance-tools` 1.9.1.
 - Corpus identity: `sha256:028729315ecd36f76b9166c014ae4af3c3dde41efcad99444b519c3a867cef43`.
 - CTAP 2.3 authenticator inventory: 49 declared scripts and 295 Mocha cases.
-- Implemented and manifest-registered: 152 cases — `Authr-Generic-1` P-1
+- Implemented and manifest-registered: all 295 cases — all 19 `HID-1`, all
+  eight `NFC-1`, and all ten `BLE-1` transport markers followed by
+  `Authr-Generic-1` P-1
   through P-5, all 41 active MakeCredential request markers, all six active
   MakeCredential response markers, all 17 active GetAssertion Req-1 through
-  Req-3 markers, all seven protocol-1 and all four protocol-2 NewPIN markers,
-  all five protocol-1 PIN-policy markers,
-  both ClientPIN key-agreement cases, both ClientPIN GetRetries scripts, and
-  all 37 active `Metadata-Stmt-1` markers.
+  Req-3 markers, all five GetAssertion response markers, all seven protocol-1
+  and all four protocol-2 NewPIN markers, all five protocol-1 and all six
+  protocol-2 PIN-policy markers, both ClientPIN key-agreement cases, all eight
+  protocol-2 legacy-token markers, all nine PIN- and built-in-UV-issued
+  protocol-2 permission markers, all nine ClientPIN GetRetries markers,
+  `Authr-Reset-1` P-1, all six `ResidentKey` and all nine
+  `EntepriseAttestation` markers, all six `hmacSecret`,
+  all six `hmacSecret2`, and all seven `hmacSecretMC` markers, all four
+  `credProtect`, all three `credBlob`, all three `thirdPartyPayment`, and the
+  `uvm` marker, all 12 `largeBlob` markers, all six `largeBlobKey` markers,
+  both `minPINLength` and both `pinComplexityPolicy` markers, all 11 Credential
+  Management markers, all seven `AuthenticatorConfig` markers, both
+  `BioEnroll-BioModAndSensorInfo` markers, both `BioEnroll-Enroll` markers, all
+  three `BioEnroll-EnumerateRenameRemove` markers, all four `LargeBlobs-1`
+  markers, and all 37 active `Metadata-Stmt-1` markers.
 - Runtime: `ctapkit.Authenticator.RunCTAP23Conformance` can execute a safe or
   full suite on the currently opened authenticator; the safe/full selections
-  currently contain 43/152 cases. Destructive MakeCredential, GetAssertion,
+  currently contain 78/295 cases. Destructive MakeCredential, GetAssertion,
   and ClientPIN retry cases use the
   manager-owned physical power-cycle/NFC-session-reset and verified rebind
   boundary; the disabled protocol-1 P-4 remains a non-destructive skip.
@@ -354,10 +367,10 @@ Extensions come later because otherwise several agents will independently
 reimplement MakeCredential, GetAssertion, PIN protocol crypto, authenticator
 data parsing, and credential setup.
 
-Transport cases are their own lane. `ctapkit` currently has HID and smart-card
-transport boundaries but no BLE runtime. A case whose required observation is
-not expressible must remain pending with a reason; do not report a synthetic
-pass or silently weaken it.
+Transport cases use callback-scoped exclusive HID, NFC, or BLE raw sessions.
+The provider owns detaching the normal connection and rebinding it after the
+callback; conformance code owns frame/APDU/GATT assertions. Missing providers
+skip before mutation and never synthetic-pass through the CBOR boundary.
 
 ## Task packet
 

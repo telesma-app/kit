@@ -19,8 +19,8 @@ func TestCurrentManifestPinsExtractedCorpusAndPortMapping(t *testing.T) {
 	if len(manifest.Modules) != 7 {
 		t.Fatalf("modules = %d, want 7", len(manifest.Modules))
 	}
-	if len(manifest.Ports) != 152 {
-		t.Fatalf("ports = %#v, want 152 Go ports", manifest.Ports)
+	if len(manifest.Ports) != 295 {
+		t.Fatalf("ports = %#v, want 295 Go ports", manifest.Ports)
 	}
 
 	suite := ctap23.Suite(ctap23.Config{})

@@ -3,6 +3,7 @@ package ctap23
 import (
 	"context"
 	"errors"
+	"iter"
 	"slices"
 
 	"github.com/fxamacker/cbor/v2"
@@ -25,15 +26,15 @@ const (
 )
 
 type clientPIN2PermissionsCase struct {
-	id                 conformance.TestID
-	marker             string
-	name               string
-	references         []conformance.RequirementRef
-	requireMCGA        bool
-	requirePerCredRO   bool
-	requireExistingPIN bool
-	requireSetMin      bool
-	run                func(*conformance.TestContext, clientPIN2PermissionsSession)
+	id               conformance.TestID
+	marker           string
+	name             string
+	references       []conformance.RequirementRef
+	preflight        func(*conformance.TestContext) conformance.Step
+	requireMCGA      bool
+	requirePerCredRO bool
+	requireSetMin    bool
+	run              func(*conformance.TestContext, clientPIN2PermissionsSession)
 }
 
 type clientPIN2PermissionsSession struct {
@@ -43,31 +44,64 @@ type clientPIN2PermissionsSession struct {
 }
 
 func authrClientPIN2GetPinUvAuthTokenUsingPinWithPermissionsTests(config Config) []conformance.Test {
-	permissionsReference := clientPIN2NewPINPermissionsReference()
+	permissionsReference := clientPIN2PermissionsOperationReference()
+	tokenLengthReference := clientPIN2PermissionsTokenLengthReference()
 	makeCredentialReference := authrMakeCredReq1CommandReference()
+	makeCredentialUVReference := clientPIN2PermissionsMakeCredentialUVReference()
 	getAssertionReference := authrGetAssertionReq1CommandReference()
-	credentialManagementReference := clientPIN2NewPINCredentialManagementReference()
+	getAssertionUVReference := clientPIN2PermissionsGetAssertionUVReference()
+	credentialManagementReference := clientPIN2PermissionsPCMRReference()
 	setMinPINLengthReference := clientPIN1NewPINSetMinPINLengthReference()
 	forcePINChangeReference := clientPIN1NewPINForceChangeReference()
+	issueReferences := []conformance.RequirementRef{permissionsReference, tokenLengthReference}
+	makeCredentialReferences := []conformance.RequirementRef{
+		permissionsReference,
+		tokenLengthReference,
+		makeCredentialReference,
+		makeCredentialUVReference,
+	}
+	getAssertionReferences := []conformance.RequirementRef{
+		permissionsReference,
+		tokenLengthReference,
+		getAssertionReference,
+		getAssertionUVReference,
+	}
+	makeAndGetReferences := []conformance.RequirementRef{
+		permissionsReference,
+		tokenLengthReference,
+		makeCredentialReference,
+		makeCredentialUVReference,
+		getAssertionReference,
+		getAssertionUVReference,
+	}
+	credentialManagementReferences := []conformance.RequirementRef{
+		permissionsReference,
+		tokenLengthReference,
+		credentialManagementReference,
+	}
+	forcePINChangeReferences := []conformance.RequirementRef{
+		permissionsReference,
+		tokenLengthReference,
+		setMinPINLengthReference,
+		forcePINChangeReference,
+	}
 
 	cases := []clientPIN2PermissionsCase{
 		{
 			id:         TestIDAuthrClientPIN2PermissionsP1,
 			marker:     "P-1",
 			name:       "Issue a protocol 2 PIN token with all advertised PIN permissions",
-			references: []conformance.RequirementRef{permissionsReference},
+			references: issueReferences,
+			preflight:  clientPIN2PermissionsAdvertisedPermissionsStep,
 			run: func(test *conformance.TestContext, session clientPIN2PermissionsSession) {
 				test.Step(conformance.Step{
 					ID:         "client-pin2-permissions.p-1.issue",
 					Name:       "Request the combined advertised PIN permission scope",
-					References: []conformance.RequirementRef{permissionsReference},
+					References: issueReferences,
 					Run: func(ctx context.Context) error {
 						permissions, rpID, err := clientPIN2AdvertisedPINPermissions(session.fields)
 						if err != nil {
 							return err
-						}
-						if permissions == protocol.PermissionNone {
-							return conformance.Skip("authenticator advertises no PIN-token permission exercised by this case")
 						}
 
 						token, err := clientPIN2IssuePermissionToken(ctx, test.Client(), session.pin, permissions, rpID)
@@ -85,13 +119,13 @@ func authrClientPIN2GetPinUvAuthTokenUsingPinWithPermissionsTests(config Config)
 			id:          TestIDAuthrClientPIN2PermissionsP2,
 			marker:      "P-2",
 			name:        "Use a makeCredential-only protocol 2 PIN token",
-			references:  []conformance.RequirementRef{permissionsReference, makeCredentialReference},
+			references:  makeCredentialReferences,
 			requireMCGA: true,
 			run: func(test *conformance.TestContext, session clientPIN2PermissionsSession) {
 				test.Step(conformance.Step{
 					ID:         "client-pin2-permissions.p-2.make-credential",
 					Name:       "Create a discoverable credential with a makeCredential-only token",
-					References: []conformance.RequirementRef{permissionsReference, makeCredentialReference},
+					References: makeCredentialReferences,
 					Run: func(ctx context.Context) error {
 						token, err := clientPIN2IssuePermissionToken(
 							ctx,
@@ -127,14 +161,14 @@ func authrClientPIN2GetPinUvAuthTokenUsingPinWithPermissionsTests(config Config)
 			id:          TestIDAuthrClientPIN2PermissionsP3,
 			marker:      "P-3",
 			name:        "Use independent makeCredential and getAssertion protocol 2 PIN tokens",
-			references:  []conformance.RequirementRef{permissionsReference, makeCredentialReference, getAssertionReference},
+			references:  makeAndGetReferences,
 			requireMCGA: true,
 			run: func(test *conformance.TestContext, session clientPIN2PermissionsSession) {
 				var credentialID []byte
 				if !test.Step(conformance.Step{
 					ID:         "client-pin2-permissions.p-3.make-credential",
 					Name:       "Create this case's discoverable credential with a makeCredential-only token",
-					References: []conformance.RequirementRef{permissionsReference, makeCredentialReference},
+					References: makeCredentialReferences,
 					Run: func(ctx context.Context) error {
 						token, err := clientPIN2IssuePermissionToken(
 							ctx,
@@ -175,7 +209,7 @@ func authrClientPIN2GetPinUvAuthTokenUsingPinWithPermissionsTests(config Config)
 				test.Step(conformance.Step{
 					ID:         "client-pin2-permissions.p-3.get-assertion",
 					Name:       "Get the new credential with a fresh getAssertion-only token",
-					References: []conformance.RequirementRef{permissionsReference, getAssertionReference},
+					References: getAssertionReferences,
 					Run: func(ctx context.Context) error {
 						token, err := clientPIN2IssuePermissionToken(
 							ctx,
@@ -201,13 +235,13 @@ func authrClientPIN2GetPinUvAuthTokenUsingPinWithPermissionsTests(config Config)
 			id:               TestIDAuthrClientPIN2PermissionsP4,
 			marker:           "P-4",
 			name:             "Use a persistent credential-management read-only protocol 2 PIN token",
-			references:       []conformance.RequirementRef{permissionsReference, credentialManagementReference},
+			references:       credentialManagementReferences,
 			requirePerCredRO: true,
 			run: func(test *conformance.TestContext, session clientPIN2PermissionsSession) {
 				test.Step(conformance.Step{
 					ID:         "client-pin2-permissions.p-4.credentials-metadata",
 					Name:       "Read credential metadata with a pcmr-only token",
-					References: []conformance.RequirementRef{permissionsReference, credentialManagementReference},
+					References: credentialManagementReferences,
 					Run: func(ctx context.Context) error {
 						token, err := clientPIN2IssuePermissionToken(
 							ctx,
@@ -237,17 +271,16 @@ func authrClientPIN2GetPinUvAuthTokenUsingPinWithPermissionsTests(config Config)
 			},
 		},
 		{
-			id:                 TestIDAuthrClientPIN2PermissionsF1,
-			marker:             "F-1",
-			name:               "Reject protocol 2 permission-token issuance while forcePINChange is true",
-			references:         []conformance.RequirementRef{permissionsReference, setMinPINLengthReference, forcePINChangeReference},
-			requireExistingPIN: true,
-			requireSetMin:      true,
+			id:            TestIDAuthrClientPIN2PermissionsF1,
+			marker:        "F-1",
+			name:          "Reject protocol 2 permission-token issuance while forcePINChange is true",
+			references:    forcePINChangeReferences,
+			requireSetMin: true,
 			run: func(test *conformance.TestContext, session clientPIN2PermissionsSession) {
 				test.Step(conformance.Step{
 					ID:         "client-pin2-permissions.f-1.force-change",
 					Name:       "Set forcePINChange and require PIN_POLICY_VIOLATION from fresh token issuance",
-					References: []conformance.RequirementRef{permissionsReference, setMinPINLengthReference, forcePINChangeReference},
+					References: forcePINChangeReferences,
 					Run: func(ctx context.Context) error {
 						token, err := clientPIN2IssuePermissionToken(
 							ctx,
@@ -328,13 +361,13 @@ func clientPIN2PermissionsTest(config Config, definition clientPIN2PermissionsCa
 			if !test.Step(clientPIN2PermissionsApplicabilityStep(test, config)) {
 				return
 			}
+			if definition.preflight != nil && !test.Step(definition.preflight(test)) {
+				return
+			}
 			if definition.requireMCGA && !test.Step(clientPIN2PermissionsMCGAStep(test)) {
 				return
 			}
 			if definition.requirePerCredRO && !test.Step(clientPIN2PermissionsPerCredROStep(test)) {
-				return
-			}
-			if definition.requireExistingPIN && !test.Step(clientPIN2PermissionsExistingPINStep(test)) {
 				return
 			}
 			if definition.requireSetMin && !test.Step(clientPIN1NewPINSetMinSupportStep(test)) {
@@ -362,6 +395,29 @@ func clientPIN2PermissionsTest(config Config, definition clientPIN2PermissionsCa
 			}
 
 			definition.run(test, session)
+		},
+	}
+}
+
+func clientPIN2PermissionsAdvertisedPermissionsStep(test *conformance.TestContext) conformance.Step {
+	return conformance.Step{
+		ID:         "client-pin2-permissions.advertised-permissions",
+		Name:       "Confirm an advertised PIN permission is available",
+		References: []conformance.RequirementRef{getInfoReference(), clientPIN2PermissionsOperationReference()},
+		Run: func(ctx context.Context) error {
+			fields, _, err := readGetInfo(ctx, test.CBOR())
+			if err != nil {
+				return err
+			}
+			permissions, _, err := clientPIN2AdvertisedPINPermissions(fields)
+			if err != nil {
+				return err
+			}
+			if permissions == protocol.PermissionNone {
+				return conformance.Skip("authenticator advertises no PIN-token permission exercised by this case")
+			}
+
+			return nil
 		},
 	}
 }
@@ -449,29 +505,6 @@ func clientPIN2PermissionsPerCredROStep(test *conformance.TestContext) conforman
 			}
 			if !present || !enabled {
 				return conformance.Skip("authenticator does not enable perCredMgmtRO")
-			}
-
-			return nil
-		},
-	}
-}
-
-func clientPIN2PermissionsExistingPINStep(test *conformance.TestContext) conformance.Step {
-	return conformance.Step{
-		ID:         "client-pin2-permissions.existing-pin",
-		Name:       "Confirm a PIN is set before the force-PIN-change case",
-		References: []conformance.RequirementRef{getInfoReference(), clientPIN1NewPINForceChangeReference()},
-		Run: func(ctx context.Context) error {
-			fields, _, err := readGetInfo(ctx, test.CBOR())
-			if err != nil {
-				return err
-			}
-			enabled, present, err := rawGetInfoOption(fields, protocol.OptionClientPIN)
-			if err != nil {
-				return err
-			}
-			if !present || !enabled {
-				return conformance.Skip("authenticator has no PIN set before the force-PIN-change case")
 			}
 
 			return nil
@@ -673,7 +706,7 @@ func clientPIN2GetAssertion(
 	token []byte,
 	credentialID []byte,
 ) error {
-	for response, err := range client.GetAssertion(
+	return clientPIN2ValidateAssertions(client.GetAssertion(
 		ctx,
 		protocol.PinUvAuthProtocolTwo,
 		token,
@@ -685,7 +718,11 @@ func clientPIN2GetAssertion(
 		}},
 		nil,
 		nil,
-	) {
+	))
+}
+
+func clientPIN2ValidateAssertions(assertions iter.Seq2[protocol.AuthenticatorGetAssertionResponse, error]) error {
+	for response, err := range assertions {
 		if err != nil {
 			return unexpectedCTAPStatus("authenticatorGetAssertion", err)
 		}
@@ -697,4 +734,48 @@ func clientPIN2GetAssertion(
 	}
 
 	return conformance.Fail("authenticatorGetAssertion returned no assertion")
+}
+
+func clientPIN2PermissionsOperationReference() conformance.RequirementRef {
+	return clientPIN1NewPINReference(
+		"6.5.5.7.2",
+		"get-pin-uv-auth-token-using-pin-with-permissions",
+		"getPinUvAuthTokenUsingPinWithPermissions",
+		conformance.RequirementConstraint,
+	)
+}
+
+func clientPIN2PermissionsTokenLengthReference() conformance.RequirementRef {
+	return clientPIN1NewPINReference(
+		"6.5.7",
+		"protocol-two-pin-uv-auth-token-length",
+		"pinProto2",
+		conformance.RequirementMust,
+	)
+}
+
+func clientPIN2PermissionsMakeCredentialUVReference() conformance.RequirementRef {
+	return clientPIN1NewPINReference(
+		"6.1.2",
+		"pin-uv-authenticated-make-credential-sets-uv",
+		"op-makecred-step-performBuiltInUv",
+		conformance.RequirementMust,
+	)
+}
+
+func clientPIN2PermissionsGetAssertionUVReference() conformance.RequirementRef {
+	return clientPIN1NewPINReference(
+		"6.2.2",
+		"pin-uv-authenticated-get-assertion-sets-uv",
+		"op-getassert-step-performBuiltInUv",
+		conformance.RequirementMust,
+	)
+}
+
+func clientPIN2PermissionsPCMRReference() conformance.RequirementRef {
+	return clientPIN2GetPINTokenReference(
+		"6.8.2",
+		"get-creds-metadata-pcmr-authorization",
+		"getCredsMetadata",
+	)
 }

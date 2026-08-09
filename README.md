@@ -314,6 +314,12 @@ When neither is configured, the runtime asks for and configures a temporary PIN;
 it. If the run is interrupted before that reset, the PIN can remain configured. The operation is serialized with all
 other work on the opened authenticator and invalidates runtime-owned token and state caches after reset.
 
+HID, NFC, and BLE transport cases additionally use the matching raw-session
+provider on `ctap23.RunRequest`. The provider owns temporarily detaching the
+normal connection, lending an exclusive session to the callback, closing it,
+and rebinding the authenticator before returning. If no matching provider is
+supplied, transport-observation cases skip before mutation.
+
 The exact upstream artifact, corpus counts, and case-to-Go mappings are pinned in
 `conformance/upstream/manifest.json`. To inspect a newly extracted artifact without adding a CLI to this library, scan
 it through the public filesystem API and compare it with the pin:

@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/telesma-app/ctap/client"
+	ctapcrypto "github.com/telesma-app/ctap/crypto"
 	"github.com/telesma-app/ctap/protocol"
 	ctaptransport "github.com/telesma-app/ctap/transport"
 	"github.com/telesma-app/kit/conformance"
@@ -59,6 +60,16 @@ func TestAuthrReset1DeletesCredentialAndWipesTokens(t *testing.T) {
 		bytes.Repeat([]byte{0x52}, 32),
 		bytes.Repeat([]byte{0x63}, 32),
 	}
+	wantPostResetHMAC := ctapcrypto.Authenticate(
+		protocol.PinUvAuthProtocolTwo,
+		tokens[2],
+		authrReset1PostResetClientDataHash[:],
+	)
+	stalePostResetHMAC := ctapcrypto.Authenticate(
+		protocol.PinUvAuthProtocolTwo,
+		tokens[1],
+		authrReset1PostResetClientDataHash[:],
+	)
 	providerCalls := 0
 	config := authrReset1Config(&events, func(
 		_ context.Context,
@@ -116,6 +127,46 @@ func TestAuthrReset1DeletesCredentialAndWipesTokens(t *testing.T) {
 	}
 	if device.resetCalls != 3 || device.getAssertionCalls != 2 {
 		t.Fatalf("calls = reset %d, assertion %d", device.resetCalls, device.getAssertionCalls)
+	}
+	if len(device.getAssertionRequests) != 2 {
+		t.Fatalf("GetAssertion requests = %d, want 2", len(device.getAssertionRequests))
+	}
+	for index, request := range device.getAssertionRequests {
+		if request.RPID != authrReset1RPID {
+			t.Fatalf("GetAssertion request %d RP ID = %q, want %q", index, request.RPID, authrReset1RPID)
+		}
+		if len(request.AllowList) != 1 ||
+			!bytes.Equal(request.AllowList[0].ID, device.fixture.credentialID) {
+			t.Fatalf(
+				"GetAssertion request %d allowList = %#v, want created credential ID %x",
+				index,
+				request.AllowList,
+				device.fixture.credentialID,
+			)
+		}
+	}
+	preResetRequest := device.getAssertionRequests[0]
+	postResetRequest := device.getAssertionRequests[1]
+	if !bytes.Equal(preResetRequest.ClientDataHash, getAssertionFixtureClientDataHash[:]) {
+		t.Fatalf("pre-reset clientDataHash = %x", preResetRequest.ClientDataHash)
+	}
+	if bytes.Equal(postResetRequest.ClientDataHash, preResetRequest.ClientDataHash) {
+		t.Fatal("post-reset clientDataHash equals pre-reset clientDataHash")
+	}
+	if !bytes.Equal(postResetRequest.ClientDataHash, authrReset1PostResetClientDataHash[:]) {
+		t.Fatalf("post-reset clientDataHash = %x", postResetRequest.ClientDataHash)
+	}
+	if postResetRequest.PinUvAuthProtocol != protocol.PinUvAuthProtocolTwo {
+		t.Fatalf(
+			"post-reset pinUvAuthProtocol = %d, want 2",
+			postResetRequest.PinUvAuthProtocol,
+		)
+	}
+	if !bytes.Equal(postResetRequest.PinUvAuthParam, wantPostResetHMAC) {
+		t.Fatalf("post-reset pinUvAuthParam = %x, want fresh-token HMAC", postResetRequest.PinUvAuthParam)
+	}
+	if bytes.Equal(postResetRequest.PinUvAuthParam, stalePostResetHMAC) {
+		t.Fatal("post-reset pinUvAuthParam uses the pre-reset GetAssertion token")
 	}
 	if countGetAssertionFixtureSteps(result.Tests[0].Steps, "make-credential-fixture.cleanup") != 1 {
 		t.Fatalf("cleanup steps = %#v", result.Tests[0].Steps)
@@ -244,6 +295,7 @@ type authrReset1Device struct {
 	subjectResetError        error
 	postResetAssertionStatus ctaptransport.StatusCode
 	postResetAssertionError  error
+	getAssertionRequests     []protocol.AuthenticatorGetAssertionRequest
 }
 
 func newAuthrReset1Device(t testing.TB, events *[]string) *authrReset1Device {
@@ -293,6 +345,12 @@ func (d *authrReset1Device) CBOR(
 		return response, err
 	case protocol.AuthenticatorGetAssertion:
 		d.getAssertionCalls++
+		var decoded protocol.AuthenticatorGetAssertionRequest
+		if err := getInfoDecMode.Unmarshal(request[1:], &decoded); err != nil {
+			d.t.Fatal(err)
+		}
+		d.getAssertionRequests = append(d.getAssertionRequests, decoded)
+
 		if d.credentialAvailable {
 			return d.fixture.CBOR(ctx, request)
 		}
