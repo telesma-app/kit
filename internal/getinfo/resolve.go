@@ -9,7 +9,6 @@ import (
 	"strconv"
 
 	"github.com/telesma-app/ctap/protocol"
-	"github.com/telesma-app/kit/conformance"
 	model "github.com/telesma-app/kit/model/inspect"
 )
 
@@ -249,7 +248,7 @@ func listFact(id model.FactID, source string, state model.FactState, origin mode
 func newFact(id model.FactID, source string, state model.FactState, origin model.FactOrigin, value model.FactValue) model.Fact {
 	return model.Fact{
 		ID:     id,
-		Source: conformance.FieldPath(source),
+		Source: model.FactSource(source),
 		State:  state,
 		Origin: origin,
 		Value:  value,

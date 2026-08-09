@@ -20,7 +20,7 @@ The runtime is built on [`telesma-app/ctap`](https://github.com/telesma-app/ctap
 
 Main features include:
 
-- authenticator inspection and CTAP conformance reports;
+- authenticator inspection and capability reports;
 - PIN setup and change;
 - built-in user verification and biometric enrollment;
 - authenticator configuration and factory reset;
@@ -257,92 +257,6 @@ Unknown CBOR fields may be missing.
 Diagnostic records can still contain device, relying-party, user, credential, or biometric identifiers. Treat them as
 sensitive data.
 
-## Executable conformance suites
-
-The public `conformance` package can run multi-step suites directly over the transport-independent boundary from
-`github.com/telesma-app/ctap/transport`. A runner exposes the same connection to tests as both a typed
-`ctap/client.Client` and raw CBOR, so positive command flows and malformed-request cases use one execution model.
-
-```go
-runner, err := conformance.NewRunner(device)
-if err != nil {
-    return err
-}
-
-result, err := runner.Run(ctx, suite)
-```
-
-`Suite`, `Test`, and `Step` carry stable IDs, specification references, exact upstream source locations, and an explicit
-destructive marker used by run-mode selection. Step callbacks return `conformance.Fail(...)` for a conformance failure,
-`conformance.Skip(...)` when a case does not apply, or an ordinary error for an execution failure. Results are
-presentation-neutral JSON DTOs. The caller retains ownership of the CTAP connection.
-
-`conformance/ctap23` contains independent Go ports for GetInfo and encrypted-state behavior, PIN/UV protocol 1 and 2
-key agreement, and Metadata Statement validation. Metadata validation preserves JSON member presence and uses the
-released `github.com/telesma-app/mds/model` document parser plus `github.com/telesma-app/fido-registry` values.
-Encrypted-state and key-agreement tests can factory-reset the authenticator. When an encrypted field is advertised,
-`ctap23.Config.TokenProvider` must acquire a `pinUvAuthToken` with the requested permission and return the exact
-PIN/UV protocol that created it. Ownership of the token buffer transfers to the suite, which wipes it after the test.
-
-Applications with an opened `ctapkit.Authenticator` should use the managed facade. The zero-value mode runs every
-implemented test that is not marked destructive:
-
-```go
-result, err := authenticator.RunCTAP23Conformance(ctx, ctap23.RunRequest{
-    Metadata: metadata,
-})
-```
-
-The metadata must come from the authenticator's verified metadata statement, include its raw JSON in `StatementJSON`,
-and record the exact advertised GetInfo field set. A complete run is deliberately explicit and should be paired with
-the application's normal interaction handler:
-
-```go
-result, err := authenticator.RunCTAP23Conformance(
-    ctx,
-    ctap23.RunRequest{
-        Mode:     ctap23.RunModeFull,
-        Metadata: metadata,
-    },
-    ctapkit.WithInteractionHandler(handler),
-)
-```
-
-Full mode additionally runs every implemented destructive test. Resetting cases ask for a destructive touch and route
-the reset through the runtime. PIN and built-in UV requests use the same interaction flow as other runtime operations.
-When neither is configured, the runtime asks for and configures a temporary PIN; a successful following reset removes
-it. If the run is interrupted before that reset, the PIN can remain configured. The operation is serialized with all
-other work on the opened authenticator and invalidates runtime-owned token and state caches after reset.
-
-HID, NFC, and BLE transport cases additionally use the matching raw-session
-provider on `ctap23.RunRequest`. The provider owns temporarily detaching the
-normal connection, lending an exclusive session to the callback, closing it,
-and rebinding the authenticator before returning. If no matching provider is
-supplied, transport-observation cases skip before mutation.
-
-The exact upstream artifact, corpus counts, and case-to-Go mappings are pinned in
-`conformance/upstream/manifest.json`. To inspect a newly extracted artifact without adding a CLI to this library, scan
-it through the public filesystem API and compare it with the pin:
-
-```go
-expected := upstream.Current()
-observed, err := upstream.Scan(os.DirFS(extractedCorpus), expected)
-if err != nil {
-    return err
-}
-
-changes := upstream.Diff(expected, observed)
-```
-
-The scanner follows every declared test-list reference, counts unique scripts and pinned Mocha case markers, and reports
-source, total, added, removed, and modified module drift. After reviewing an upstream change, update the source identity,
-module inventory, and port mappings in the manifest. Its loader rejects inconsistent totals, duplicate mappings, and
-unknown modules. These are independent Go implementations; passing them does not itself constitute FIDO certification.
-
-For parallel porting, use the [multi-agent porting playbook](conformance/PORTING_PLAYBOOK.md). It defines the short read
-list, task catalog, file ownership, dependency waves, review gates, and copy-ready prompts for coordinators, porters,
-and reviewers.
-
 ## Packages
 
 | Package                                                                             | Use it for                                                                                |
@@ -355,9 +269,6 @@ and reviewers.
 | `model/largeblobs`                                                                  | Large-blob operation DTOs                                                                 |
 | `model/webauthn`                                                                    | WebAuthn operation DTOs                                                                   |
 | `model/failure`                                                                     | Stable public error codes and snapshots                                                   |
-| `conformance`                                                                       | Authenticator conformance assessment API and contracts                                    |
-| `conformance/ctap23`                                                                | Executable CTAP 2.3 authenticator tests                                                    |
-| `conformance/upstream`                                                              | Pinned upstream corpus manifest and Go port coverage                                       |
 | `model/operation`, `model/report`, `model/safety`                                   | Shared report and contract DTOs                                                           |
 | `transport`                                                                         | HID, PC/SC smart-card, and Windows proxy discovery modes                                  |
 

@@ -90,11 +90,10 @@ The current interpolation allowlist is:
 |---------------------------------------|----------------------------|
 | `PIN_REQUIRED`                        | `field`                    |
 | `MDS_FETCH_FAILED`                    | `httpStatus`               |
-| `CONFORMANCE_TARGET_INVALID`          | `specification`, `profile` |
 | `MIN_PIN_LENGTH_DECREASE_NOT_ALLOWED` | `requested`, `current`     |
 | `LARGE_BLOB_ARRAY_TOO_LARGE`          | `requested`, `limit`       |
 
-`field`, `specification`, and `profile` accept registered enum values.
+`field` accepts registered enum values.
 `requested`, `current`, and `limit` accept canonical unsigned decimal values.
 `httpStatus` accepts decimal HTTP status codes from 100 through 599.
 

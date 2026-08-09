@@ -2,7 +2,6 @@ package inspect
 
 import (
 	"github.com/telesma-app/ctap/protocol"
-	"github.com/telesma-app/kit/conformance"
 	"github.com/telesma-app/kit/internal/getinfo"
 	appinspect "github.com/telesma-app/kit/model/inspect"
 	"github.com/telesma-app/kit/model/report"
@@ -14,7 +13,6 @@ func BuildResult(device report.DeviceReport, info protocol.AuthenticatorGetInfoR
 		Info: appinspect.Info{
 			AuthenticatorGetInfoResponse: info,
 			Assessment:                   getinfo.Resolve(info),
-			Conformance:                  conformance.AssessGetInfo(info),
 		},
 	}
 

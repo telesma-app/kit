@@ -7,7 +7,6 @@ import (
 	"github.com/telesma-app/ctap/attestation"
 	"github.com/telesma-app/ctap/credential"
 	"github.com/telesma-app/ctap/protocol"
-	ctaptransport "github.com/telesma-app/ctap/transport"
 	"github.com/telesma-app/ctap/transport/ctaphid"
 	"github.com/telesma-app/ctap/webauthn"
 )
@@ -132,7 +131,6 @@ type BioDevice interface {
 // opener. The concrete upstream device is adapted once at the transport
 // boundary; facade code retains only the capability needed by each domain.
 type Opened struct {
-	CBOR                ctaptransport.CBOR
 	Lifecycle           Lifecycle
 	Info                InfoProvider
 	Vendor              VendorProvider

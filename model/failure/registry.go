@@ -7,11 +7,9 @@ import (
 type paramValueRule string
 
 const (
-	paramValueField         paramValueRule = "field"
-	paramValueUint          paramValueRule = "uint"
-	paramValueHTTPStatus    paramValueRule = "http-status"
-	paramValueSpecification paramValueRule = "specification"
-	paramValueProfile       paramValueRule = "profile"
+	paramValueField      paramValueRule = "field"
+	paramValueUint       paramValueRule = "uint"
+	paramValueHTTPStatus paramValueRule = "http-status"
 )
 
 var paramValueEnums = map[paramValueRule]map[string]struct{}{
@@ -19,18 +17,6 @@ var paramValueEnums = map[paramValueRule]map[string]struct{}{
 		"pin",
 		"currentPIN",
 		"newPIN",
-	),
-	paramValueSpecification: values(
-		"ctap-2.0-ps-20190130",
-		"ctap-2.1-ps-20210615",
-		"ctap-2.3-ps-20260226",
-	),
-	paramValueProfile: values(
-		"FIDO_2_0",
-		"FIDO_2_1_PRE",
-		"FIDO_2_1",
-		"FIDO_2_3",
-		"U2F_V2",
 	),
 }
 
@@ -114,8 +100,6 @@ func newCodeRegistry() map[Code]codeSpec {
 		CodeInteractionKindRequired,
 		CodeInteractionHandlerRequired,
 		CodeMDSAAGUIDInvalid,
-		CodeConformanceTargetInvalid,
-		CodeConformanceModeInvalid,
 		CodeRelyingPartyIDRequired,
 		CodeUserIDRequired,
 		CodeClientDataJSONRequired,
@@ -190,10 +174,6 @@ func newCodeRegistry() map[Code]codeSpec {
 	})
 	allow(CodeMDSFetchFailed, map[string]paramValueRule{
 		"httpStatus": paramValueHTTPStatus,
-	})
-	allow(CodeConformanceTargetInvalid, map[string]paramValueRule{
-		"profile":       paramValueProfile,
-		"specification": paramValueSpecification,
 	})
 	allow(CodeMinPINLengthDecreaseNotAllowed, map[string]paramValueRule{
 		"current":   paramValueUint,

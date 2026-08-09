@@ -45,19 +45,6 @@ func TestUserVerificationInteractionJSON(t *testing.T) {
 	assertJSON(t, VerificationFlowPIN, `"pin"`)
 }
 
-func TestConformanceEnvironmentInteractionJSON(t *testing.T) {
-	assertJSON(t, model.InteractionRequest{
-		Kind:        model.InteractionKindPowerCycle,
-		Message:     "Power-cycle the selected authenticator.",
-		Destructive: true,
-	}, `{"kind":"power-cycle","message":"Power-cycle the selected authenticator.","destructive":true}`)
-	assertJSON(t, model.InteractionRequest{
-		Kind:        model.InteractionKindUserVerificationConfiguration,
-		Message:     "Configure built-in user verification.",
-		Destructive: true,
-	}, `{"kind":"user-verification-configuration","message":"Configure built-in user verification.","destructive":true}`)
-}
-
 func TestPINInteractionJSON(t *testing.T) {
 	powerCycleState := false
 	tests := []struct {
@@ -154,11 +141,11 @@ func TestPublicDTOJSONContractsUseCTAP23Spellings(t *testing.T) {
 				`"uvModality":2`,
 				`"uvModalityLabel":"fingerprint_internal"`,
 				`"assessment":{"facts":[`,
-				`"conformance"`,
 			},
 			reject: []string{
 				`"result"`,
 				`"Result"`,
+				`"conformance"`,
 				`"conformanceFindings"`,
 				`"forcePinChange"`,
 				`"minPinLength"`,

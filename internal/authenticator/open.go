@@ -47,7 +47,6 @@ func Open(ctx context.Context, mode transport.Mode, path string) (*Opened, error
 			err = errors.Join(newErr, deviceTransport.Close())
 		} else {
 			return &Opened{
-				CBOR:                deviceTransport,
 				Lifecycle:           device,
 				Info:                device,
 				Vendor:              device,

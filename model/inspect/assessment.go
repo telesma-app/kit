@@ -1,7 +1,5 @@
 package inspect
 
-import "github.com/telesma-app/kit/conformance"
-
 // Assessment is the deterministic, presentation-neutral interpretation of an
 // authenticatorGetInfo response.
 type Assessment struct {
@@ -10,12 +8,14 @@ type Assessment struct {
 
 // Fact describes one stable GetInfo capability or observation.
 type Fact struct {
-	ID     FactID                `json:"id"`
-	Source conformance.FieldPath `json:"source"`
-	State  FactState             `json:"state"`
-	Origin FactOrigin            `json:"origin"`
-	Value  FactValue             `json:"value"`
+	ID     FactID     `json:"id"`
+	Source FactSource `json:"source"`
+	State  FactState  `json:"state"`
+	Origin FactOrigin `json:"origin"`
+	Value  FactValue  `json:"value"`
 }
+
+type FactSource string
 
 type FactID string
 
