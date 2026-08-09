@@ -127,6 +127,7 @@ const (
 	RequirementConstraint RequirementLevel = "CONSTRAINT"
 	RequirementMust       RequirementLevel = "MUST"
 	RequirementMustNot    RequirementLevel = "MUST_NOT"
+	RequirementShould     RequirementLevel = "SHOULD"
 )
 
 type Expectation struct {

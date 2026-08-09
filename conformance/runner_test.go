@@ -216,6 +216,169 @@ func TestRunnerClassifiesStepOutcomesAndAggregatesStatus(t *testing.T) {
 	}
 }
 
+func TestRunnerRunsCleanupStepsAfterFailureInLIFOOrder(t *testing.T) {
+	runner, err := conformance.NewRunner(cborFunc(func(context.Context, []byte) (ctaptransport.CBORResponse, error) {
+		return ctaptransport.CBORResponse{}, errors.New("unexpected command")
+	}))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var order []string
+	suite := conformance.Suite{
+		ID:   "cleanup",
+		Name: "Cleanup",
+		Tests: []conformance.Test{{
+			ID:   "test",
+			Name: "Test",
+			Run: func(test *conformance.TestContext) {
+				test.Cleanup(conformance.Step{
+					ID:   "cleanup.first",
+					Name: "First cleanup",
+					Run: func(context.Context) error {
+						order = append(order, "first")
+
+						return nil
+					},
+				})
+				test.Cleanup(conformance.Step{
+					ID:   "cleanup.second",
+					Name: "Second cleanup",
+					Run: func(context.Context) error {
+						order = append(order, "second")
+
+						return nil
+					},
+				})
+				test.Step(conformance.Step{
+					ID:   "execute",
+					Name: "Execute",
+					Run: func(context.Context) error {
+						order = append(order, "execute")
+
+						return conformance.Fail("fixture failure")
+					},
+				})
+			},
+		}},
+	}
+
+	result, err := runner.Run(context.Background(), suite)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if fmt.Sprint(order) != "[execute second first]" {
+		t.Fatalf("order = %v", order)
+	}
+	if result.Status != conformance.StatusFailed || result.Tests[0].Status != conformance.StatusFailed {
+		t.Fatalf("result = %#v, want failed", result)
+	}
+	wantSteps := []conformance.StepID{"execute", "cleanup.second", "cleanup.first"}
+	for index, step := range result.Tests[0].Steps {
+		if step.ID != wantSteps[index] {
+			t.Fatalf("step %d = %q, want %q", index, step.ID, wantSteps[index])
+		}
+	}
+}
+
+func TestRunnerCleanupErrorPromotesTestAndSuiteStatus(t *testing.T) {
+	runner, err := conformance.NewRunner(cborFunc(func(context.Context, []byte) (ctaptransport.CBORResponse, error) {
+		return ctaptransport.CBORResponse{}, errors.New("unexpected command")
+	}))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	suite := conformance.Suite{
+		ID:   "cleanup-error",
+		Name: "Cleanup error",
+		Tests: []conformance.Test{{
+			ID:   "test",
+			Name: "Test",
+			Run: func(test *conformance.TestContext) {
+				test.Cleanup(conformance.Step{
+					ID:   "cleanup",
+					Name: "Cleanup",
+					Run: func(context.Context) error {
+						return errors.New("device remained configured")
+					},
+				})
+				test.Step(conformance.Step{
+					ID:   "execute",
+					Name: "Execute",
+					Run: func(context.Context) error {
+						return nil
+					},
+				})
+			},
+		}},
+	}
+
+	result, err := runner.Run(context.Background(), suite)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Status != conformance.StatusError || result.Tests[0].Status != conformance.StatusError {
+		t.Fatalf("result = %#v, want cleanup error", result)
+	}
+	cleanup := result.Tests[0].Steps[1]
+	if cleanup.Status != conformance.StatusError || cleanup.Message != "device remained configured" {
+		t.Fatalf("cleanup = %#v, want visible error", cleanup)
+	}
+}
+
+func TestRunnerLateSkipOutranksPassedSetupAndCleanup(t *testing.T) {
+	runner, err := conformance.NewRunner(cborFunc(func(context.Context, []byte) (ctaptransport.CBORResponse, error) {
+		return ctaptransport.CBORResponse{}, errors.New("unexpected command")
+	}))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	suite := conformance.Suite{
+		ID:   "late-skip",
+		Name: "Late skip",
+		Tests: []conformance.Test{{
+			ID:   "test",
+			Name: "Test",
+			Run: func(test *conformance.TestContext) {
+				test.Cleanup(conformance.Step{
+					ID:   "cleanup",
+					Name: "Cleanup",
+					Run: func(context.Context) error {
+						return nil
+					},
+				})
+				test.Step(conformance.Step{
+					ID:   "setup",
+					Name: "Setup",
+					Run: func(context.Context) error {
+						return nil
+					},
+				})
+				test.Step(conformance.Step{
+					ID:   "applicability",
+					Name: "Applicability",
+					Run: func(context.Context) error {
+						return conformance.Skip("case does not apply")
+					},
+				})
+			},
+		}},
+	}
+
+	result, err := runner.Run(context.Background(), suite)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Status != conformance.StatusSkipped || result.Tests[0].Status != conformance.StatusSkipped {
+		t.Fatalf("result = %#v, want skipped", result)
+	}
+	if len(result.Tests[0].Steps) != 3 || result.Tests[0].Steps[2].Status != conformance.StatusPassed {
+		t.Fatalf("steps = %#v, want visible passed cleanup", result.Tests[0].Steps)
+	}
+}
+
 func TestRunnerReturnsPartialResultOnContextCancellation(t *testing.T) {
 	runner, err := conformance.NewRunner(cborFunc(func(context.Context, []byte) (ctaptransport.CBORResponse, error) {
 		return ctaptransport.CBORResponse{}, errors.New("unexpected command")
@@ -226,6 +389,8 @@ func TestRunnerReturnsPartialResultOnContextCancellation(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	secondRan := false
+	cleanupRan := false
+	cleanupHadDeadline := false
 	suite := conformance.Suite{
 		ID:   "cancel",
 		Name: "Cancel",
@@ -234,6 +399,19 @@ func TestRunnerReturnsPartialResultOnContextCancellation(t *testing.T) {
 				ID:   "first",
 				Name: "First",
 				Run: func(test *conformance.TestContext) {
+					test.Cleanup(conformance.Step{
+						ID:   "cleanup",
+						Name: "Cleanup",
+						Run: func(ctx context.Context) error {
+							cleanupRan = true
+							if ctx.Err() != nil {
+								return fmt.Errorf("cleanup context is already done: %v", ctx.Err())
+							}
+							_, cleanupHadDeadline = ctx.Deadline()
+
+							return nil
+						},
+					})
 					test.Step(conformance.Step{
 						ID:   "cancel",
 						Name: "Cancel",
@@ -264,6 +442,9 @@ func TestRunnerReturnsPartialResultOnContextCancellation(t *testing.T) {
 	}
 	if len(result.Tests) != 1 || result.Tests[0].Status != conformance.StatusError {
 		t.Fatalf("tests = %#v, want one errored test", result.Tests)
+	}
+	if !cleanupRan || !cleanupHadDeadline || len(result.Tests[0].Steps) != 2 || result.Tests[0].Steps[1].Status != conformance.StatusPassed {
+		t.Fatalf("cleanup result = %#v, ran %t, deadline %t", result.Tests[0].Steps, cleanupRan, cleanupHadDeadline)
 	}
 	if secondRan {
 		t.Fatal("second test ran after cancellation")

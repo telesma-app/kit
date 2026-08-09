@@ -15,36 +15,40 @@ import (
 	"github.com/telesma-app/kit/internal/secret"
 	"github.com/telesma-app/kit/model"
 	"github.com/telesma-app/kit/model/failure"
+	apptransport "github.com/telesma-app/kit/transport"
 )
+
+// ConformanceEnvironment binds one CTAP 2.3 run to the owning runtime's
+// replaceable authenticator connection.
+type ConformanceEnvironment struct {
+	CBOR ctaptransport.CBOR
+	// Current returns capabilities from one currently installed authenticator
+	// connection generation. Rebindable runtimes resolve it for every callback
+	// so reset and token-provider fallback operations never retain a superseded
+	// device. The Runner's TokenService must separately use a stable dynamic
+	// TokenProvider because cached-token acquisition does not call Current.
+	Current func() (ConfigDevice, rtauthenticator.TokenProvider, error)
+	// PowerCycle arms the owning runtime's rebind boundary before invoking
+	// action for a physical HID or BLE cycle. An NFC implementation resets and
+	// rebinds its card session without invoking action. A nil callback means the
+	// owning runtime cannot satisfy physical power-cycle tests.
+	PowerCycle func(context.Context, func(context.Context) error) error
+}
 
 // RunCTAP23Conformance executes the selected CTAP 2.3 tests over the opened
 // authenticator's raw command boundary while routing tokens and resets through
 // the owning runtime.
 func (r Runner) RunCTAP23Conformance(
 	ctx context.Context,
-	cbor ctaptransport.CBOR,
-	device ConfigDevice,
-	tokenDevice rtauthenticator.TokenProvider,
+	environment ConformanceEnvironment,
 	request ctap23.RunRequest,
 ) (conformance.SuiteResult, error) {
-	suite, err := ctap23.SuiteFor(request.Mode, ctap23.Config{
-		Metadata: request.Metadata,
-		PersistentTokenProvider: func(
-			ctx context.Context,
-			_ *client.Client,
-			permission protocol.Permission,
-		) ([]byte, error) {
-			return r.conformanceToken(ctx, device, tokenDevice, permission)
-		},
-		Resetter: func(ctx context.Context, _ *client.Client) error {
-			return r.conformanceReset(ctx, device)
-		},
-	})
+	suite, err := ctap23.SuiteFor(request.Mode, r.conformanceConfig(environment, request))
 	if err != nil {
 		return conformance.SuiteResult{}, err
 	}
 
-	runner, err := conformance.NewRunner(cbor)
+	runner, err := conformance.NewRunner(environment.CBOR)
 	if err != nil {
 		return conformance.SuiteResult{}, err
 	}
@@ -52,31 +56,132 @@ func (r Runner) RunCTAP23Conformance(
 	return runner.Run(ctx, suite)
 }
 
+func (r Runner) conformanceConfig(
+	environment ConformanceEnvironment,
+	request ctap23.RunRequest,
+) ctap23.Config {
+	config := ctap23.Config{
+		Metadata:   request.Metadata,
+		Transport:  conformanceTransport(r.env.Selected.Attachment.Transport),
+		Featureful: request.Featureful,
+		TokenProvider: func(
+			ctx context.Context,
+			_ *client.Client,
+			request ctap23.PinUvAuthTokenRequest,
+		) (ctap23.PinUvAuthToken, error) {
+			device, tokenDevice, err := environment.Current()
+			if err != nil {
+				return ctap23.PinUvAuthToken{}, err
+			}
+
+			return r.conformanceToken(ctx, device, tokenDevice, request)
+		},
+		Resetter: func(ctx context.Context, _ *client.Client) error {
+			device, _, err := environment.Current()
+			if err != nil {
+				return err
+			}
+
+			return r.conformanceReset(ctx, device)
+		},
+		TemporaryPINProvider: r.conformanceTemporaryPIN,
+		UVConfigurator:       r.conformanceUVConfigurator,
+	}
+	if environment.PowerCycle != nil {
+		config.PowerCycler = func(ctx context.Context) error {
+			action := func(actionCtx context.Context) error {
+				_, err := r.env.Interactions.RequestInteraction(actionCtx, model.InteractionRequest{
+					Kind:        model.InteractionKindPowerCycle,
+					Message:     "Physically power-cycle authenticator " + string(r.env.Selected.Attachment.ID) + " and wait for it to reconnect.",
+					Destructive: true,
+				})
+
+				return err
+			}
+			if err := environment.PowerCycle(ctx, action); err != nil {
+				return err
+			}
+
+			r.env.Tokens.Invalidate()
+
+			return nil
+		}
+	}
+
+	return config
+}
+
+func (r Runner) conformanceTemporaryPIN(
+	ctx context.Context,
+	request ctap23.TemporaryPINRequest,
+) ([]byte, error) {
+	response, err := r.env.Interactions.RequestInteraction(ctx, model.InteractionRequest{
+		Kind:        model.InteractionKindPIN,
+		Message:     "Provide a temporary PIN for destructive CTAP 2.3 conformance testing on authenticator " + string(r.env.Selected.Attachment.ID) + ".",
+		Destructive: true,
+		Preview:     request,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	// Ownership transfers from the interaction broker to the suite, which
+	// wipes the buffer when the current test ends.
+	return response.PIN, nil
+}
+
+func (r Runner) conformanceUVConfigurator(ctx context.Context, _ []byte) error {
+	_, err := r.env.Interactions.RequestInteraction(ctx, model.InteractionRequest{
+		Kind:        model.InteractionKindUserVerificationConfiguration,
+		Message:     "Configure built-in user verification on authenticator " + string(r.env.Selected.Attachment.ID) + " for CTAP 2.3 conformance testing.",
+		Destructive: true,
+	})
+
+	return err
+}
+
+func conformanceTransport(mode apptransport.Mode) ctap23.AuthenticatorTransport {
+	if mode == apptransport.ModeSmartCard {
+		return ctap23.AuthenticatorTransportNFC
+	}
+
+	return ctap23.AuthenticatorTransportHID
+}
+
 func (r Runner) conformanceToken(
 	ctx context.Context,
 	device ConfigDevice,
 	tokenDevice rtauthenticator.TokenProvider,
-	permission protocol.Permission,
-) ([]byte, error) {
-	token, err := r.acquireConformanceToken(ctx, permission)
+	request ctap23.PinUvAuthTokenRequest,
+) (ctap23.PinUvAuthToken, error) {
+	info, err := rtauthenticator.ResolveInfo(ctx, tokenDevice)
+	if err != nil {
+		return ctap23.PinUvAuthToken{}, err
+	}
+	selectedProtocol, err := selectPinUvAuthProtocol(info)
+	if err != nil {
+		return ctap23.PinUvAuthToken{}, err
+	}
+
+	token, err := r.acquireConformanceToken(ctx, request)
 	if !failure.IsCode(err, failure.CodePINNotConfigured) {
-		return token, err
+		return ctap23.PinUvAuthToken{Protocol: selectedProtocol, Value: token}, err
 	}
 
 	response, err := r.env.Interactions.RequestInteraction(ctx, model.InteractionRequest{
 		Kind:       model.InteractionKindPIN,
 		Message:    "Create a temporary PIN for CTAP 2.3 conformance testing.",
-		Permission: permission.String(),
+		Permission: request.Permission.String(),
 	})
 	if err != nil {
-		return nil, err
+		return ctap23.PinUvAuthToken{}, err
 	}
 	defer secret.Zero(response.PIN)
 
 	err = device.SetPIN(ctx, string(response.PIN))
 	r.env.Tokens.Invalidate()
 	if err != nil {
-		return nil, errornorm.Annotate(err, errornorm.WithClientPINSubCommand(
+		return ctap23.PinUvAuthToken{}, errornorm.Annotate(err, errornorm.WithClientPINSubCommand(
 			failure.PhaseAuthenticatorCommand,
 			protocol.ClientPINSubCommandSetPIN,
 		))
@@ -85,26 +190,46 @@ func (r Runner) conformanceToken(
 	token, err = tokenDevice.GetPinUvAuthTokenUsingPIN(
 		ctx,
 		string(response.PIN),
-		permission,
-		"",
+		request.Permission,
+		request.RPID,
 	)
 	if err != nil {
-		return nil, errornorm.Annotate(err, errornorm.WithClientPINSubCommand(
+		return ctap23.PinUvAuthToken{}, errornorm.Annotate(err, errornorm.WithClientPINSubCommand(
 			failure.PhaseTokenAcquisition,
 			protocol.ClientPINSubCommandGetPinUvAuthTokenUsingPinWithPermissions,
 		))
 	}
 
-	return token, nil
+	return ctap23.PinUvAuthToken{Protocol: selectedProtocol, Value: token}, nil
+}
+
+func selectPinUvAuthProtocol(info protocol.AuthenticatorGetInfoResponse) (protocol.PinUvAuthProtocol, error) {
+	for _, candidate := range info.PinUvAuthProtocols {
+		switch candidate {
+		case protocol.PinUvAuthProtocolOne, protocol.PinUvAuthProtocolTwo:
+			return candidate, nil
+		}
+	}
+
+	if len(info.PinUvAuthProtocols) == 0 &&
+		info.Versions.IsPreviewOnly() && info.Options[protocol.OptionUvToken] {
+		return protocol.PinUvAuthProtocolOne, nil
+	}
+
+	return 0, failure.New(
+		failure.CodeVerificationFlowUnsupported,
+		failure.WithPhase(failure.PhaseTokenAcquisition),
+	)
 }
 
 func (r Runner) acquireConformanceToken(
 	ctx context.Context,
-	permission protocol.Permission,
+	request ctap23.PinUvAuthTokenRequest,
 ) ([]byte, error) {
 	var token []byte
 	err := r.env.Tokens.Use(ctx, rtruntime.TokenUse{
-		Permission: permission,
+		Permission: request.Permission,
+		RPID:       request.RPID,
 	}, func(value []byte) error {
 		token = slices.Clone(value)
 

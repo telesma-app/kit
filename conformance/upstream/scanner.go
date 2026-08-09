@@ -16,7 +16,8 @@ type testList struct {
 }
 
 type testGroup struct {
-	Cases []string `json:"cases"`
+	Helpers []string `json:"helpers"`
+	Cases   []string `json:"cases"`
 }
 
 // Scan reads the test lists and referenced scripts from an extracted upstream
@@ -105,11 +106,11 @@ func resolveScriptPath(listPath, reference string) (string, error) {
 	if reference == "" {
 		return "", fmt.Errorf("empty case reference")
 	}
-
-	scriptPath := path.Join(path.Dir(listPath), reference)
-	if !fs.ValidPath(scriptPath) {
+	if !fs.ValidPath(reference) {
 		return "", fmt.Errorf("invalid case reference %q", reference)
 	}
+
+	scriptPath := path.Join(path.Dir(listPath), reference)
 
 	return scriptPath, nil
 }

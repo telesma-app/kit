@@ -68,6 +68,9 @@ func Current() Manifest {
 	if err := Validate(manifest); err != nil {
 		panic(err)
 	}
+	if err := ValidateCTAP23Coverage(manifest, CurrentCatalog(), CurrentWorkplan()); err != nil {
+		panic(err)
+	}
 
 	return manifest
 }
@@ -128,6 +131,54 @@ func Validate(manifest Manifest) error {
 		case PortStatusPending, PortStatusPartial, PortStatusPorted:
 		default:
 			return fmt.Errorf("conformance upstream manifest: port %q has invalid status %q", port.TestID, port.Status)
+		}
+	}
+
+	return nil
+}
+
+type sourceCase struct {
+	path       string
+	caseMarker string
+}
+
+// ValidateCTAP23Coverage checks port mappings against the pinned CTAP 2.3
+// catalog and the coordinator-owned task lifecycle.
+func ValidateCTAP23Coverage(manifest Manifest, catalog Catalog, workplan Workplan) error {
+	knownCases := make(map[sourceCase]bool, catalog.Totals.Cases)
+	for _, group := range catalog.Groups {
+		for _, script := range group.Scripts {
+			for _, testCase := range script.Cases {
+				knownCases[sourceCase{path: script.Source, caseMarker: testCase.Marker}] = true
+			}
+		}
+	}
+
+	portedCases := make(map[sourceCase]bool)
+	for _, port := range manifest.Ports {
+		if port.ModuleID != catalog.ModuleID {
+			continue
+		}
+
+		key := sourceCase{path: port.Source.Path, caseMarker: port.Source.Case}
+		if !knownCases[key] {
+			return fmt.Errorf("conformance upstream manifest: port %q has unknown CTAP 2.3 source case %q %q", port.TestID, port.Source.Path, port.Source.Case)
+		}
+		if port.Status == PortStatusPorted {
+			portedCases[key] = true
+		}
+	}
+
+	for _, task := range workplan.Tasks {
+		for _, marker := range task.Cases {
+			key := sourceCase{path: task.Source, caseMarker: marker}
+			ported := portedCases[key]
+			if task.Status == TaskStatusMerged && !ported {
+				return fmt.Errorf("conformance upstream manifest: merged task %q case %q has no ported manifest row", task.ID, marker)
+			}
+			if task.Status != TaskStatusMerged && ported {
+				return fmt.Errorf("conformance upstream manifest: unmerged task %q case %q is marked ported", task.ID, marker)
+			}
 		}
 	}
 

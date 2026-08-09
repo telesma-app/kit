@@ -180,6 +180,88 @@ func TestGetInfoP1RejectsPresentZeroValuedOptionalField(t *testing.T) {
 	}
 }
 
+func TestGetInfoP1ForcePINChangeFalseIsEquivalentToAbsent(t *testing.T) {
+	for _, test := range []struct {
+		name  string
+		value bool
+		want  conformance.Status
+	}{
+		{name: "false", want: conformance.StatusPassed},
+		{name: "true", value: true, want: conformance.StatusFailed},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			info := validGetInfo()
+			info.ForcePINChange = test.value
+			data := encodeCBOR(t, map[uint64]any{
+				1:  []string{string(protocol.FIDO_2_3)},
+				2:  []string{string(extension.ExtensionIdentifierHMACSecret)},
+				3:  info.AAGUID[:],
+				12: test.value,
+			})
+			device := &cborDevice{response: ctaptransport.CBORResponse{
+				StatusCode: ctaptransport.CTAP2_OK,
+				Data:       data,
+			}}
+			runner, err := conformance.NewRunner(device)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			result, err := runner.Run(context.Background(), suiteWithTest(t, ctap23.Config{
+				Metadata: ctap23.Metadata{
+					GetInfo:       info,
+					GetInfoFields: []uint64{1, 2, 3, 12},
+				},
+			}, ctap23.TestIDAuthrGeneric1P1))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if result.Status != test.want || result.Tests[0].Status != test.want {
+				t.Fatalf("result = %#v, want %q", result, test.want)
+			}
+			if test.value {
+				last := result.Tests[0].Steps[len(result.Tests[0].Steps)-1]
+				if last.ID != "get-info.declared-fields" || last.Message != "forcePINChange requires pinUvAuthProtocols" {
+					t.Fatalf("declared-fields step = %#v", last)
+				}
+			}
+		})
+	}
+}
+
+func TestGetInfoP1AllowsZeroFirmwareVersion(t *testing.T) {
+	info := validGetInfo()
+	firmwareVersion := uint(0)
+	info.FirmwareVersion = &firmwareVersion
+	data := encodeCBOR(t, map[uint64]any{
+		1:  []string{string(protocol.FIDO_2_3)},
+		2:  []string{string(extension.ExtensionIdentifierHMACSecret)},
+		3:  info.AAGUID[:],
+		14: uint64(0),
+	})
+	device := &cborDevice{response: ctaptransport.CBORResponse{
+		StatusCode: ctaptransport.CTAP2_OK,
+		Data:       data,
+	}}
+	runner, err := conformance.NewRunner(device)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	result, err := runner.Run(context.Background(), suiteWithTest(t, ctap23.Config{
+		Metadata: ctap23.Metadata{
+			GetInfo:       info,
+			GetInfoFields: []uint64{1, 2, 3, 14},
+		},
+	}, ctap23.TestIDAuthrGeneric1P1))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Status != conformance.StatusPassed || result.Tests[0].Status != conformance.StatusPassed {
+		t.Fatalf("result = %#v, want passed", result)
+	}
+}
+
 func runGetInfoSuite(
 	t *testing.T,
 	info protocol.AuthenticatorGetInfoResponse,

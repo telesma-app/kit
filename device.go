@@ -56,3 +56,74 @@ func newAttachment(candidate devicewatch.Candidate) attachment {
 
 	return result
 }
+
+func powerCycleCandidateMatches(
+	original attachment,
+	originalReport report.DeviceReport,
+	candidate attachment,
+) bool {
+	if original.mode != candidate.mode {
+		return false
+	}
+	if original.mode == transport.ModeSmartCard {
+		return original.path == candidate.path
+	}
+	if !sameUSBProduct(original.report, candidate.report) {
+		return false
+	}
+	if canonicalSerial(originalReport) != "" {
+		return true
+	}
+
+	originalUSB := original.report.Attachment.USB
+	candidateUSB := candidate.report.Attachment.USB
+	if originalUSB.ReportedSerial != "" {
+		return originalUSB.ReportedSerial == candidateUSB.ReportedSerial
+	}
+	if original.hidInstanceID != "" && original.hidInstanceID == candidate.hidInstanceID {
+		return true
+	}
+	if original.hidParentID != "" && original.hidParentID == candidate.hidParentID {
+		return true
+	}
+	if original.hidInstanceID != "" || original.hidParentID != "" {
+		return false
+	}
+
+	return original.path == candidate.path
+}
+
+func powerCycleIdentityMatches(
+	original attachment,
+	originalReport report.DeviceReport,
+	candidate attachment,
+	candidateReport report.DeviceReport,
+) bool {
+	if !powerCycleCandidateMatches(original, originalReport, candidate) {
+		return false
+	}
+	serial := canonicalSerial(originalReport)
+	if serial == "" {
+		return true
+	}
+
+	return candidateReport.Identity != nil &&
+		originalReport.Identity.Vendor == candidateReport.Identity.Vendor &&
+		serial == candidateReport.Identity.SerialNumber
+}
+
+func sameUSBProduct(left, right report.DeviceReport) bool {
+	leftUSB := left.Attachment.USB
+	rightUSB := right.Attachment.USB
+	return leftUSB != nil && rightUSB != nil &&
+		leftUSB.VendorID == rightUSB.VendorID &&
+		leftUSB.ProductID == rightUSB.ProductID
+}
+
+func canonicalSerial(device report.DeviceReport) string {
+	if device.Identity == nil {
+		return ""
+	}
+
+	return device.Identity.SerialNumber
+}

@@ -272,19 +272,20 @@ if err != nil {
 result, err := runner.Run(ctx, suite)
 ```
 
-`Suite`, `Test`, and `Step` carry stable IDs, specification references, and exact upstream source locations. Step
-callbacks return `conformance.Fail(...)` for a conformance failure, `conformance.Skip(...)` when a case does not apply,
-or an ordinary error for an execution failure. Results are presentation-neutral JSON DTOs. The caller retains ownership
-of the CTAP connection.
+`Suite`, `Test`, and `Step` carry stable IDs, specification references, exact upstream source locations, and an explicit
+destructive marker used by run-mode selection. Step callbacks return `conformance.Fail(...)` for a conformance failure,
+`conformance.Skip(...)` when a case does not apply, or an ordinary error for an execution failure. Results are
+presentation-neutral JSON DTOs. The caller retains ownership of the CTAP connection.
 
-`conformance/ctap23` contains independent Go ports of `Authr-Generic-1 / P-1…P-5`. They validate the raw GetInfo CBOR
-map, typed CTAP 2.3 capability relationships, authenticator metadata, UP/UV declarations, and the lifecycle of
-`encIdentifier` and `encCredStoreState`. P-4 and P-5 each perform a factory reset. When either encrypted field is
-advertised, `ctap23.Config.PersistentTokenProvider` must acquire a persistent `pinUvAuthToken` with the requested
-permission; ownership of that byte buffer transfers to the suite and the suite wipes it after the test.
+`conformance/ctap23` contains independent Go ports for GetInfo and encrypted-state behavior, PIN/UV protocol 1 and 2
+key agreement, and Metadata Statement validation. Metadata validation preserves JSON member presence and uses the
+released `github.com/telesma-app/mds/model` document parser plus `github.com/telesma-app/fido-registry` values.
+Encrypted-state and key-agreement tests can factory-reset the authenticator. When an encrypted field is advertised,
+`ctap23.Config.TokenProvider` must acquire a `pinUvAuthToken` with the requested permission and return the exact
+PIN/UV protocol that created it. Ownership of the token buffer transfers to the suite, which wipes it after the test.
 
-Applications with an opened `ctapkit.Authenticator` should use the managed facade. The zero-value mode is
-non-destructive and runs P-1 through P-3 on that authenticator:
+Applications with an opened `ctapkit.Authenticator` should use the managed facade. The zero-value mode runs every
+implemented test that is not marked destructive:
 
 ```go
 result, err := authenticator.RunCTAP23Conformance(ctx, ctap23.RunRequest{
@@ -292,9 +293,9 @@ result, err := authenticator.RunCTAP23Conformance(ctx, ctap23.RunRequest{
 })
 ```
 
-The metadata must come from the authenticator's verified metadata statement and must include the exact advertised
-GetInfo field set. A complete run is deliberately explicit and should be paired with the application's normal
-interaction handler:
+The metadata must come from the authenticator's verified metadata statement, include its raw JSON in `StatementJSON`,
+and record the exact advertised GetInfo field set. A complete run is deliberately explicit and should be paired with
+the application's normal interaction handler:
 
 ```go
 result, err := authenticator.RunCTAP23Conformance(
@@ -307,12 +308,11 @@ result, err := authenticator.RunCTAP23Conformance(
 )
 ```
 
-Full mode runs P-1 through P-5. If the corresponding encrypted GetInfo members are advertised, P-4 and P-5 each ask
-for a destructive touch and factory-reset the authenticator. PIN and built-in UV requests use the same interaction
-flow as other runtime operations. When neither is configured, the runtime asks for and configures a temporary PIN;
-a successful following reset removes it. If the run is interrupted before that reset, the PIN can remain configured.
-The operation is serialized with all other work on the opened authenticator and invalidates runtime-owned token and
-state caches after reset.
+Full mode additionally runs every implemented destructive test. Resetting cases ask for a destructive touch and route
+the reset through the runtime. PIN and built-in UV requests use the same interaction flow as other runtime operations.
+When neither is configured, the runtime asks for and configures a temporary PIN; a successful following reset removes
+it. If the run is interrupted before that reset, the PIN can remain configured. The operation is serialized with all
+other work on the opened authenticator and invalidates runtime-owned token and state caches after reset.
 
 The exact upstream artifact, corpus counts, and case-to-Go mappings are pinned in
 `conformance/upstream/manifest.json`. To inspect a newly extracted artifact without adding a CLI to this library, scan
@@ -332,6 +332,10 @@ The scanner follows every declared test-list reference, counts unique scripts an
 source, total, added, removed, and modified module drift. After reviewing an upstream change, update the source identity,
 module inventory, and port mappings in the manifest. Its loader rejects inconsistent totals, duplicate mappings, and
 unknown modules. These are independent Go implementations; passing them does not itself constitute FIDO certification.
+
+For parallel porting, use the [multi-agent porting playbook](conformance/PORTING_PLAYBOOK.md). It defines the short read
+list, task catalog, file ownership, dependency waves, review gates, and copy-ready prompts for coordinators, porters,
+and reviewers.
 
 ## Packages
 

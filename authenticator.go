@@ -79,6 +79,7 @@ func WithVerificationFlow(flow VerificationFlow) OperationOption {
 // lifecycle, operation serialization, and runtime token state until Close.
 type Authenticator struct {
 	selected            report.DeviceReport
+	connection          *authenticatorConnection
 	cbor                ctaptransport.CBOR
 	lifecycle           authenticator.Lifecycle
 	vendor              authenticator.VendorProvider
@@ -93,6 +94,7 @@ type Authenticator struct {
 	bio                 authenticator.BioDevice
 	tokens              *rtruntime.TokenStore
 	largeBlobState      *workflow.LargeBlobState
+	powerCycle          func(context.Context, func(context.Context) error) error
 
 	runMu   sync.Mutex
 	stateMu sync.Mutex
@@ -129,14 +131,16 @@ func openAuthenticatorHandle(
 	if err != nil {
 		return nil, err
 	}
+	connection := newAuthenticatorConnection(opened)
 
 	return &Authenticator{
 		selected:            selected,
-		cbor:                opened.CBOR,
-		lifecycle:           opened.Lifecycle,
+		connection:          connection,
+		cbor:                connection,
+		lifecycle:           connection,
 		vendor:              opened.Vendor,
 		info:                opened.Info,
-		tokenProvider:       opened.Tokens,
+		tokenProvider:       authenticatorConnectionTokenProvider{connection: connection},
 		credentialInventory: opened.CredentialInventory,
 		credentials:         opened.Credentials,
 		webAuthn:            opened.WebAuthn,
@@ -181,7 +185,81 @@ func (a *Authenticator) Close() error {
 }
 
 func (a *Authenticator) Device() report.DeviceReport {
+	a.stateMu.Lock()
+	defer a.stateMu.Unlock()
+
 	return a.selected
+}
+
+func (a *Authenticator) currentConformanceCapabilities() (
+	authenticator.ConfigDevice,
+	authenticator.TokenProvider,
+	error,
+) {
+	opened, _, ok := a.connection.Current()
+	if !ok {
+		return nil, nil, &ctaptransport.DeviceInvalidatedError{
+			Err: a.connection.unavailableError(),
+		}
+	}
+
+	return opened.Config, opened.Tokens, nil
+}
+
+func (a *Authenticator) installConnection(
+	expectedGeneration uint64,
+	selected report.DeviceReport,
+	opened *authenticator.Opened,
+) (uint64, error) {
+	generation, err := a.connection.Install(expectedGeneration, opened)
+	current, currentGeneration, installed := a.connection.Current()
+	if !installed || currentGeneration != generation || current != opened {
+		return generation, err
+	}
+
+	a.stateMu.Lock()
+	a.selected = selected
+	a.vendor = opened.Vendor
+	a.info = opened.Info
+	a.credentialInventory = opened.CredentialInventory
+	a.credentials = opened.Credentials
+	a.webAuthn = opened.WebAuthn
+	a.largeBlobs = opened.LargeBlobs
+	a.configStatus = opened.ConfigStatus
+	a.config = opened.Config
+	a.bio = opened.Bio
+	a.stateMu.Unlock()
+
+	a.tokens.InvalidateToken()
+	a.largeBlobState.Clear()
+
+	return generation, err
+}
+
+func (a *Authenticator) detachConnection(expectedGeneration uint64) (uint64, error) {
+	generation, err := a.connection.Detach(expectedGeneration)
+	a.tokens.InvalidateToken()
+	a.largeBlobState.Clear()
+
+	return generation, err
+}
+
+func (a *Authenticator) setPowerCycler(
+	cycle func(context.Context, func(context.Context) error) error,
+) {
+	a.stateMu.Lock()
+	a.powerCycle = cycle
+	a.stateMu.Unlock()
+}
+
+func (a *Authenticator) conformancePowerCycler() func(
+	context.Context,
+	func(context.Context) error,
+) error {
+	a.stateMu.Lock()
+	defer a.stateMu.Unlock()
+
+	return a.powerCycle
 }
 
 func (a *Authenticator) Closed() bool {

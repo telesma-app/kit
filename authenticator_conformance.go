@@ -11,9 +11,9 @@ import (
 )
 
 // RunCTAP23Conformance executes the selected CTAP 2.3 conformance tests on
-// this opened authenticator. The safe zero-value mode runs P-1 through P-3.
-// Full mode may configure a temporary PIN and may factory-reset the
-// authenticator in both P-4 and P-5.
+// this opened authenticator. The safe zero-value mode excludes every
+// destructive case. Full mode may configure a temporary PIN and may
+// factory-reset the authenticator more than once.
 func (a *Authenticator) RunCTAP23Conformance(
 	ctx context.Context,
 	request ctap23.RunRequest,
@@ -32,7 +32,11 @@ func (a *Authenticator) RunCTAP23Conformance(
 		ctx,
 		appoperation.ConformanceCTAP23,
 		func(runner workflow.Runner, ctx context.Context) (conformance.SuiteResult, error) {
-			return runner.RunCTAP23Conformance(ctx, a.cbor, a.config, a.tokenProvider, request)
+			return runner.RunCTAP23Conformance(ctx, workflow.ConformanceEnvironment{
+				CBOR:       a.cbor,
+				Current:    a.currentConformanceCapabilities,
+				PowerCycle: a.conformancePowerCycler(),
+			}, request)
 		},
 		opts...,
 	)

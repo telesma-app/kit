@@ -5,11 +5,14 @@ import (
 	"errors"
 	"slices"
 	"sync"
+	"time"
 
 	"github.com/telesma-app/ctap/client"
 	"github.com/telesma-app/ctap/options"
 	ctaptransport "github.com/telesma-app/ctap/transport"
 )
+
+const cleanupTimeout = 30 * time.Second
 
 // Runner executes suites sequentially against one caller-owned CTAP
 // connection. Concurrent Run calls are serialized, and Runner does not close
@@ -40,10 +43,11 @@ func NewRunner(device ctaptransport.CBOR, clientOptions ...options.Option) (*Run
 // TestContext provides one test with raw and typed access to the same
 // authenticator connection and records its step results.
 type TestContext struct {
-	ctx    context.Context
-	cbor   ctaptransport.CBOR
-	client *client.Client
-	steps  []StepResult
+	ctx     context.Context
+	cbor    ctaptransport.CBOR
+	client  *client.Client
+	steps   []StepResult
+	cleanup []Step
 }
 
 // CBOR returns the raw transport-independent CTAP command boundary. Tests use
@@ -60,15 +64,27 @@ func (t *TestContext) Client() *client.Client {
 // Step executes and records one test step. It returns true only when the step
 // passed, allowing dependent steps to stop with an ordinary return.
 func (t *TestContext) Step(step Step) bool {
+	return t.runStep(t.ctx, step)
+}
+
+// Cleanup registers a visible cleanup step to run in last-in, first-out order
+// after the test body. Cleanup callbacks receive a bounded context which
+// retains the run context's values but outlives its cancellation, allowing
+// release commands while Run still reports the original cancellation.
+func (t *TestContext) Cleanup(step Step) {
+	t.cleanup = append(t.cleanup, step)
+}
+
+func (t *TestContext) runStep(ctx context.Context, step Step) bool {
 	result := StepResult{
 		ID:         step.ID,
 		Name:       step.Name,
 		References: step.References,
 	}
 
-	err := t.ctx.Err()
+	err := ctx.Err()
 	if err == nil {
-		err = step.Run(t.ctx)
+		err = step.Run(ctx)
 	}
 
 	result.Status = classifyStepError(err)
@@ -78,6 +94,15 @@ func (t *TestContext) Step(step Step) bool {
 	t.steps = append(t.steps, result)
 
 	return result.Status == StatusPassed
+}
+
+func (t *TestContext) runCleanup() {
+	ctx, cancel := context.WithTimeout(context.WithoutCancel(t.ctx), cleanupTimeout)
+	defer cancel()
+
+	for index := len(t.cleanup) - 1; index >= 0; index-- {
+		t.runStep(ctx, t.cleanup[index])
+	}
 }
 
 // Run executes every test in declaration order. Test and step errors are
@@ -101,12 +126,14 @@ func (r *Runner) Run(ctx context.Context, suite Suite) (SuiteResult, error) {
 		}
 
 		testContext := TestContext{
-			ctx:    ctx,
-			cbor:   r.cbor,
-			client: r.client,
-			steps:  make([]StepResult, 0),
+			ctx:     ctx,
+			cbor:    r.cbor,
+			client:  r.client,
+			steps:   make([]StepResult, 0),
+			cleanup: make([]Step, 0),
 		}
 		test.Run(&testContext)
+		testContext.runCleanup()
 
 		result.Tests = append(result.Tests, TestResult{
 			ID:          test.ID,
@@ -114,6 +141,7 @@ func (r *Runner) Run(ctx context.Context, suite Suite) (SuiteResult, error) {
 			Description: test.Description,
 			Source:      test.Source,
 			References:  test.References,
+			Destructive: test.Destructive,
 			Status:      aggregateStepResults(testContext.steps),
 			Steps:       testContext.steps,
 		})
@@ -147,12 +175,32 @@ func classifyStepError(err error) Status {
 }
 
 func aggregateStepResults(results []StepResult) Status {
-	status := StatusSkipped
+	passed := false
+	skipped := false
+	failed := false
 	for _, result := range results {
-		status = higherStatus(status, result.Status)
+		switch result.Status {
+		case StatusError:
+			return StatusError
+		case StatusFailed:
+			failed = true
+		case StatusSkipped:
+			skipped = true
+		case StatusPassed:
+			passed = true
+		}
+	}
+	if failed {
+		return StatusFailed
+	}
+	if skipped {
+		return StatusSkipped
+	}
+	if passed {
+		return StatusPassed
 	}
 
-	return status
+	return StatusSkipped
 }
 
 func aggregateTestResults(results []TestResult) Status {

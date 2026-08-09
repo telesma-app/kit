@@ -7,9 +7,11 @@ import (
 type InteractionKind string
 
 const (
-	InteractionKindPIN              InteractionKind = "pin"
-	InteractionKindUserVerification InteractionKind = "user-verification"
-	InteractionKindTouch            InteractionKind = "touch"
+	InteractionKindPIN                           InteractionKind = "pin"
+	InteractionKindUserVerification              InteractionKind = "user-verification"
+	InteractionKindUserVerificationConfiguration InteractionKind = "user-verification-configuration"
+	InteractionKindPowerCycle                    InteractionKind = "power-cycle"
+	InteractionKindTouch                         InteractionKind = "touch"
 )
 
 type InteractionRequest struct {

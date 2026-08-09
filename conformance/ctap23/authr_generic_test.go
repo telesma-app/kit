@@ -165,17 +165,22 @@ func TestGetInfoP4AndP5ValidateEncryptedStateAndWipeToken(t *testing.T) {
 			device := newScriptedDevice(t, infos)
 			providerCalls := 0
 			result := runSingleAuthenticatorTest(t, device, ctap23.Config{
-				PersistentTokenProvider: func(
+				TokenProvider: func(
 					_ context.Context,
 					_ *client.Client,
-					permission protocol.Permission,
-				) ([]byte, error) {
+					request ctap23.PinUvAuthTokenRequest,
+				) (ctap23.PinUvAuthToken, error) {
 					providerCalls++
-					if permission != protocol.PermissionPersistentCredentialManagementReadOnly {
-						return nil, fmt.Errorf("permission = %v", permission)
+					if request != (ctap23.PinUvAuthTokenRequest{
+						Permission: protocol.PermissionPersistentCredentialManagementReadOnly,
+					}) {
+						return ctap23.PinUvAuthToken{}, fmt.Errorf("request = %+v", request)
 					}
 
-					return token, nil
+					return ctap23.PinUvAuthToken{
+						Protocol: protocol.PinUvAuthProtocolTwo,
+						Value:    token,
+					}, nil
 				},
 			}, tt.testID)
 
@@ -222,15 +227,51 @@ func TestSuiteForSelectsSafeAndFullRunModes(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(safe.Tests) != 3 || safe.Tests[2].ID != ctap23.TestIDAuthrGeneric1P3 {
+	if len(safe.Tests) != 43 ||
+		safe.Tests[2].ID != ctap23.TestIDAuthrGeneric1P3 ||
+		safe.Tests[3].ID != ctap23.TestIDAuthrMakeCredReq2F3 ||
+		safe.Tests[4].ID != ctap23.TestIDAuthrMakeCredReq3F4 ||
+		safe.Tests[5].ID != ctap23.TestIDAuthrClientPIN1GetRetriesP4 ||
+		safe.Tests[len(safe.Tests)-1].ID != ctap23.TestIDMetadataStmt1P43 {
 		t.Fatalf("safe tests = %#v", safe.Tests)
+	}
+	if slices.ContainsFunc(safe.Tests, func(test conformance.Test) bool { return test.Destructive }) {
+		t.Fatalf("safe tests contain a destructive test: %#v", safe.Tests)
 	}
 
 	full, err := ctap23.SuiteFor(ctap23.RunModeFull, ctap23.Config{})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(full.Tests) != 5 || full.Tests[4].ID != ctap23.TestIDAuthrGeneric1P5 {
+	if len(full.Tests) != 152 ||
+		full.Tests[5].ID != ctap23.TestIDAuthrMakeCredReq1P1 ||
+		full.Tests[45].ID != ctap23.TestIDAuthrMakeCredReq6F1 ||
+		full.Tests[46].ID != ctap23.TestIDAuthrMakeCredResp1P01 ||
+		full.Tests[51].ID != ctap23.TestIDAuthrMakeCredResp1F01 ||
+		full.Tests[52].ID != ctap23.TestIDAuthrGetAssertionReq1P1 ||
+		full.Tests[58].ID != ctap23.TestIDAuthrGetAssertionReq1F6 ||
+		full.Tests[59].ID != ctap23.TestIDAuthrGetAssertionReq2P1 ||
+		full.Tests[61].ID != ctap23.TestIDAuthrGetAssertionReq2P3 ||
+		full.Tests[62].ID != ctap23.TestIDAuthrGetAssertionReq3P1 ||
+		full.Tests[68].ID != ctap23.TestIDAuthrGetAssertionReq3F6 ||
+		full.Tests[69].ID != ctap23.TestIDAuthrGetAssertionResp1P1 ||
+		full.Tests[73].ID != ctap23.TestIDAuthrGetAssertionResp1F1 ||
+		full.Tests[74].ID != ctap23.TestIDAuthrClientPIN1KeyAgreementP1 ||
+		full.Tests[75].ID != ctap23.TestIDAuthrClientPIN1NewPINP1 ||
+		full.Tests[81].ID != ctap23.TestIDAuthrClientPIN1NewPINF1 ||
+		full.Tests[82].ID != ctap23.TestIDAuthrClientPIN1PinPolicyP1 ||
+		full.Tests[86].ID != ctap23.TestIDAuthrClientPIN1PinPolicyF4 ||
+		full.Tests[87].ID != ctap23.TestIDAuthrClientPIN1GetRetriesP1 ||
+		full.Tests[90].ID != ctap23.TestIDAuthrClientPIN1GetRetriesP4 ||
+		full.Tests[91].ID != ctap23.TestIDAuthrClientPIN2KeyAgreementP1 ||
+		full.Tests[92].ID != ctap23.TestIDAuthrClientPIN2NewPINP1 ||
+		full.Tests[95].ID != ctap23.TestIDAuthrClientPIN2NewPINP4 ||
+		full.Tests[96].ID != ctap23.TestIDAuthrClientPIN2GetPINTokenP1 ||
+		full.Tests[103].ID != ctap23.TestIDAuthrClientPIN2GetPINTokenF5 ||
+		full.Tests[104].ID != ctap23.TestIDAuthrClientPIN2PinPolicyP1 ||
+		full.Tests[109].ID != ctap23.TestIDAuthrClientPIN2PinPolicyF5 ||
+		full.Tests[110].ID != ctap23.TestIDAuthrClientPIN2GetRetriesP1 ||
+		full.Tests[len(full.Tests)-1].ID != ctap23.TestIDMetadataStmt1P43 {
 		t.Fatalf("full tests = %#v", full.Tests)
 	}
 

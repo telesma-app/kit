@@ -1,0 +1,2346 @@
+{
+  "schemaVersion": 1,
+  "moduleId": "ctap2.3-authenticator",
+  "sharedPrimitives": [
+    {
+      "id": "ctap23-harness-command-fixtures",
+      "files": [
+        "conformance/ctap23/harness_test.go",
+        "conformance/ctap23/ctap2_wire.go",
+        "conformance/ctap23/get_assertion_fixture.go",
+        "conformance/ctap23/make_credential_fixture.go"
+      ]
+    },
+    {
+      "id": "ctap23-get-info-flow",
+      "files": [
+        "conformance/ctap23/get_info.go",
+        "conformance/ctap23/get_info_metadata.go"
+      ]
+    },
+    {
+      "id": "ctap23-persistent-token-reset-environment",
+      "files": [
+        "authenticator_connection.go",
+        "authenticator_connection_capabilities.go",
+        "authenticator_conformance.go",
+        "conformance/ctap23/suite.go",
+        "internal/workflow/conformance.go"
+      ]
+    },
+    {
+      "id": "ctap23-metadata-input-contract",
+      "files": [
+        "conformance/ctap23/suite.go",
+        "conformance/ctap23/metadata_statement.go"
+      ]
+    },
+    {
+      "id": "ctap23-metadata-registry-values",
+      "files": [
+        "go.mod"
+      ]
+    },
+    {
+      "id": "ctap23-expected-status-classifier",
+      "files": [
+        "conformance/ctap23/status.go"
+      ]
+    },
+    {
+      "id": "ctap23-transport-environment",
+      "files": [
+        "conformance/ctap23/suite.go",
+        "internal/workflow/conformance.go"
+      ]
+    },
+    {
+      "id": "ctap23-feature-profile-environment",
+      "files": [
+        "conformance/ctap23/suite.go",
+        "internal/workflow/conformance.go"
+      ]
+    },
+    {
+      "id": "ctap23-client-pin-key-agreement-wire",
+      "files": [
+        "conformance/ctap23/client_pin_key_agreement.go"
+      ]
+    },
+    {
+      "id": "ctap23-client-pin-environment",
+      "files": [
+        "authenticator_connection.go",
+        "authenticator_conformance.go",
+        "conformance/ctap23/client_pin_environment.go",
+        "conformance/ctap23/suite.go",
+        "internal/workflow/conformance.go"
+      ]
+    },
+    {
+      "id": "telesma-ctap-stack",
+      "files": [
+        "go.mod"
+      ]
+    },
+    {
+      "id": "telesma-mds-model",
+      "files": [
+        "go.mod"
+      ]
+    },
+    {
+      "id": "telesma-iso7816-apdu",
+      "files": [
+        "go.mod"
+      ]
+    },
+    {
+      "id": "telesma-hid-transport",
+      "files": [
+        "go.mod"
+      ]
+    }
+  ],
+  "tasks": [
+    {
+      "id": "ctap23-hid-1-p-01-10",
+      "source": "tests/CTAP2/Transports/hid-1.js",
+      "cases": [
+        "P-1",
+        "P-2",
+        "P-3",
+        "P-4",
+        "P-5",
+        "P-6",
+        "P-7",
+        "P-8",
+        "P-9",
+        "P-10"
+      ],
+      "dependsOn": [],
+      "helpers": [
+        "js/HID.js",
+        "js/CTAP2.js",
+        "js/meta.js",
+        "app/js/utils.js"
+      ],
+      "risk": [
+        "transport-specific",
+        "raw-hid",
+        "stateful-channel",
+        "user-presence"
+      ],
+      "sharedPrimitives": [
+        "ctap23-harness-command-fixtures",
+        "telesma-ctap-stack",
+        "ctap23-get-info-flow",
+        "ctap23-expected-status-classifier",
+        "ctap23-transport-environment",
+        "telesma-hid-transport"
+      ],
+      "implementationFiles": [
+        "conformance/ctap23/hid_1_p_01_10.go"
+      ],
+      "testFiles": [
+        "conformance/ctap23/hid_1_p_01_10_test.go"
+      ],
+      "status": "blocked",
+      "blockedReason": "TestContext exposes only CTAP CBOR; raw HID frames, channels, keepalive, cancellation, lock, and idle reads are unavailable"
+    },
+    {
+      "id": "ctap23-hid-1-p-11-f-4",
+      "source": "tests/CTAP2/Transports/hid-1.js",
+      "cases": [
+        "P-11",
+        "P-12",
+        "P-13",
+        "P-14",
+        "P-15",
+        "F-1",
+        "F-2",
+        "F-3",
+        "F-4"
+      ],
+      "dependsOn": [],
+      "helpers": [
+        "js/HID.js",
+        "js/CTAP2.js",
+        "js/meta.js",
+        "app/js/utils.js"
+      ],
+      "risk": [
+        "transport-specific",
+        "raw-hid",
+        "stateful-channel",
+        "user-presence"
+      ],
+      "sharedPrimitives": [
+        "ctap23-harness-command-fixtures",
+        "telesma-ctap-stack",
+        "ctap23-get-info-flow",
+        "ctap23-expected-status-classifier",
+        "ctap23-transport-environment",
+        "telesma-hid-transport"
+      ],
+      "implementationFiles": [
+        "conformance/ctap23/hid_1_p_11_f_4.go"
+      ],
+      "testFiles": [
+        "conformance/ctap23/hid_1_p_11_f_4_test.go"
+      ],
+      "status": "blocked",
+      "blockedReason": "TestContext exposes only CTAP CBOR; raw HID frames, channels, keepalive, cancellation, lock, and idle reads are unavailable"
+    },
+    {
+      "id": "ctap23-nfc-1",
+      "source": "tests/CTAP2/Transports/nfc-1.js",
+      "cases": [
+        "P-1",
+        "P-2",
+        "P-3",
+        "P-4",
+        "F-1",
+        "F-2",
+        "F-3",
+        "F-4"
+      ],
+      "dependsOn": [
+        "ctap23-authenticator-config"
+      ],
+      "helpers": [
+        "js/NFC.js",
+        "js/CTAP2.js",
+        "js/AuthenticatorConfigUtils.js",
+        "js/meta.js",
+        "app/js/utils.js"
+      ],
+      "risk": [
+        "transport-specific",
+        "raw-apdu",
+        "config-mutation",
+        "credential-write",
+        "pin-uv"
+      ],
+      "sharedPrimitives": [
+        "ctap23-harness-command-fixtures",
+        "telesma-ctap-stack",
+        "ctap23-get-info-flow",
+        "ctap23-expected-status-classifier",
+        "ctap23-transport-environment",
+        "telesma-iso7816-apdu"
+      ],
+      "implementationFiles": [
+        "conformance/ctap23/nfc_1.go"
+      ],
+      "testFiles": [
+        "conformance/ctap23/nfc_1_test.go"
+      ],
+      "status": "blocked",
+      "blockedReason": "runtime does not expose SELECT responses, arbitrary short or extended APDUs, malformed APDUs, or status words"
+    },
+    {
+      "id": "ctap23-ble-1",
+      "source": "tests/CTAP2/Transports/ble-1.js",
+      "cases": [
+        "P-1",
+        "P-2",
+        "P-3",
+        "P-4",
+        "P-5",
+        "P-6",
+        "P-7",
+        "P-8",
+        "P-9",
+        "P-10"
+      ],
+      "dependsOn": [],
+      "helpers": [
+        "js/BLE.js",
+        "app/js/utils.js"
+      ],
+      "risk": [
+        "transport-specific",
+        "raw-ble",
+        "lexical-comment-marker"
+      ],
+      "sharedPrimitives": [
+        "ctap23-harness-command-fixtures",
+        "telesma-ctap-stack",
+        "ctap23-get-info-flow",
+        "ctap23-expected-status-classifier",
+        "ctap23-transport-environment"
+      ],
+      "implementationFiles": [
+        "conformance/ctap23/ble_1.go"
+      ],
+      "testFiles": [
+        "conformance/ctap23/ble_1_test.go"
+      ],
+      "status": "blocked",
+      "blockedReason": "no BLE opener, GATT discovery, or BLE CTAP framing boundary exists"
+    },
+    {
+      "id": "ctap23-authr-generic-1",
+      "source": "tests/CTAP2/Protocol/Authr-Generic-1.js",
+      "cases": [
+        "P-1",
+        "P-2",
+        "P-3",
+        "P-4",
+        "P-5"
+      ],
+      "dependsOn": [],
+      "helpers": [
+        "js/CTAP2.js"
+      ],
+      "risk": [],
+      "sharedPrimitives": [
+        "ctap23-harness-command-fixtures",
+        "telesma-ctap-stack",
+        "ctap23-get-info-flow",
+        "ctap23-expected-status-classifier"
+      ],
+      "implementationFiles": [
+        "conformance/ctap23/get_info.go",
+        "conformance/ctap23/get_info_metadata.go",
+        "conformance/ctap23/encrypted_state.go"
+      ],
+      "testFiles": [
+        "conformance/ctap23/get_info_test.go",
+        "conformance/ctap23/authr_generic_test.go"
+      ],
+      "status": "merged"
+    },
+    {
+      "id": "ctap23-authr-make-cred-req-1",
+      "source": "tests/CTAP2/Protocol/Make/Authr-MakeCred-Req-1.js",
+      "cases": [
+        "P-1",
+        "F-1",
+        "F-2",
+        "F-3",
+        "F-4",
+        "F-5",
+        "F-6",
+        "F-7",
+        "F-8",
+        "F-9",
+        "F-10",
+        "F-11"
+      ],
+      "dependsOn": [],
+      "helpers": [
+        "js/CTAP2.js",
+        "js/meta.js",
+        "app/js/utils.js"
+      ],
+      "risk": [
+        "destructive-reset",
+        "credential-write",
+        "pin-uv",
+        "user-presence",
+        "raw-cbor"
+      ],
+      "sharedPrimitives": [
+        "ctap23-harness-command-fixtures",
+        "telesma-ctap-stack",
+        "ctap23-get-info-flow",
+        "ctap23-expected-status-classifier"
+      ],
+      "implementationFiles": [
+        "conformance/ctap23/authr_make_cred_req_1.go"
+      ],
+      "testFiles": [
+        "conformance/ctap23/authr_make_cred_req_1_test.go"
+      ],
+      "status": "merged"
+    },
+    {
+      "id": "ctap23-authr-make-cred-req-2",
+      "source": "tests/CTAP2/Protocol/Make/Authr-MakeCred-Req-2.js",
+      "cases": [
+        "F-1",
+        "F-2",
+        "F-3"
+      ],
+      "dependsOn": [],
+      "helpers": [
+        "js/CTAP2.js",
+        "js/meta.js",
+        "app/js/utils.js"
+      ],
+      "risk": [
+        "destructive-reset",
+        "credential-write",
+        "pin-uv",
+        "user-presence",
+        "raw-cbor",
+        "lexical-comment-marker"
+      ],
+      "sharedPrimitives": [
+        "ctap23-harness-command-fixtures",
+        "telesma-ctap-stack",
+        "ctap23-get-info-flow",
+        "ctap23-expected-status-classifier"
+      ],
+      "implementationFiles": [
+        "conformance/ctap23/authr_make_cred_req_2.go"
+      ],
+      "testFiles": [
+        "conformance/ctap23/authr_make_cred_req_2_test.go"
+      ],
+      "status": "merged"
+    },
+    {
+      "id": "ctap23-authr-make-cred-req-3",
+      "source": "tests/CTAP2/Protocol/Make/Authr-MakeCred-Req-3.js",
+      "cases": [
+        "F-1",
+        "F-2",
+        "F-3",
+        "F-4"
+      ],
+      "dependsOn": [],
+      "helpers": [
+        "js/CTAP2.js",
+        "js/meta.js",
+        "app/js/utils.js"
+      ],
+      "risk": [
+        "destructive-reset",
+        "credential-write",
+        "pin-uv",
+        "user-presence",
+        "raw-cbor",
+        "lexical-comment-marker"
+      ],
+      "sharedPrimitives": [
+        "ctap23-harness-command-fixtures",
+        "telesma-ctap-stack",
+        "ctap23-get-info-flow",
+        "ctap23-expected-status-classifier"
+      ],
+      "implementationFiles": [
+        "conformance/ctap23/authr_make_cred_req_3.go"
+      ],
+      "testFiles": [
+        "conformance/ctap23/authr_make_cred_req_3_test.go"
+      ],
+      "status": "merged"
+    },
+    {
+      "id": "ctap23-authr-make-cred-req-4",
+      "source": "tests/CTAP2/Protocol/Make/Authr-MakeCred-Req-4.js",
+      "cases": [
+        "P-1",
+        "F-1",
+        "F-2",
+        "F-3",
+        "F-4",
+        "F-5",
+        "F-6",
+        "F-7"
+      ],
+      "dependsOn": [],
+      "helpers": [
+        "js/CTAP2.js",
+        "js/meta.js",
+        "app/js/utils.js"
+      ],
+      "risk": [
+        "destructive-reset",
+        "credential-write",
+        "pin-uv",
+        "user-presence",
+        "raw-cbor"
+      ],
+      "sharedPrimitives": [
+        "ctap23-harness-command-fixtures",
+        "telesma-ctap-stack",
+        "ctap23-get-info-flow",
+        "ctap23-expected-status-classifier"
+      ],
+      "implementationFiles": [
+        "conformance/ctap23/authr_make_cred_req_4.go"
+      ],
+      "testFiles": [
+        "conformance/ctap23/authr_make_cred_req_4_test.go"
+      ],
+      "status": "merged"
+    },
+    {
+      "id": "ctap23-authr-make-cred-req-5-positive",
+      "source": "tests/CTAP2/Protocol/Make/Authr-MakeCred-Req-5.js",
+      "cases": [
+        "P-1",
+        "P-2",
+        "P-3"
+      ],
+      "dependsOn": [],
+      "helpers": [
+        "js/CTAP2.js",
+        "js/meta.js",
+        "app/js/utils.js"
+      ],
+      "risk": [
+        "destructive-reset",
+        "credential-write",
+        "pin-uv",
+        "user-presence",
+        "raw-cbor"
+      ],
+      "sharedPrimitives": [
+        "ctap23-harness-command-fixtures",
+        "telesma-ctap-stack",
+        "ctap23-get-info-flow",
+        "ctap23-expected-status-classifier"
+      ],
+      "implementationFiles": [
+        "conformance/ctap23/authr_make_cred_req_5_positive.go"
+      ],
+      "testFiles": [
+        "conformance/ctap23/authr_make_cred_req_5_positive_test.go"
+      ],
+      "status": "merged"
+    },
+    {
+      "id": "ctap23-authr-make-cred-req-5-attestation-type",
+      "source": "tests/CTAP2/Protocol/Make/Authr-MakeCred-Req-5.js",
+      "cases": [
+        "P-4"
+      ],
+      "dependsOn": [],
+      "helpers": [
+        "js/CTAP2.js",
+        "js/meta.js",
+        "app/js/utils.js"
+      ],
+      "risk": [
+        "destructive-reset",
+        "credential-write",
+        "pin-uv",
+        "user-presence",
+        "raw-cbor"
+      ],
+      "sharedPrimitives": [
+        "ctap23-harness-command-fixtures",
+        "telesma-ctap-stack",
+        "ctap23-get-info-flow",
+        "ctap23-expected-status-classifier"
+      ],
+      "implementationFiles": [
+        "conformance/ctap23/authr_make_cred_req_5_attestation_type.go"
+      ],
+      "testFiles": [
+        "conformance/ctap23/authr_make_cred_req_5_attestation_type_test.go"
+      ],
+      "status": "merged"
+    },
+    {
+      "id": "ctap23-authr-make-cred-req-5-negative",
+      "source": "tests/CTAP2/Protocol/Make/Authr-MakeCred-Req-5.js",
+      "cases": [
+        "F-1",
+        "F-2",
+        "F-3",
+        "F-5",
+        "F-6",
+        "F-7"
+      ],
+      "dependsOn": [],
+      "helpers": [
+        "js/CTAP2.js",
+        "js/meta.js",
+        "app/js/utils.js"
+      ],
+      "risk": [
+        "destructive-reset",
+        "credential-write",
+        "pin-uv",
+        "user-presence",
+        "raw-cbor"
+      ],
+      "sharedPrimitives": [
+        "ctap23-harness-command-fixtures",
+        "telesma-ctap-stack",
+        "ctap23-get-info-flow",
+        "ctap23-expected-status-classifier"
+      ],
+      "implementationFiles": [
+        "conformance/ctap23/authr_make_cred_req_5_negative.go"
+      ],
+      "testFiles": [
+        "conformance/ctap23/authr_make_cred_req_5_negative_test.go"
+      ],
+      "status": "merged"
+    },
+    {
+      "id": "ctap23-authr-make-cred-req-6",
+      "source": "tests/CTAP2/Protocol/Make/Authr-MakeCred-Req-6.js",
+      "cases": [
+        "P-1",
+        "P-2",
+        "P-3",
+        "F-1"
+      ],
+      "dependsOn": [],
+      "helpers": [
+        "js/CTAP2.js",
+        "js/meta.js",
+        "app/js/utils.js"
+      ],
+      "risk": [
+        "destructive-reset",
+        "credential-write",
+        "pin-uv",
+        "user-presence",
+        "raw-cbor"
+      ],
+      "sharedPrimitives": [
+        "ctap23-harness-command-fixtures",
+        "telesma-ctap-stack",
+        "ctap23-get-info-flow",
+        "ctap23-expected-status-classifier"
+      ],
+      "implementationFiles": [
+        "conformance/ctap23/authr_make_cred_req_6.go"
+      ],
+      "testFiles": [
+        "conformance/ctap23/authr_make_cred_req_6_test.go"
+      ],
+      "status": "merged"
+    },
+    {
+      "id": "ctap23-authr-make-cred-resp-1",
+      "source": "tests/CTAP2/Protocol/Make/Authr-MakeCred-Resp-1.js",
+      "cases": [
+        "P-01",
+        "P-02",
+        "P-03",
+        "P-04",
+        "P-06",
+        "F-01"
+      ],
+      "dependsOn": [
+        "ctap23-authr-make-cred-req-1"
+      ],
+      "helpers": [
+        "js/CTAP2.js",
+        "js/meta.js",
+        "app/js/utils.js"
+      ],
+      "risk": [
+        "credential-write",
+        "pin-uv",
+        "metadata",
+        "response-validation",
+        "attestation-crypto",
+        "x509"
+      ],
+      "sharedPrimitives": [
+        "ctap23-harness-command-fixtures",
+        "telesma-ctap-stack",
+        "ctap23-get-info-flow",
+        "ctap23-expected-status-classifier",
+        "ctap23-metadata-input-contract"
+      ],
+      "implementationFiles": [
+        "conformance/ctap23/authr_make_cred_resp_1.go"
+      ],
+      "testFiles": [
+        "conformance/ctap23/authr_make_cred_resp_1_test.go"
+      ],
+      "status": "merged"
+    },
+    {
+      "id": "ctap23-authr-get-assertion-req-1",
+      "source": "tests/CTAP2/Protocol/Get/Authr-GetAssertion-Req-1.js",
+      "cases": [
+        "P-1",
+        "F-1",
+        "F-2",
+        "F-3",
+        "F-4",
+        "F-5",
+        "F-6"
+      ],
+      "dependsOn": [
+        "ctap23-authr-make-cred-req-1"
+      ],
+      "helpers": [
+        "js/CTAP2.js",
+        "js/meta.js",
+        "app/js/utils.js"
+      ],
+      "risk": [
+        "credential-write",
+        "pin-uv",
+        "user-presence",
+        "raw-cbor"
+      ],
+      "sharedPrimitives": [
+        "ctap23-harness-command-fixtures",
+        "telesma-ctap-stack",
+        "ctap23-get-info-flow",
+        "ctap23-expected-status-classifier"
+      ],
+      "implementationFiles": [
+        "conformance/ctap23/authr_get_assertion_req_1.go"
+      ],
+      "testFiles": [
+        "conformance/ctap23/authr_get_assertion_req_1_test.go"
+      ],
+      "status": "merged"
+    },
+    {
+      "id": "ctap23-authr-get-assertion-req-2",
+      "source": "tests/CTAP2/Protocol/Get/Authr-GetAssertion-Req-2.js",
+      "cases": [
+        "P-1",
+        "P-2",
+        "P-3"
+      ],
+      "dependsOn": [
+        "ctap23-authr-make-cred-req-1"
+      ],
+      "helpers": [
+        "js/CTAP2.js",
+        "app/js/utils.js"
+      ],
+      "risk": [
+        "credential-write",
+        "pin-uv",
+        "user-presence",
+        "built-in-uv",
+        "interaction"
+      ],
+      "sharedPrimitives": [
+        "ctap23-harness-command-fixtures",
+        "telesma-ctap-stack",
+        "ctap23-get-info-flow",
+        "ctap23-expected-status-classifier",
+        "ctap23-client-pin-environment"
+      ],
+      "implementationFiles": [
+        "conformance/ctap23/authr_get_assertion_req_2.go"
+      ],
+      "testFiles": [
+        "conformance/ctap23/authr_get_assertion_req_2_test.go"
+      ],
+      "status": "merged"
+    },
+    {
+      "id": "ctap23-authr-get-assertion-req-3",
+      "source": "tests/CTAP2/Protocol/Get/Authr-GetAssertion-Req-3.js",
+      "cases": [
+        "P-1",
+        "F-1",
+        "F-2",
+        "F-3",
+        "F-4",
+        "F-5",
+        "F-6"
+      ],
+      "dependsOn": [
+        "ctap23-authr-make-cred-req-1",
+        "ctap23-authr-get-assertion-req-1"
+      ],
+      "helpers": [
+        "js/CTAP2.js",
+        "js/meta.js",
+        "app/js/utils.js"
+      ],
+      "risk": [
+        "credential-write",
+        "pin-uv",
+        "user-presence",
+        "raw-cbor"
+      ],
+      "sharedPrimitives": [
+        "ctap23-harness-command-fixtures",
+        "telesma-ctap-stack",
+        "ctap23-get-info-flow",
+        "ctap23-expected-status-classifier"
+      ],
+      "implementationFiles": [
+        "conformance/ctap23/authr_get_assertion_req_3.go"
+      ],
+      "testFiles": [
+        "conformance/ctap23/authr_get_assertion_req_3_test.go"
+      ],
+      "status": "merged"
+    },
+    {
+      "id": "ctap23-authr-get-assertion-resp-1",
+      "source": "tests/CTAP2/Protocol/Get/Authr-GetAssertion-Resp-1.js",
+      "cases": [
+        "P-1",
+        "P-2",
+        "P-3",
+        "P-4",
+        "F-1"
+      ],
+      "dependsOn": [
+        "ctap23-authr-get-assertion-req-1"
+      ],
+      "helpers": [
+        "js/CTAP2.js",
+        "js/meta.js",
+        "app/js/utils.js"
+      ],
+      "risk": [
+        "credential-write",
+        "pin-uv",
+        "signature-crypto",
+        "counter-state",
+        "response-validation"
+      ],
+      "sharedPrimitives": [
+        "ctap23-harness-command-fixtures",
+        "telesma-ctap-stack",
+        "ctap23-get-info-flow",
+        "ctap23-expected-status-classifier",
+        "ctap23-client-pin-environment",
+        "ctap23-metadata-registry-values"
+      ],
+      "implementationFiles": [
+        "conformance/ctap23/authr_get_assertion_resp_1.go"
+      ],
+      "testFiles": [
+        "conformance/ctap23/authr_get_assertion_resp_1_test.go"
+      ],
+      "status": "merged"
+    },
+    {
+      "id": "ctap23-authr-reset-1",
+      "source": "tests/CTAP2/Protocol/Reset/Authr-Reset-1.js",
+      "cases": [
+        "P-1"
+      ],
+      "dependsOn": [],
+      "helpers": [
+        "js/CTAP2.js"
+      ],
+      "risk": [
+        "destructive-reset"
+      ],
+      "sharedPrimitives": [
+        "ctap23-harness-command-fixtures",
+        "telesma-ctap-stack",
+        "ctap23-get-info-flow",
+        "ctap23-expected-status-classifier",
+        "ctap23-persistent-token-reset-environment"
+      ],
+      "implementationFiles": [
+        "conformance/ctap23/authr_reset_1.go"
+      ],
+      "testFiles": [
+        "conformance/ctap23/authr_reset_1_test.go"
+      ],
+      "status": "review"
+    },
+    {
+      "id": "ctap23-resident-key",
+      "source": "tests/CTAP2/Protocol/Options/ResidentKey.js",
+      "cases": [
+        "P-1",
+        "P-2",
+        "P-3",
+        "P-4",
+        "P-5",
+        "P-6"
+      ],
+      "dependsOn": [
+        "ctap23-authr-make-cred-req-1"
+      ],
+      "helpers": [
+        "js/CTAP2.js"
+      ],
+      "risk": [
+        "credential-write",
+        "authenticator-state"
+      ],
+      "sharedPrimitives": [
+        "ctap23-harness-command-fixtures",
+        "telesma-ctap-stack",
+        "ctap23-get-info-flow",
+        "ctap23-expected-status-classifier",
+        "ctap23-transport-environment",
+        "ctap23-feature-profile-environment"
+      ],
+      "implementationFiles": [
+        "conformance/ctap23/resident_key.go"
+      ],
+      "testFiles": [
+        "conformance/ctap23/resident_key_test.go"
+      ],
+      "status": "blocked",
+      "blockedReason": "the suite has no explicit authenticator-display capability, which is required to select the mutually exclusive no-display and display case groups without guessing"
+    },
+    {
+      "id": "ctap23-enteprise-attestation",
+      "source": "tests/CTAP2/Protocol/Options/EntepriseAttestation.js",
+      "cases": [
+        "P-1",
+        "P-2",
+        "P-3",
+        "F-1",
+        "F-2",
+        "F-3",
+        "F-4",
+        "F-5",
+        "F-6"
+      ],
+      "dependsOn": [
+        "ctap23-authr-make-cred-req-1"
+      ],
+      "helpers": [
+        "js/CTAP2.js"
+      ],
+      "risk": [
+        "credential-write",
+        "authenticator-state"
+      ],
+      "sharedPrimitives": [
+        "ctap23-harness-command-fixtures",
+        "telesma-ctap-stack",
+        "ctap23-get-info-flow",
+        "ctap23-expected-status-classifier",
+        "ctap23-transport-environment",
+        "ctap23-persistent-token-reset-environment"
+      ],
+      "implementationFiles": [
+        "conformance/ctap23/enteprise_attestation.go"
+      ],
+      "testFiles": [
+        "conformance/ctap23/enteprise_attestation_test.go"
+      ],
+      "status": "blocked"
+    },
+    {
+      "id": "ctap23-hmac-secret",
+      "source": "tests/CTAP2/Protocol/Extensions/hmacSecret.js",
+      "cases": [
+        "P-1",
+        "P-2",
+        "P-3",
+        "F-1",
+        "F-2",
+        "F-3"
+      ],
+      "dependsOn": [
+        "ctap23-authr-make-cred-req-1",
+        "ctap23-authr-get-assertion-req-1",
+        "ctap23-authr-client-pin2-get-pin-uv-auth-token-using-pin-with-permissions",
+        "ctap23-authr-client-pin1-key-agreement"
+      ],
+      "helpers": [
+        "js/CTAP2.js",
+        "js/ClientPin1Utils.js",
+        "js/meta.js",
+        "app/js/utils.js"
+      ],
+      "risk": [
+        "credential-write",
+        "pin-uv",
+        "cryptography",
+        "secret-output",
+        "raw-cbor",
+        "wire-presence",
+        "parameterized-marker"
+      ],
+      "sharedPrimitives": [
+        "ctap23-harness-command-fixtures",
+        "telesma-ctap-stack",
+        "ctap23-get-info-flow",
+        "ctap23-expected-status-classifier",
+        "ctap23-feature-profile-environment"
+      ],
+      "implementationFiles": [
+        "conformance/ctap23/hmac_secret.go"
+      ],
+      "testFiles": [
+        "conformance/ctap23/hmac_secret_test.go"
+      ],
+      "status": "blocked",
+      "blockedReason": "suite cannot require or observe PIN/UV protocol 1 and lacks a presence-preserving authenticator-data extension view"
+    },
+    {
+      "id": "ctap23-hmac-secret2",
+      "source": "tests/CTAP2/Protocol/Extensions/hmacSecret2.js",
+      "cases": [
+        "P-1",
+        "P-2",
+        "P-3",
+        "F-1",
+        "F-2",
+        "F-3"
+      ],
+      "dependsOn": [
+        "ctap23-authr-make-cred-req-1",
+        "ctap23-authr-get-assertion-req-1",
+        "ctap23-authr-client-pin2-get-pin-uv-auth-token-using-pin-with-permissions",
+        "ctap23-authr-client-pin2-key-agreement"
+      ],
+      "helpers": [
+        "js/CTAP2.js",
+        "js/ClientPin2Utils.js",
+        "js/meta.js",
+        "app/js/utils.js"
+      ],
+      "risk": [
+        "credential-write",
+        "pin-uv",
+        "cryptography",
+        "secret-output",
+        "raw-cbor",
+        "wire-presence",
+        "parameterized-marker"
+      ],
+      "sharedPrimitives": [
+        "ctap23-harness-command-fixtures",
+        "telesma-ctap-stack",
+        "ctap23-get-info-flow",
+        "ctap23-expected-status-classifier",
+        "ctap23-feature-profile-environment"
+      ],
+      "implementationFiles": [
+        "conformance/ctap23/hmac_secret2.go"
+      ],
+      "testFiles": [
+        "conformance/ctap23/hmac_secret2_test.go"
+      ],
+      "status": "blocked",
+      "blockedReason": "suite cannot require or observe PIN/UV protocol 2 and lacks a presence-preserving authenticator-data extension view"
+    },
+    {
+      "id": "ctap23-hmac-secret-mc",
+      "source": "tests/CTAP2/Protocol/Extensions/hmacSecretMC.js",
+      "cases": [
+        "P-1",
+        "P-2",
+        "P-3",
+        "F-1",
+        "F-2",
+        "F-3",
+        "F-4"
+      ],
+      "dependsOn": [
+        "ctap23-authr-make-cred-req-1",
+        "ctap23-authr-get-assertion-req-1",
+        "ctap23-authr-client-pin2-get-pin-uv-auth-token-using-pin-with-permissions",
+        "ctap23-authr-client-pin1-key-agreement",
+        "ctap23-authr-client-pin2-key-agreement"
+      ],
+      "helpers": [
+        "js/CTAP2.js",
+        "js/ClientPin1Utils.js",
+        "js/ClientPin2Utils.js",
+        "js/meta.js",
+        "app/js/utils.js"
+      ],
+      "risk": [
+        "credential-write",
+        "pin-uv",
+        "cryptography",
+        "secret-output",
+        "raw-cbor",
+        "wire-presence",
+        "parameterized-marker",
+        "source-bug"
+      ],
+      "sharedPrimitives": [
+        "ctap23-harness-command-fixtures",
+        "telesma-ctap-stack",
+        "ctap23-get-info-flow",
+        "ctap23-expected-status-classifier",
+        "ctap23-feature-profile-environment"
+      ],
+      "implementationFiles": [
+        "conformance/ctap23/hmac_secret_mc.go"
+      ],
+      "testFiles": [
+        "conformance/ctap23/hmac_secret_mc_test.go"
+      ],
+      "status": "blocked",
+      "blockedReason": "protocol-aware crypto boundary is absent and the assigned source uses an undefined RP ID"
+    },
+    {
+      "id": "ctap23-cred-protect",
+      "source": "tests/CTAP2/Protocol/Extensions/credProtect.js",
+      "cases": [
+        "P-1",
+        "P-2",
+        "P-3",
+        "P-4"
+      ],
+      "dependsOn": [
+        "ctap23-authr-make-cred-req-1",
+        "ctap23-authr-get-assertion-req-1",
+        "ctap23-authr-client-pin2-get-pin-uv-auth-token-using-pin-with-permissions",
+        "ctap23-authenticator-config",
+        "ctap23-credential-management-enumerate-credentials"
+      ],
+      "helpers": [
+        "js/CTAP2.js",
+        "js/AuthenticatorConfigUtils.js",
+        "js/CredMan2.1.js",
+        "js/ClientPin2Utils.js",
+        "js/meta.js",
+        "app/js/utils.js"
+      ],
+      "risk": [
+        "credential-write",
+        "destructive-reset",
+        "pin-uv",
+        "config-mutation",
+        "credential-management",
+        "stateful"
+      ],
+      "sharedPrimitives": [
+        "ctap23-harness-command-fixtures",
+        "telesma-ctap-stack",
+        "ctap23-get-info-flow",
+        "ctap23-expected-status-classifier",
+        "ctap23-feature-profile-environment"
+      ],
+      "implementationFiles": [
+        "conformance/ctap23/cred_protect.go"
+      ],
+      "testFiles": [
+        "conformance/ctap23/cred_protect_test.go"
+      ],
+      "status": "blocked",
+      "blockedReason": "alwaysUV mutation and restoration are not exposed through a runtime-coherent conformance callback"
+    },
+    {
+      "id": "ctap23-cred-blob",
+      "source": "tests/CTAP2/Protocol/Extensions/credBlob.js",
+      "cases": [
+        "P-1",
+        "P-2",
+        "P-3"
+      ],
+      "dependsOn": [
+        "ctap23-authr-make-cred-req-1",
+        "ctap23-authr-get-assertion-req-1",
+        "ctap23-authr-client-pin2-get-pin-uv-auth-token-using-pin-with-permissions"
+      ],
+      "helpers": [
+        "js/CTAP2.js",
+        "js/meta.js",
+        "app/js/utils.js"
+      ],
+      "risk": [
+        "credential-write",
+        "pin-uv",
+        "opaque-secret",
+        "wire-presence"
+      ],
+      "sharedPrimitives": [
+        "ctap23-harness-command-fixtures",
+        "telesma-ctap-stack",
+        "ctap23-get-info-flow",
+        "ctap23-expected-status-classifier",
+        "ctap23-feature-profile-environment"
+      ],
+      "implementationFiles": [
+        "conformance/ctap23/cred_blob.go"
+      ],
+      "testFiles": [
+        "conformance/ctap23/cred_blob_test.go"
+      ],
+      "status": "blocked"
+    },
+    {
+      "id": "ctap23-large-blob",
+      "source": "tests/CTAP2/Protocol/Extensions/largeBlob.js",
+      "cases": [
+        "P-1",
+        "P-2",
+        "P-3",
+        "P-4",
+        "P-5",
+        "P-6",
+        "P-7",
+        "F-1",
+        "F-2",
+        "F-3",
+        "F-4",
+        "F-5"
+      ],
+      "dependsOn": [
+        "ctap23-authr-make-cred-req-1",
+        "ctap23-authr-get-assertion-req-1",
+        "ctap23-authr-client-pin2-get-pin-uv-auth-token-using-pin-with-permissions"
+      ],
+      "helpers": [
+        "js/CTAP2.js",
+        "js/meta.js",
+        "app/js/utils.js"
+      ],
+      "risk": [
+        "credential-write",
+        "pin-uv",
+        "opaque-secret",
+        "raw-cbor",
+        "wire-presence",
+        "stateful"
+      ],
+      "sharedPrimitives": [
+        "ctap23-harness-command-fixtures",
+        "telesma-ctap-stack",
+        "ctap23-get-info-flow",
+        "ctap23-expected-status-classifier",
+        "ctap23-feature-profile-environment"
+      ],
+      "implementationFiles": [
+        "conformance/ctap23/large_blob.go"
+      ],
+      "testFiles": [
+        "conformance/ctap23/large_blob_test.go"
+      ],
+      "status": "blocked",
+      "blockedReason": "default large-blob behavior requires an injected tri-state declaration"
+    },
+    {
+      "id": "ctap23-large-blob-key",
+      "source": "tests/CTAP2/Protocol/Extensions/largeBlobKey.js",
+      "cases": [
+        "P-1",
+        "P-2",
+        "F-1",
+        "F-2",
+        "F-3",
+        "F-4"
+      ],
+      "dependsOn": [
+        "ctap23-authr-make-cred-req-1",
+        "ctap23-authr-get-assertion-req-1",
+        "ctap23-authr-client-pin2-get-pin-uv-auth-token-using-pin-with-permissions"
+      ],
+      "helpers": [
+        "js/CTAP2.js",
+        "js/meta.js",
+        "app/js/utils.js"
+      ],
+      "risk": [
+        "credential-write",
+        "pin-uv",
+        "secret-key",
+        "raw-cbor",
+        "wire-presence",
+        "source-bug"
+      ],
+      "sharedPrimitives": [
+        "ctap23-harness-command-fixtures",
+        "telesma-ctap-stack",
+        "ctap23-get-info-flow",
+        "ctap23-expected-status-classifier",
+        "ctap23-feature-profile-environment"
+      ],
+      "implementationFiles": [
+        "conformance/ctap23/large_blob_key.go"
+      ],
+      "testFiles": [
+        "conformance/ctap23/large_blob_key_test.go"
+      ],
+      "status": "blocked",
+      "blockedReason": "the assigned source compares an undefined value; normative fresh-key inequality requires adjudication"
+    },
+    {
+      "id": "ctap23-min-pinlength",
+      "source": "tests/CTAP2/Protocol/Extensions/minPINLength.js",
+      "cases": [
+        "P-1",
+        "F-1"
+      ],
+      "dependsOn": [
+        "ctap23-authr-make-cred-req-1",
+        "ctap23-authr-get-assertion-req-1",
+        "ctap23-authr-client-pin2-get-pin-uv-auth-token-using-pin-with-permissions",
+        "ctap23-authenticator-config"
+      ],
+      "helpers": [
+        "js/CTAP2.js",
+        "js/AuthenticatorConfigUtils.js",
+        "js/ClientPin2Utils.js",
+        "js/meta.js",
+        "app/js/utils.js"
+      ],
+      "risk": [
+        "credential-write",
+        "pin-uv",
+        "config-mutation",
+        "raw-cbor",
+        "wire-presence",
+        "source-bug"
+      ],
+      "sharedPrimitives": [
+        "ctap23-harness-command-fixtures",
+        "telesma-ctap-stack",
+        "ctap23-get-info-flow",
+        "ctap23-expected-status-classifier",
+        "ctap23-feature-profile-environment"
+      ],
+      "implementationFiles": [
+        "conformance/ctap23/min_pinlength.go"
+      ],
+      "testFiles": [
+        "conformance/ctap23/min_pinlength_test.go"
+      ],
+      "status": "blocked",
+      "blockedReason": "runtime-coherent minimum-PIN RPID mutation and reset are absent, and the assigned source uses undefined options"
+    },
+    {
+      "id": "ctap23-pin-complexity-policy",
+      "source": "tests/CTAP2/Protocol/Extensions/pinComplexityPolicy.js",
+      "cases": [
+        "P-1",
+        "P-2"
+      ],
+      "dependsOn": [
+        "ctap23-authr-make-cred-req-1",
+        "ctap23-authr-get-assertion-req-1",
+        "ctap23-authr-client-pin2-get-pin-uv-auth-token-using-pin-with-permissions",
+        "ctap23-authenticator-config"
+      ],
+      "helpers": [
+        "js/CTAP2.js",
+        "js/AuthenticatorConfigUtils.js",
+        "js/ClientPin2Utils.js",
+        "js/meta.js",
+        "app/js/utils.js"
+      ],
+      "risk": [
+        "credential-write",
+        "pin-uv",
+        "config-mutation",
+        "raw-cbor",
+        "wire-presence",
+        "source-bug"
+      ],
+      "sharedPrimitives": [
+        "ctap23-harness-command-fixtures",
+        "telesma-ctap-stack",
+        "ctap23-get-info-flow",
+        "ctap23-expected-status-classifier",
+        "ctap23-feature-profile-environment"
+      ],
+      "implementationFiles": [
+        "conformance/ctap23/pin_complexity_policy.go"
+      ],
+      "testFiles": [
+        "conformance/ctap23/pin_complexity_policy_test.go"
+      ],
+      "status": "blocked",
+      "blockedReason": "runtime-coherent RPID policy mutation and reset are absent, and the assigned source uses undefined options"
+    },
+    {
+      "id": "ctap23-third-party-payment",
+      "source": "tests/CTAP2/Protocol/Extensions/thirdPartyPayment.js",
+      "cases": [
+        "P-1",
+        "P-2",
+        "F-1"
+      ],
+      "dependsOn": [
+        "ctap23-authr-make-cred-req-1",
+        "ctap23-authr-get-assertion-req-1",
+        "ctap23-authr-client-pin2-get-pin-uv-auth-token-using-pin-with-permissions"
+      ],
+      "helpers": [
+        "js/CTAP2.js",
+        "js/meta.js",
+        "app/js/utils.js"
+      ],
+      "risk": [
+        "credential-write",
+        "pin-uv",
+        "stateful",
+        "wire-presence"
+      ],
+      "sharedPrimitives": [
+        "ctap23-harness-command-fixtures",
+        "telesma-ctap-stack",
+        "ctap23-get-info-flow",
+        "ctap23-expected-status-classifier",
+        "ctap23-feature-profile-environment"
+      ],
+      "implementationFiles": [
+        "conformance/ctap23/third_party_payment.go"
+      ],
+      "testFiles": [
+        "conformance/ctap23/third_party_payment_test.go"
+      ],
+      "status": "blocked"
+    },
+    {
+      "id": "ctap23-uvm",
+      "source": "tests/CTAP2/Protocol/Extensions/uvm.js",
+      "cases": [
+        "P-1"
+      ],
+      "dependsOn": [
+        "ctap23-authr-make-cred-req-1",
+        "ctap23-authr-get-assertion-req-1",
+        "ctap23-authr-client-pin2-get-pin-uv-auth-token-using-uv-with-permissions"
+      ],
+      "helpers": [
+        "js/CTAP2.js",
+        "js/meta.js",
+        "app/js/utils.js"
+      ],
+      "risk": [
+        "credential-write",
+        "pin-uv",
+        "raw-cbor",
+        "wire-presence",
+        "metadata-registry"
+      ],
+      "sharedPrimitives": [
+        "ctap23-harness-command-fixtures",
+        "telesma-ctap-stack",
+        "ctap23-get-info-flow",
+        "ctap23-expected-status-classifier",
+        "ctap23-feature-profile-environment"
+      ],
+      "implementationFiles": [
+        "conformance/ctap23/uvm.go"
+      ],
+      "testFiles": [
+        "conformance/ctap23/uvm_test.go"
+      ],
+      "status": "blocked",
+      "blockedReason": "typed extension API has no UVM fields and the built-in UV permission environment is not yet available"
+    },
+    {
+      "id": "ctap23-authr-client-pin1-key-agreement",
+      "source": "tests/CTAP2/Protocol/ClientPin/ClientPin1/Authr-ClientPin1-KeyAgreement.js",
+      "cases": [
+        "P-1"
+      ],
+      "dependsOn": [],
+      "helpers": [
+        "js/meta.js",
+        "js/CTAP2.js",
+        "js/ClientPin1Utils.js"
+      ],
+      "risk": [
+        "destructive-reset",
+        "raw-response",
+        "pin-uv"
+      ],
+      "sharedPrimitives": [
+        "ctap23-harness-command-fixtures",
+        "telesma-ctap-stack",
+        "ctap23-get-info-flow",
+        "ctap23-expected-status-classifier",
+        "ctap23-transport-environment",
+        "ctap23-feature-profile-environment",
+        "ctap23-client-pin-key-agreement-wire",
+        "ctap23-persistent-token-reset-environment"
+      ],
+      "implementationFiles": [
+        "conformance/ctap23/authr_client_pin1_key_agreement.go"
+      ],
+      "testFiles": [
+        "conformance/ctap23/authr_client_pin1_key_agreement_test.go"
+      ],
+      "status": "merged"
+    },
+    {
+      "id": "ctap23-authr-client-pin1-new-pin",
+      "source": "tests/CTAP2/Protocol/ClientPin/ClientPin1/Authr-ClientPin1-NewPin.js",
+      "cases": [
+        "P-1",
+        "P-2",
+        "P-3",
+        "P-4",
+        "P-5",
+        "P-6",
+        "F-1"
+      ],
+      "dependsOn": [
+        "ctap23-authr-client-pin1-key-agreement"
+      ],
+      "helpers": [
+        "js/meta.js",
+        "js/CTAP2.js",
+        "js/ClientPin1Utils.js"
+      ],
+      "risk": [
+        "pin-state",
+        "pin-uv",
+        "secret-material"
+      ],
+      "sharedPrimitives": [
+        "ctap23-harness-command-fixtures",
+        "telesma-ctap-stack",
+        "ctap23-get-info-flow",
+        "ctap23-expected-status-classifier",
+        "ctap23-client-pin-environment",
+        "ctap23-transport-environment",
+        "ctap23-feature-profile-environment",
+        "ctap23-persistent-token-reset-environment"
+      ],
+      "implementationFiles": [
+        "conformance/ctap23/authr_client_pin1_new_pin.go"
+      ],
+      "testFiles": [
+        "conformance/ctap23/authr_client_pin1_new_pin_test.go"
+      ],
+      "status": "merged"
+    },
+    {
+      "id": "ctap23-authr-client-pin1-pin-policy",
+      "source": "tests/CTAP2/Protocol/ClientPin/ClientPin1/Authr-ClientPin1-PinPolicy.js",
+      "cases": [
+        "P-1",
+        "F-1",
+        "F-2",
+        "F-3",
+        "F-4"
+      ],
+      "dependsOn": [
+        "ctap23-authr-client-pin1-key-agreement"
+      ],
+      "helpers": [
+        "js/meta.js",
+        "js/CTAP2.js",
+        "js/ClientPin1Utils.js"
+      ],
+      "risk": [
+        "pin-state",
+        "pin-uv",
+        "secret-material"
+      ],
+      "sharedPrimitives": [
+        "ctap23-harness-command-fixtures",
+        "telesma-ctap-stack",
+        "ctap23-get-info-flow",
+        "ctap23-expected-status-classifier",
+        "ctap23-client-pin-environment",
+        "ctap23-transport-environment",
+        "ctap23-feature-profile-environment",
+        "ctap23-persistent-token-reset-environment"
+      ],
+      "implementationFiles": [
+        "conformance/ctap23/authr_client_pin1_pin_policy.go"
+      ],
+      "testFiles": [
+        "conformance/ctap23/authr_client_pin1_pin_policy_test.go"
+      ],
+      "status": "merged"
+    },
+    {
+      "id": "ctap23-authr-client-pin1-get-retries",
+      "source": "tests/CTAP2/Protocol/ClientPin/ClientPin1/Authr-ClientPin1-GetRetries.js",
+      "cases": [
+        "P-1",
+        "P-2",
+        "P-3",
+        "P-4"
+      ],
+      "dependsOn": [],
+      "helpers": [
+        "js/meta.js",
+        "js/CTAP2.js",
+        "js/ClientPin1Utils.js"
+      ],
+      "risk": [
+        "pin-state",
+        "pin-uv",
+        "secret-material"
+      ],
+      "sharedPrimitives": [
+        "ctap23-harness-command-fixtures",
+        "telesma-ctap-stack",
+        "ctap23-get-info-flow",
+        "ctap23-expected-status-classifier",
+        "ctap23-transport-environment",
+        "ctap23-feature-profile-environment",
+        "ctap23-persistent-token-reset-environment"
+      ],
+      "implementationFiles": [
+        "conformance/ctap23/authr_client_pin1_get_retries.go"
+      ],
+      "testFiles": [
+        "conformance/ctap23/authr_client_pin1_get_retries_test.go"
+      ],
+      "status": "merged"
+    },
+    {
+      "id": "ctap23-authr-client-pin2-key-agreement",
+      "source": "tests/CTAP2/Protocol/ClientPin/ClientPin2/Authr-ClientPin2-KeyAgreement.js",
+      "cases": [
+        "P-1"
+      ],
+      "dependsOn": [],
+      "helpers": [
+        "js/meta.js",
+        "js/CTAP2.js",
+        "js/ClientPin2Utils.js"
+      ],
+      "risk": [
+        "destructive-reset",
+        "raw-response",
+        "pin-uv"
+      ],
+      "sharedPrimitives": [
+        "ctap23-harness-command-fixtures",
+        "telesma-ctap-stack",
+        "ctap23-get-info-flow",
+        "ctap23-expected-status-classifier",
+        "ctap23-transport-environment",
+        "ctap23-feature-profile-environment",
+        "ctap23-client-pin-key-agreement-wire",
+        "ctap23-persistent-token-reset-environment"
+      ],
+      "implementationFiles": [
+        "conformance/ctap23/authr_client_pin2_key_agreement.go"
+      ],
+      "testFiles": [
+        "conformance/ctap23/authr_client_pin2_key_agreement_test.go"
+      ],
+      "status": "merged"
+    },
+    {
+      "id": "ctap23-authr-client-pin2-new-pin",
+      "source": "tests/CTAP2/Protocol/ClientPin/ClientPin2/Authr-ClientPin2-NewPin.js",
+      "cases": [
+        "P-1",
+        "P-2",
+        "P-3",
+        "P-4"
+      ],
+      "dependsOn": [
+        "ctap23-authr-client-pin2-key-agreement"
+      ],
+      "helpers": [
+        "js/meta.js",
+        "js/CTAP2.js",
+        "js/ClientPin2Utils.js"
+      ],
+      "risk": [
+        "pin-state",
+        "pin-uv",
+        "secret-material"
+      ],
+      "sharedPrimitives": [
+        "ctap23-harness-command-fixtures",
+        "telesma-ctap-stack",
+        "ctap23-get-info-flow",
+        "ctap23-expected-status-classifier",
+        "ctap23-client-pin-environment",
+        "ctap23-transport-environment",
+        "ctap23-feature-profile-environment",
+        "ctap23-persistent-token-reset-environment"
+      ],
+      "implementationFiles": [
+        "conformance/ctap23/authr_client_pin2_new_pin.go"
+      ],
+      "testFiles": [
+        "conformance/ctap23/authr_client_pin2_new_pin_test.go"
+      ],
+      "status": "merged"
+    },
+    {
+      "id": "ctap23-authr-client-pin2-get-pin-token",
+      "source": "tests/CTAP2/Protocol/ClientPin/ClientPin2/Authr-ClientPin2-GetPinToken.js",
+      "cases": [
+        "P-1",
+        "P-2",
+        "P-3",
+        "F-1",
+        "F-2",
+        "F-3",
+        "F-4",
+        "F-5"
+      ],
+      "dependsOn": [
+        "ctap23-authr-client-pin2-new-pin"
+      ],
+      "helpers": [
+        "js/meta.js",
+        "js/CTAP2.js",
+        "js/ClientPin2Utils.js",
+        "js/AuthenticatorConfigUtils.js"
+      ],
+      "risk": [
+        "pin-state",
+        "pin-uv",
+        "secret-material"
+      ],
+      "sharedPrimitives": [
+        "ctap23-harness-command-fixtures",
+        "telesma-ctap-stack",
+        "ctap23-get-info-flow",
+        "ctap23-expected-status-classifier",
+        "ctap23-client-pin-environment",
+        "ctap23-transport-environment",
+        "ctap23-feature-profile-environment",
+        "ctap23-persistent-token-reset-environment"
+      ],
+      "implementationFiles": [
+        "conformance/ctap23/authr_client_pin2_get_pin_token.go"
+      ],
+      "testFiles": [
+        "conformance/ctap23/authr_client_pin2_get_pin_token_test.go"
+      ],
+      "status": "merged"
+    },
+    {
+      "id": "ctap23-authr-client-pin2-get-pin-uv-auth-token-using-pin-with-permissions",
+      "source": "tests/CTAP2/Protocol/ClientPin/ClientPin2/Authr-ClientPin2-GetPinUvAuthTokenUsingPinWithPermissions.js",
+      "cases": [
+        "P-1",
+        "P-2",
+        "P-3",
+        "P-4",
+        "F-1"
+      ],
+      "dependsOn": [
+        "ctap23-authr-client-pin2-new-pin"
+      ],
+      "helpers": [
+        "js/meta.js",
+        "js/CTAP2.js",
+        "js/ClientPin2Utils.js",
+        "js/AuthenticatorConfigUtils.js"
+      ],
+      "risk": [
+        "pin-state",
+        "pin-uv",
+        "secret-material"
+      ],
+      "sharedPrimitives": [
+        "ctap23-harness-command-fixtures",
+        "telesma-ctap-stack",
+        "ctap23-get-info-flow",
+        "ctap23-expected-status-classifier",
+        "ctap23-client-pin-environment",
+        "ctap23-transport-environment",
+        "ctap23-feature-profile-environment",
+        "ctap23-persistent-token-reset-environment"
+      ],
+      "implementationFiles": [
+        "conformance/ctap23/authr_client_pin2_get_pin_uv_auth_token_using_pin_with_permissions.go"
+      ],
+      "testFiles": [
+        "conformance/ctap23/authr_client_pin2_get_pin_uv_auth_token_using_pin_with_permissions_test.go"
+      ],
+      "status": "review"
+    },
+    {
+      "id": "ctap23-authr-client-pin2-get-pin-uv-auth-token-using-uv-with-permissions",
+      "source": "tests/CTAP2/Protocol/ClientPin/ClientPin2/Authr-ClientPin2-GetPinUvAuthTokenUsingUvWithPermissions.js",
+      "cases": [
+        "P-1",
+        "P-2",
+        "P-3",
+        "P-4"
+      ],
+      "dependsOn": [
+        "ctap23-authr-client-pin2-key-agreement"
+      ],
+      "helpers": [
+        "js/meta.js",
+        "js/CTAP2.js",
+        "js/ClientPin2Utils.js"
+      ],
+      "risk": [
+        "pin-state",
+        "pin-uv",
+        "secret-material"
+      ],
+      "sharedPrimitives": [
+        "ctap23-harness-command-fixtures",
+        "telesma-ctap-stack",
+        "ctap23-get-info-flow",
+        "ctap23-expected-status-classifier",
+        "ctap23-client-pin-environment",
+        "ctap23-transport-environment",
+        "ctap23-feature-profile-environment",
+        "ctap23-persistent-token-reset-environment"
+      ],
+      "implementationFiles": [
+        "conformance/ctap23/authr_client_pin2_get_pin_uv_auth_token_using_uv_with_permissions.go"
+      ],
+      "testFiles": [
+        "conformance/ctap23/authr_client_pin2_get_pin_uv_auth_token_using_uv_with_permissions_test.go"
+      ],
+      "status": "active"
+    },
+    {
+      "id": "ctap23-authr-client-pin2-pin-policy",
+      "source": "tests/CTAP2/Protocol/ClientPin/ClientPin2/Authr-ClientPin2-PinPolicy.js",
+      "cases": [
+        "P-1",
+        "F-1",
+        "F-2",
+        "F-3",
+        "F-4",
+        "F-5"
+      ],
+      "dependsOn": [
+        "ctap23-authr-client-pin2-key-agreement"
+      ],
+      "helpers": [
+        "js/meta.js",
+        "js/CTAP2.js",
+        "js/ClientPin2Utils.js"
+      ],
+      "risk": [
+        "pin-state",
+        "pin-uv",
+        "secret-material"
+      ],
+      "sharedPrimitives": [
+        "ctap23-harness-command-fixtures",
+        "telesma-ctap-stack",
+        "ctap23-get-info-flow",
+        "ctap23-expected-status-classifier",
+        "ctap23-client-pin-environment",
+        "ctap23-transport-environment",
+        "ctap23-feature-profile-environment",
+        "ctap23-persistent-token-reset-environment"
+      ],
+      "implementationFiles": [
+        "conformance/ctap23/authr_client_pin2_pin_policy.go"
+      ],
+      "testFiles": [
+        "conformance/ctap23/authr_client_pin2_pin_policy_test.go"
+      ],
+      "status": "merged"
+    },
+    {
+      "id": "ctap23-authr-client-pin2-get-retries",
+      "source": "tests/CTAP2/Protocol/ClientPin/ClientPin2/Authr-ClientPin2-GetRetries.js",
+      "cases": [
+        "P-1",
+        "P-2",
+        "P-3",
+        "P-4",
+        "P-5"
+      ],
+      "dependsOn": [],
+      "helpers": [
+        "js/meta.js",
+        "js/CTAP2.js",
+        "js/ClientPin2Utils.js"
+      ],
+      "risk": [
+        "pin-state",
+        "pin-uv",
+        "secret-material"
+      ],
+      "sharedPrimitives": [
+        "ctap23-harness-command-fixtures",
+        "telesma-ctap-stack",
+        "ctap23-get-info-flow",
+        "ctap23-expected-status-classifier",
+        "ctap23-transport-environment",
+        "ctap23-feature-profile-environment",
+        "ctap23-persistent-token-reset-environment"
+      ],
+      "implementationFiles": [
+        "conformance/ctap23/authr_client_pin2_get_retries.go"
+      ],
+      "testFiles": [
+        "conformance/ctap23/authr_client_pin2_get_retries_test.go"
+      ],
+      "status": "merged"
+    },
+    {
+      "id": "ctap23-credential-management-enumerate-rps",
+      "source": "tests/CTAP2/Protocol/CredentialManagement/CredentialManagement-EnumerateRPs.js",
+      "cases": [
+        "P-1",
+        "P-2",
+        "P-3",
+        "P-4",
+        "P-5",
+        "P-6"
+      ],
+      "dependsOn": [
+        "ctap23-authr-make-cred-req-1"
+      ],
+      "helpers": [
+        "js/CTAP2.js",
+        "js/ClientPin2Utils.js",
+        "js/CredMan2.1.js",
+        "app/js/utils.js"
+      ],
+      "risk": [
+        "credential-write",
+        "pin-uv"
+      ],
+      "sharedPrimitives": [
+        "ctap23-harness-command-fixtures",
+        "telesma-ctap-stack",
+        "ctap23-get-info-flow",
+        "ctap23-expected-status-classifier",
+        "ctap23-feature-profile-environment",
+        "ctap23-persistent-token-reset-environment"
+      ],
+      "implementationFiles": [
+        "conformance/ctap23/credential_management_enumerate_rps.go"
+      ],
+      "testFiles": [
+        "conformance/ctap23/credential_management_enumerate_rps_test.go"
+      ],
+      "status": "blocked",
+      "blockedReason": "generic PIN-or-UV permission-token and discoverable-credential fixtures are not yet available"
+    },
+    {
+      "id": "ctap23-credential-management-enumerate-credentials",
+      "source": "tests/CTAP2/Protocol/CredentialManagement/CredentialManagement-EnumerateCredentials.js",
+      "cases": [
+        "P-1",
+        "P-2",
+        "P-3"
+      ],
+      "dependsOn": [
+        "ctap23-authr-make-cred-req-1"
+      ],
+      "helpers": [
+        "js/CTAP2.js",
+        "js/ClientPin2Utils.js",
+        "js/CredMan2.1.js",
+        "app/js/utils.js"
+      ],
+      "risk": [
+        "credential-write",
+        "pin-uv"
+      ],
+      "sharedPrimitives": [
+        "ctap23-harness-command-fixtures",
+        "telesma-ctap-stack",
+        "ctap23-get-info-flow",
+        "ctap23-expected-status-classifier",
+        "ctap23-feature-profile-environment",
+        "ctap23-persistent-token-reset-environment"
+      ],
+      "implementationFiles": [
+        "conformance/ctap23/credential_management_enumerate_credentials.go"
+      ],
+      "testFiles": [
+        "conformance/ctap23/credential_management_enumerate_credentials_test.go"
+      ],
+      "status": "blocked",
+      "blockedReason": "generic PIN-or-UV permission-token and discoverable-credential fixtures are not yet available"
+    },
+    {
+      "id": "ctap23-credential-management-update-and-delete",
+      "source": "tests/CTAP2/Protocol/CredentialManagement/CredentialManagement-UpdateAndDelete.js",
+      "cases": [
+        "P-1",
+        "P-2"
+      ],
+      "dependsOn": [
+        "ctap23-authr-make-cred-req-1"
+      ],
+      "helpers": [
+        "js/CTAP2.js",
+        "js/ClientPin2Utils.js",
+        "js/CredMan2.1.js",
+        "app/js/utils.js"
+      ],
+      "risk": [
+        "credential-write",
+        "pin-uv"
+      ],
+      "sharedPrimitives": [
+        "ctap23-harness-command-fixtures",
+        "telesma-ctap-stack",
+        "ctap23-get-info-flow",
+        "ctap23-expected-status-classifier",
+        "ctap23-feature-profile-environment",
+        "ctap23-persistent-token-reset-environment"
+      ],
+      "implementationFiles": [
+        "conformance/ctap23/credential_management_update_and_delete.go"
+      ],
+      "testFiles": [
+        "conformance/ctap23/credential_management_update_and_delete_test.go"
+      ],
+      "status": "blocked",
+      "blockedReason": "generic PIN-or-UV permission-token and discoverable-credential fixtures are not yet available"
+    },
+    {
+      "id": "ctap23-authenticator-config",
+      "source": "tests/CTAP2/Protocol/AuthenticatorConfig/AuthenticatorConfig.js",
+      "cases": [
+        "P-1",
+        "P-2",
+        "P-3",
+        "P-4",
+        "P-5",
+        "P-6",
+        "P-7"
+      ],
+      "dependsOn": [],
+      "helpers": [
+        "js/CTAP2.js",
+        "js/ClientPin2Utils.js",
+        "js/AuthenticatorConfigUtils.js",
+        "app/js/utils.js"
+      ],
+      "risk": [
+        "authenticator-state",
+        "pin-uv"
+      ],
+      "sharedPrimitives": [
+        "ctap23-harness-command-fixtures",
+        "telesma-ctap-stack",
+        "ctap23-get-info-flow",
+        "ctap23-expected-status-classifier",
+        "ctap23-feature-profile-environment",
+        "ctap23-persistent-token-reset-environment"
+      ],
+      "implementationFiles": [
+        "conformance/ctap23/authenticator_config.go"
+      ],
+      "testFiles": [
+        "conformance/ctap23/authenticator_config_test.go"
+      ],
+      "status": "blocked",
+      "blockedReason": "generic PIN-or-UV permission-token and reset/provision interaction environment are not yet available"
+    },
+    {
+      "id": "ctap23-bio-enroll-bio-mod-and-sensor-info",
+      "source": "tests/CTAP2/Protocol/BiometricEnrollment/BioEnroll-BioModAndSensorInfo.js",
+      "cases": [
+        "P-1",
+        "P-2"
+      ],
+      "dependsOn": [],
+      "helpers": [
+        "js/CTAP2.js",
+        "js/BioEnrollment2.1.js",
+        "app/js/utils.js"
+      ],
+      "risk": [
+        "destructive-reset",
+        "capability",
+        "response-validation"
+      ],
+      "sharedPrimitives": [
+        "ctap23-harness-command-fixtures",
+        "telesma-ctap-stack",
+        "ctap23-get-info-flow",
+        "ctap23-expected-status-classifier",
+        "ctap23-persistent-token-reset-environment"
+      ],
+      "implementationFiles": [
+        "conformance/ctap23/bio_enroll_bio_mod_and_sensor_info.go"
+      ],
+      "testFiles": [
+        "conformance/ctap23/bio_enroll_bio_mod_and_sensor_info_test.go"
+      ],
+      "status": "blocked",
+      "blockedReason": "reset and verification provisioning environment is not yet available"
+    },
+    {
+      "id": "ctap23-bio-enroll-enroll",
+      "source": "tests/CTAP2/Protocol/BiometricEnrollment/BioEnroll-Enroll.js",
+      "cases": [
+        "P-1",
+        "P-2"
+      ],
+      "dependsOn": [
+        "ctap23-authr-client-pin2-get-pin-uv-auth-token-using-uv-with-permissions"
+      ],
+      "helpers": [
+        "js/CTAP2.js",
+        "js/ClientPin2Utils.js",
+        "js/BioEnrollment2.1.js",
+        "app/js/utils.js"
+      ],
+      "risk": [
+        "biometric-state",
+        "interactive",
+        "pin-uv"
+      ],
+      "sharedPrimitives": [
+        "ctap23-harness-command-fixtures",
+        "telesma-ctap-stack",
+        "ctap23-get-info-flow",
+        "ctap23-expected-status-classifier",
+        "ctap23-persistent-token-reset-environment"
+      ],
+      "implementationFiles": [
+        "conformance/ctap23/bio_enroll_enroll.go"
+      ],
+      "testFiles": [
+        "conformance/ctap23/bio_enroll_enroll_test.go"
+      ],
+      "status": "blocked",
+      "blockedReason": "biometric capture interaction environment is not yet exposed to the suite"
+    },
+    {
+      "id": "ctap23-bio-enroll-enumerate-rename-remove",
+      "source": "tests/CTAP2/Protocol/BiometricEnrollment/BioEnroll-EnumerateRenameRemove.js",
+      "cases": [
+        "P-1",
+        "P-2",
+        "P-3"
+      ],
+      "dependsOn": [
+        "ctap23-authr-client-pin2-get-pin-uv-auth-token-using-uv-with-permissions"
+      ],
+      "helpers": [
+        "js/CTAP2.js",
+        "js/ClientPin2Utils.js",
+        "js/BioEnrollment2.1.js",
+        "app/js/utils.js"
+      ],
+      "risk": [
+        "biometric-state",
+        "interactive",
+        "pin-uv"
+      ],
+      "sharedPrimitives": [
+        "ctap23-harness-command-fixtures",
+        "telesma-ctap-stack",
+        "ctap23-get-info-flow",
+        "ctap23-expected-status-classifier",
+        "ctap23-persistent-token-reset-environment"
+      ],
+      "implementationFiles": [
+        "conformance/ctap23/bio_enroll_enumerate_rename_remove.go"
+      ],
+      "testFiles": [
+        "conformance/ctap23/bio_enroll_enumerate_rename_remove_test.go"
+      ],
+      "status": "blocked",
+      "blockedReason": "biometric capture interaction environment is not yet exposed to the suite"
+    },
+    {
+      "id": "ctap23-large-blobs-1",
+      "source": "tests/CTAP2/Protocol/LargeBlobs/LargeBlobs-1.js",
+      "cases": [
+        "P-1",
+        "P-2",
+        "P-3",
+        "P-4"
+      ],
+      "dependsOn": [],
+      "helpers": [
+        "js/CTAP2.js",
+        "js/ClientPin2Utils.js",
+        "js/LargeBlob2.1.js",
+        "app/js/utils.js"
+      ],
+      "risk": [
+        "destructive-reset",
+        "large-blob-write",
+        "pin-uv",
+        "stateful-command"
+      ],
+      "sharedPrimitives": [
+        "ctap23-harness-command-fixtures",
+        "telesma-ctap-stack",
+        "ctap23-get-info-flow",
+        "ctap23-expected-status-classifier",
+        "ctap23-feature-profile-environment",
+        "ctap23-persistent-token-reset-environment"
+      ],
+      "implementationFiles": [
+        "conformance/ctap23/large_blobs_1.go"
+      ],
+      "testFiles": [
+        "conformance/ctap23/large_blobs_1_test.go"
+      ],
+      "status": "blocked",
+      "blockedReason": "large-blob-write permission-token and reset/provision environment are not yet available"
+    },
+    {
+      "id": "ctap23-metadata-stmt-1-01-14",
+      "source": "tests/CTAP2/Metadata/Metadata-Stmt-1.js",
+      "cases": [
+        "P-1",
+        "P-2",
+        "P-3",
+        "P-4",
+        "P-5",
+        "P-6",
+        "P-7",
+        "P-8",
+        "P-11",
+        "P-13",
+        "P-14"
+      ],
+      "dependsOn": [],
+      "helpers": [
+        "js/meta.js",
+        "app/js/utils.js"
+      ],
+      "risk": [
+        "metadata-input",
+        "presence-sensitive",
+        "registry-validation"
+      ],
+      "sharedPrimitives": [
+        "ctap23-metadata-input-contract",
+        "ctap23-metadata-registry-values",
+        "telesma-mds-model"
+      ],
+      "implementationFiles": [
+        "conformance/ctap23/metadata_stmt_1_01_14.go"
+      ],
+      "testFiles": [
+        "conformance/ctap23/metadata_stmt_1_01_14_test.go"
+      ],
+      "status": "merged"
+    },
+    {
+      "id": "ctap23-metadata-stmt-1-15-24",
+      "source": "tests/CTAP2/Metadata/Metadata-Stmt-1.js",
+      "cases": [
+        "P-15",
+        "P-16",
+        "P-17",
+        "P-18",
+        "P-19",
+        "P-20",
+        "P-22",
+        "P-24"
+      ],
+      "dependsOn": [],
+      "helpers": [
+        "js/meta.js",
+        "app/js/utils.js"
+      ],
+      "risk": [
+        "metadata-input",
+        "presence-sensitive",
+        "registry-validation",
+        "nested-validation"
+      ],
+      "sharedPrimitives": [
+        "ctap23-metadata-input-contract",
+        "ctap23-metadata-registry-values",
+        "telesma-mds-model"
+      ],
+      "implementationFiles": [
+        "conformance/ctap23/metadata_stmt_1_15_24.go"
+      ],
+      "testFiles": [
+        "conformance/ctap23/metadata_stmt_1_15_24_test.go"
+      ],
+      "status": "merged"
+    },
+    {
+      "id": "ctap23-metadata-stmt-1-25-31",
+      "source": "tests/CTAP2/Metadata/Metadata-Stmt-1.js",
+      "cases": [
+        "P-25",
+        "P-26",
+        "P-27",
+        "P-28",
+        "P-29",
+        "P-31"
+      ],
+      "dependsOn": [],
+      "helpers": [
+        "js/CTAP2.js",
+        "app/js/utils.js"
+      ],
+      "risk": [
+        "metadata-input",
+        "binary-decoding",
+        "svg-data-url"
+      ],
+      "sharedPrimitives": [
+        "ctap23-metadata-input-contract",
+        "ctap23-metadata-registry-values",
+        "telesma-mds-model"
+      ],
+      "implementationFiles": [
+        "conformance/ctap23/metadata_stmt_1_25_31.go"
+      ],
+      "testFiles": [
+        "conformance/ctap23/metadata_stmt_1_25_31_test.go"
+      ],
+      "status": "merged"
+    },
+    {
+      "id": "ctap23-metadata-stmt-1-32-36",
+      "source": "tests/CTAP2/Metadata/Metadata-Stmt-1.js",
+      "cases": [
+        "P-32",
+        "P-33",
+        "P-34",
+        "P-35",
+        "P-36"
+      ],
+      "dependsOn": [],
+      "helpers": [
+        "js/CTAP2.js",
+        "js/meta.js",
+        "app/js/utils.js"
+      ],
+      "risk": [
+        "metadata-input",
+        "presence-sensitive",
+        "get-info-cross-field",
+        "reference-fixture"
+      ],
+      "sharedPrimitives": [
+        "ctap23-metadata-input-contract",
+        "ctap23-metadata-registry-values",
+        "ctap23-harness-command-fixtures",
+        "ctap23-get-info-flow"
+      ],
+      "implementationFiles": [
+        "conformance/ctap23/metadata_stmt_1_32_36.go"
+      ],
+      "testFiles": [
+        "conformance/ctap23/metadata_stmt_1_32_36_test.go"
+      ],
+      "status": "merged"
+    },
+    {
+      "id": "ctap23-metadata-stmt-1-37-43",
+      "source": "tests/CTAP2/Metadata/Metadata-Stmt-1.js",
+      "cases": [
+        "P-37",
+        "P-38",
+        "P-39",
+        "P-40",
+        "P-41",
+        "P-42",
+        "P-43"
+      ],
+      "dependsOn": [],
+      "helpers": [
+        "js/CTAP2.js",
+        "app/js/utils.js"
+      ],
+      "risk": [
+        "metadata-input",
+        "binary-decoding",
+        "svg-data-url"
+      ],
+      "sharedPrimitives": [
+        "ctap23-metadata-input-contract",
+        "telesma-mds-model"
+      ],
+      "implementationFiles": [
+        "conformance/ctap23/metadata_stmt_1_37_43.go"
+      ],
+      "testFiles": [
+        "conformance/ctap23/metadata_stmt_1_37_43_test.go"
+      ],
+      "status": "merged"
+    }
+  ],
+  "totals": {
+    "tasks": 56,
+    "scripts": 49,
+    "cases": 295
+  }
+}

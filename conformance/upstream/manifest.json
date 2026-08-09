@@ -123,6 +123,1476 @@
         "case": "P-5"
       },
       "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.authr-make-cred-req-1.p-1",
+      "source": {
+        "path": "tests/CTAP2/Protocol/Make/Authr-MakeCred-Req-1.js",
+        "case": "P-1"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.authr-make-cred-req-1.f-1",
+      "source": {
+        "path": "tests/CTAP2/Protocol/Make/Authr-MakeCred-Req-1.js",
+        "case": "F-1"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.authr-make-cred-req-1.f-2",
+      "source": {
+        "path": "tests/CTAP2/Protocol/Make/Authr-MakeCred-Req-1.js",
+        "case": "F-2"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.authr-make-cred-req-1.f-3",
+      "source": {
+        "path": "tests/CTAP2/Protocol/Make/Authr-MakeCred-Req-1.js",
+        "case": "F-3"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.authr-make-cred-req-1.f-4",
+      "source": {
+        "path": "tests/CTAP2/Protocol/Make/Authr-MakeCred-Req-1.js",
+        "case": "F-4"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.authr-make-cred-req-1.f-5",
+      "source": {
+        "path": "tests/CTAP2/Protocol/Make/Authr-MakeCred-Req-1.js",
+        "case": "F-5"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.authr-make-cred-req-1.f-6",
+      "source": {
+        "path": "tests/CTAP2/Protocol/Make/Authr-MakeCred-Req-1.js",
+        "case": "F-6"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.authr-make-cred-req-1.f-7",
+      "source": {
+        "path": "tests/CTAP2/Protocol/Make/Authr-MakeCred-Req-1.js",
+        "case": "F-7"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.authr-make-cred-req-1.f-8",
+      "source": {
+        "path": "tests/CTAP2/Protocol/Make/Authr-MakeCred-Req-1.js",
+        "case": "F-8"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.authr-make-cred-req-1.f-9",
+      "source": {
+        "path": "tests/CTAP2/Protocol/Make/Authr-MakeCred-Req-1.js",
+        "case": "F-9"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.authr-make-cred-req-1.f-10",
+      "source": {
+        "path": "tests/CTAP2/Protocol/Make/Authr-MakeCred-Req-1.js",
+        "case": "F-10"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.authr-make-cred-req-1.f-11",
+      "source": {
+        "path": "tests/CTAP2/Protocol/Make/Authr-MakeCred-Req-1.js",
+        "case": "F-11"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.authr-make-cred-req-2.f-1",
+      "source": {
+        "path": "tests/CTAP2/Protocol/Make/Authr-MakeCred-Req-2.js",
+        "case": "F-1"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.authr-make-cred-req-2.f-2",
+      "source": {
+        "path": "tests/CTAP2/Protocol/Make/Authr-MakeCred-Req-2.js",
+        "case": "F-2"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.authr-make-cred-req-2.f-3",
+      "source": {
+        "path": "tests/CTAP2/Protocol/Make/Authr-MakeCred-Req-2.js",
+        "case": "F-3"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.authr-make-cred-req-3.f-1",
+      "source": {
+        "path": "tests/CTAP2/Protocol/Make/Authr-MakeCred-Req-3.js",
+        "case": "F-1"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.authr-make-cred-req-3.f-2",
+      "source": {
+        "path": "tests/CTAP2/Protocol/Make/Authr-MakeCred-Req-3.js",
+        "case": "F-2"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.authr-make-cred-req-3.f-3",
+      "source": {
+        "path": "tests/CTAP2/Protocol/Make/Authr-MakeCred-Req-3.js",
+        "case": "F-3"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.authr-make-cred-req-3.f-4",
+      "source": {
+        "path": "tests/CTAP2/Protocol/Make/Authr-MakeCred-Req-3.js",
+        "case": "F-4"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.authr-make-cred-req-4.p-1",
+      "source": {
+        "path": "tests/CTAP2/Protocol/Make/Authr-MakeCred-Req-4.js",
+        "case": "P-1"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.authr-make-cred-req-4.f-1",
+      "source": {
+        "path": "tests/CTAP2/Protocol/Make/Authr-MakeCred-Req-4.js",
+        "case": "F-1"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.authr-make-cred-req-4.f-2",
+      "source": {
+        "path": "tests/CTAP2/Protocol/Make/Authr-MakeCred-Req-4.js",
+        "case": "F-2"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.authr-make-cred-req-4.f-3",
+      "source": {
+        "path": "tests/CTAP2/Protocol/Make/Authr-MakeCred-Req-4.js",
+        "case": "F-3"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.authr-make-cred-req-4.f-4",
+      "source": {
+        "path": "tests/CTAP2/Protocol/Make/Authr-MakeCred-Req-4.js",
+        "case": "F-4"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.authr-make-cred-req-4.f-5",
+      "source": {
+        "path": "tests/CTAP2/Protocol/Make/Authr-MakeCred-Req-4.js",
+        "case": "F-5"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.authr-make-cred-req-4.f-6",
+      "source": {
+        "path": "tests/CTAP2/Protocol/Make/Authr-MakeCred-Req-4.js",
+        "case": "F-6"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.authr-make-cred-req-4.f-7",
+      "source": {
+        "path": "tests/CTAP2/Protocol/Make/Authr-MakeCred-Req-4.js",
+        "case": "F-7"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.authr-make-cred-req-5.p-1",
+      "source": {
+        "path": "tests/CTAP2/Protocol/Make/Authr-MakeCred-Req-5.js",
+        "case": "P-1"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.authr-make-cred-req-5.p-2",
+      "source": {
+        "path": "tests/CTAP2/Protocol/Make/Authr-MakeCred-Req-5.js",
+        "case": "P-2"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.authr-make-cred-req-5.p-3",
+      "source": {
+        "path": "tests/CTAP2/Protocol/Make/Authr-MakeCred-Req-5.js",
+        "case": "P-3"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.authr-make-cred-req-5.p-4",
+      "source": {
+        "path": "tests/CTAP2/Protocol/Make/Authr-MakeCred-Req-5.js",
+        "case": "P-4"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.authr-make-cred-req-5.f-1",
+      "source": {
+        "path": "tests/CTAP2/Protocol/Make/Authr-MakeCred-Req-5.js",
+        "case": "F-1"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.authr-make-cred-req-5.f-2",
+      "source": {
+        "path": "tests/CTAP2/Protocol/Make/Authr-MakeCred-Req-5.js",
+        "case": "F-2"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.authr-make-cred-req-5.f-3",
+      "source": {
+        "path": "tests/CTAP2/Protocol/Make/Authr-MakeCred-Req-5.js",
+        "case": "F-3"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.authr-make-cred-req-5.f-5",
+      "source": {
+        "path": "tests/CTAP2/Protocol/Make/Authr-MakeCred-Req-5.js",
+        "case": "F-5"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.authr-make-cred-req-5.f-6",
+      "source": {
+        "path": "tests/CTAP2/Protocol/Make/Authr-MakeCred-Req-5.js",
+        "case": "F-6"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.authr-make-cred-req-5.f-7",
+      "source": {
+        "path": "tests/CTAP2/Protocol/Make/Authr-MakeCred-Req-5.js",
+        "case": "F-7"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.authr-make-cred-req-6.p-1",
+      "source": {
+        "path": "tests/CTAP2/Protocol/Make/Authr-MakeCred-Req-6.js",
+        "case": "P-1"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.authr-make-cred-req-6.p-2",
+      "source": {
+        "path": "tests/CTAP2/Protocol/Make/Authr-MakeCred-Req-6.js",
+        "case": "P-2"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.authr-make-cred-req-6.p-3",
+      "source": {
+        "path": "tests/CTAP2/Protocol/Make/Authr-MakeCred-Req-6.js",
+        "case": "P-3"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.authr-make-cred-req-6.f-1",
+      "source": {
+        "path": "tests/CTAP2/Protocol/Make/Authr-MakeCred-Req-6.js",
+        "case": "F-1"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.authr-make-cred-resp-1.p-01",
+      "source": {
+        "path": "tests/CTAP2/Protocol/Make/Authr-MakeCred-Resp-1.js",
+        "case": "P-01"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.authr-make-cred-resp-1.p-02",
+      "source": {
+        "path": "tests/CTAP2/Protocol/Make/Authr-MakeCred-Resp-1.js",
+        "case": "P-02"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.authr-make-cred-resp-1.p-03",
+      "source": {
+        "path": "tests/CTAP2/Protocol/Make/Authr-MakeCred-Resp-1.js",
+        "case": "P-03"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.authr-make-cred-resp-1.p-04",
+      "source": {
+        "path": "tests/CTAP2/Protocol/Make/Authr-MakeCred-Resp-1.js",
+        "case": "P-04"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.authr-make-cred-resp-1.p-06",
+      "source": {
+        "path": "tests/CTAP2/Protocol/Make/Authr-MakeCred-Resp-1.js",
+        "case": "P-06"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.authr-make-cred-resp-1.f-01",
+      "source": {
+        "path": "tests/CTAP2/Protocol/Make/Authr-MakeCred-Resp-1.js",
+        "case": "F-01"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.authr-get-assertion-req-1.p-1",
+      "source": {
+        "path": "tests/CTAP2/Protocol/Get/Authr-GetAssertion-Req-1.js",
+        "case": "P-1"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.authr-get-assertion-req-1.f-1",
+      "source": {
+        "path": "tests/CTAP2/Protocol/Get/Authr-GetAssertion-Req-1.js",
+        "case": "F-1"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.authr-get-assertion-req-1.f-2",
+      "source": {
+        "path": "tests/CTAP2/Protocol/Get/Authr-GetAssertion-Req-1.js",
+        "case": "F-2"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.authr-get-assertion-req-1.f-3",
+      "source": {
+        "path": "tests/CTAP2/Protocol/Get/Authr-GetAssertion-Req-1.js",
+        "case": "F-3"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.authr-get-assertion-req-1.f-4",
+      "source": {
+        "path": "tests/CTAP2/Protocol/Get/Authr-GetAssertion-Req-1.js",
+        "case": "F-4"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.authr-get-assertion-req-1.f-5",
+      "source": {
+        "path": "tests/CTAP2/Protocol/Get/Authr-GetAssertion-Req-1.js",
+        "case": "F-5"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.authr-get-assertion-req-1.f-6",
+      "source": {
+        "path": "tests/CTAP2/Protocol/Get/Authr-GetAssertion-Req-1.js",
+        "case": "F-6"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.authr-get-assertion-req-2.p-1",
+      "source": {
+        "path": "tests/CTAP2/Protocol/Get/Authr-GetAssertion-Req-2.js",
+        "case": "P-1"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.authr-get-assertion-req-2.p-2",
+      "source": {
+        "path": "tests/CTAP2/Protocol/Get/Authr-GetAssertion-Req-2.js",
+        "case": "P-2"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.authr-get-assertion-req-2.p-3",
+      "source": {
+        "path": "tests/CTAP2/Protocol/Get/Authr-GetAssertion-Req-2.js",
+        "case": "P-3"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.authr-get-assertion-req-3.p-1",
+      "source": {
+        "path": "tests/CTAP2/Protocol/Get/Authr-GetAssertion-Req-3.js",
+        "case": "P-1"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.authr-get-assertion-req-3.f-1",
+      "source": {
+        "path": "tests/CTAP2/Protocol/Get/Authr-GetAssertion-Req-3.js",
+        "case": "F-1"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.authr-get-assertion-req-3.f-2",
+      "source": {
+        "path": "tests/CTAP2/Protocol/Get/Authr-GetAssertion-Req-3.js",
+        "case": "F-2"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.authr-get-assertion-req-3.f-3",
+      "source": {
+        "path": "tests/CTAP2/Protocol/Get/Authr-GetAssertion-Req-3.js",
+        "case": "F-3"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.authr-get-assertion-req-3.f-4",
+      "source": {
+        "path": "tests/CTAP2/Protocol/Get/Authr-GetAssertion-Req-3.js",
+        "case": "F-4"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.authr-get-assertion-req-3.f-5",
+      "source": {
+        "path": "tests/CTAP2/Protocol/Get/Authr-GetAssertion-Req-3.js",
+        "case": "F-5"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.authr-get-assertion-req-3.f-6",
+      "source": {
+        "path": "tests/CTAP2/Protocol/Get/Authr-GetAssertion-Req-3.js",
+        "case": "F-6"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.authr-get-assertion-resp-1.p-1",
+      "source": {
+        "path": "tests/CTAP2/Protocol/Get/Authr-GetAssertion-Resp-1.js",
+        "case": "P-1"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.authr-get-assertion-resp-1.p-2",
+      "source": {
+        "path": "tests/CTAP2/Protocol/Get/Authr-GetAssertion-Resp-1.js",
+        "case": "P-2"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.authr-get-assertion-resp-1.p-3",
+      "source": {
+        "path": "tests/CTAP2/Protocol/Get/Authr-GetAssertion-Resp-1.js",
+        "case": "P-3"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.authr-get-assertion-resp-1.p-4",
+      "source": {
+        "path": "tests/CTAP2/Protocol/Get/Authr-GetAssertion-Resp-1.js",
+        "case": "P-4"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.authr-get-assertion-resp-1.f-1",
+      "source": {
+        "path": "tests/CTAP2/Protocol/Get/Authr-GetAssertion-Resp-1.js",
+        "case": "F-1"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.authr-client-pin1-key-agreement.p-1",
+      "source": {
+        "path": "tests/CTAP2/Protocol/ClientPin/ClientPin1/Authr-ClientPin1-KeyAgreement.js",
+        "case": "P-1"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.authr-client-pin1-new-pin.p-1",
+      "source": {
+        "path": "tests/CTAP2/Protocol/ClientPin/ClientPin1/Authr-ClientPin1-NewPin.js",
+        "case": "P-1"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.authr-client-pin1-new-pin.p-2",
+      "source": {
+        "path": "tests/CTAP2/Protocol/ClientPin/ClientPin1/Authr-ClientPin1-NewPin.js",
+        "case": "P-2"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.authr-client-pin1-new-pin.p-3",
+      "source": {
+        "path": "tests/CTAP2/Protocol/ClientPin/ClientPin1/Authr-ClientPin1-NewPin.js",
+        "case": "P-3"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.authr-client-pin1-new-pin.p-4",
+      "source": {
+        "path": "tests/CTAP2/Protocol/ClientPin/ClientPin1/Authr-ClientPin1-NewPin.js",
+        "case": "P-4"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.authr-client-pin1-new-pin.p-5",
+      "source": {
+        "path": "tests/CTAP2/Protocol/ClientPin/ClientPin1/Authr-ClientPin1-NewPin.js",
+        "case": "P-5"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.authr-client-pin1-new-pin.p-6",
+      "source": {
+        "path": "tests/CTAP2/Protocol/ClientPin/ClientPin1/Authr-ClientPin1-NewPin.js",
+        "case": "P-6"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.authr-client-pin1-new-pin.f-1",
+      "source": {
+        "path": "tests/CTAP2/Protocol/ClientPin/ClientPin1/Authr-ClientPin1-NewPin.js",
+        "case": "F-1"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.authr-client-pin1-pin-policy.p-1",
+      "source": {
+        "path": "tests/CTAP2/Protocol/ClientPin/ClientPin1/Authr-ClientPin1-PinPolicy.js",
+        "case": "P-1"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.authr-client-pin1-pin-policy.f-1",
+      "source": {
+        "path": "tests/CTAP2/Protocol/ClientPin/ClientPin1/Authr-ClientPin1-PinPolicy.js",
+        "case": "F-1"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.authr-client-pin1-pin-policy.f-2",
+      "source": {
+        "path": "tests/CTAP2/Protocol/ClientPin/ClientPin1/Authr-ClientPin1-PinPolicy.js",
+        "case": "F-2"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.authr-client-pin1-pin-policy.f-3",
+      "source": {
+        "path": "tests/CTAP2/Protocol/ClientPin/ClientPin1/Authr-ClientPin1-PinPolicy.js",
+        "case": "F-3"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.authr-client-pin1-pin-policy.f-4",
+      "source": {
+        "path": "tests/CTAP2/Protocol/ClientPin/ClientPin1/Authr-ClientPin1-PinPolicy.js",
+        "case": "F-4"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.authr-client-pin1-get-retries.p-1",
+      "source": {
+        "path": "tests/CTAP2/Protocol/ClientPin/ClientPin1/Authr-ClientPin1-GetRetries.js",
+        "case": "P-1"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.authr-client-pin1-get-retries.p-2",
+      "source": {
+        "path": "tests/CTAP2/Protocol/ClientPin/ClientPin1/Authr-ClientPin1-GetRetries.js",
+        "case": "P-2"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.authr-client-pin1-get-retries.p-3",
+      "source": {
+        "path": "tests/CTAP2/Protocol/ClientPin/ClientPin1/Authr-ClientPin1-GetRetries.js",
+        "case": "P-3"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.authr-client-pin1-get-retries.p-4",
+      "source": {
+        "path": "tests/CTAP2/Protocol/ClientPin/ClientPin1/Authr-ClientPin1-GetRetries.js",
+        "case": "P-4"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.authr-client-pin2-key-agreement.p-1",
+      "source": {
+        "path": "tests/CTAP2/Protocol/ClientPin/ClientPin2/Authr-ClientPin2-KeyAgreement.js",
+        "case": "P-1"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.authr-client-pin2-new-pin.p-1",
+      "source": {
+        "path": "tests/CTAP2/Protocol/ClientPin/ClientPin2/Authr-ClientPin2-NewPin.js",
+        "case": "P-1"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.authr-client-pin2-new-pin.p-2",
+      "source": {
+        "path": "tests/CTAP2/Protocol/ClientPin/ClientPin2/Authr-ClientPin2-NewPin.js",
+        "case": "P-2"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.authr-client-pin2-new-pin.p-3",
+      "source": {
+        "path": "tests/CTAP2/Protocol/ClientPin/ClientPin2/Authr-ClientPin2-NewPin.js",
+        "case": "P-3"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.authr-client-pin2-new-pin.p-4",
+      "source": {
+        "path": "tests/CTAP2/Protocol/ClientPin/ClientPin2/Authr-ClientPin2-NewPin.js",
+        "case": "P-4"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.authr-client-pin2-get-pin-token.p-1",
+      "source": {
+        "path": "tests/CTAP2/Protocol/ClientPin/ClientPin2/Authr-ClientPin2-GetPinToken.js",
+        "case": "P-1"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.authr-client-pin2-get-pin-token.p-2",
+      "source": {
+        "path": "tests/CTAP2/Protocol/ClientPin/ClientPin2/Authr-ClientPin2-GetPinToken.js",
+        "case": "P-2"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.authr-client-pin2-get-pin-token.p-3",
+      "source": {
+        "path": "tests/CTAP2/Protocol/ClientPin/ClientPin2/Authr-ClientPin2-GetPinToken.js",
+        "case": "P-3"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.authr-client-pin2-get-pin-token.f-1",
+      "source": {
+        "path": "tests/CTAP2/Protocol/ClientPin/ClientPin2/Authr-ClientPin2-GetPinToken.js",
+        "case": "F-1"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.authr-client-pin2-get-pin-token.f-2",
+      "source": {
+        "path": "tests/CTAP2/Protocol/ClientPin/ClientPin2/Authr-ClientPin2-GetPinToken.js",
+        "case": "F-2"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.authr-client-pin2-get-pin-token.f-3",
+      "source": {
+        "path": "tests/CTAP2/Protocol/ClientPin/ClientPin2/Authr-ClientPin2-GetPinToken.js",
+        "case": "F-3"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.authr-client-pin2-get-pin-token.f-4",
+      "source": {
+        "path": "tests/CTAP2/Protocol/ClientPin/ClientPin2/Authr-ClientPin2-GetPinToken.js",
+        "case": "F-4"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.authr-client-pin2-get-pin-token.f-5",
+      "source": {
+        "path": "tests/CTAP2/Protocol/ClientPin/ClientPin2/Authr-ClientPin2-GetPinToken.js",
+        "case": "F-5"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.authr-client-pin2-pin-policy.p-1",
+      "source": {
+        "path": "tests/CTAP2/Protocol/ClientPin/ClientPin2/Authr-ClientPin2-PinPolicy.js",
+        "case": "P-1"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.authr-client-pin2-pin-policy.f-1",
+      "source": {
+        "path": "tests/CTAP2/Protocol/ClientPin/ClientPin2/Authr-ClientPin2-PinPolicy.js",
+        "case": "F-1"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.authr-client-pin2-pin-policy.f-2",
+      "source": {
+        "path": "tests/CTAP2/Protocol/ClientPin/ClientPin2/Authr-ClientPin2-PinPolicy.js",
+        "case": "F-2"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.authr-client-pin2-pin-policy.f-3",
+      "source": {
+        "path": "tests/CTAP2/Protocol/ClientPin/ClientPin2/Authr-ClientPin2-PinPolicy.js",
+        "case": "F-3"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.authr-client-pin2-pin-policy.f-4",
+      "source": {
+        "path": "tests/CTAP2/Protocol/ClientPin/ClientPin2/Authr-ClientPin2-PinPolicy.js",
+        "case": "F-4"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.authr-client-pin2-pin-policy.f-5",
+      "source": {
+        "path": "tests/CTAP2/Protocol/ClientPin/ClientPin2/Authr-ClientPin2-PinPolicy.js",
+        "case": "F-5"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.authr-client-pin2-get-retries.p-1",
+      "source": {
+        "path": "tests/CTAP2/Protocol/ClientPin/ClientPin2/Authr-ClientPin2-GetRetries.js",
+        "case": "P-1"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.authr-client-pin2-get-retries.p-2",
+      "source": {
+        "path": "tests/CTAP2/Protocol/ClientPin/ClientPin2/Authr-ClientPin2-GetRetries.js",
+        "case": "P-2"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.authr-client-pin2-get-retries.p-3",
+      "source": {
+        "path": "tests/CTAP2/Protocol/ClientPin/ClientPin2/Authr-ClientPin2-GetRetries.js",
+        "case": "P-3"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.authr-client-pin2-get-retries.p-4",
+      "source": {
+        "path": "tests/CTAP2/Protocol/ClientPin/ClientPin2/Authr-ClientPin2-GetRetries.js",
+        "case": "P-4"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.authr-client-pin2-get-retries.p-5",
+      "source": {
+        "path": "tests/CTAP2/Protocol/ClientPin/ClientPin2/Authr-ClientPin2-GetRetries.js",
+        "case": "P-5"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.metadata-stmt-1.p-1",
+      "source": {
+        "path": "tests/CTAP2/Metadata/Metadata-Stmt-1.js",
+        "case": "P-1"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.metadata-stmt-1.p-2",
+      "source": {
+        "path": "tests/CTAP2/Metadata/Metadata-Stmt-1.js",
+        "case": "P-2"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.metadata-stmt-1.p-3",
+      "source": {
+        "path": "tests/CTAP2/Metadata/Metadata-Stmt-1.js",
+        "case": "P-3"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.metadata-stmt-1.p-4",
+      "source": {
+        "path": "tests/CTAP2/Metadata/Metadata-Stmt-1.js",
+        "case": "P-4"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.metadata-stmt-1.p-5",
+      "source": {
+        "path": "tests/CTAP2/Metadata/Metadata-Stmt-1.js",
+        "case": "P-5"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.metadata-stmt-1.p-6",
+      "source": {
+        "path": "tests/CTAP2/Metadata/Metadata-Stmt-1.js",
+        "case": "P-6"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.metadata-stmt-1.p-7",
+      "source": {
+        "path": "tests/CTAP2/Metadata/Metadata-Stmt-1.js",
+        "case": "P-7"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.metadata-stmt-1.p-8",
+      "source": {
+        "path": "tests/CTAP2/Metadata/Metadata-Stmt-1.js",
+        "case": "P-8"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.metadata-stmt-1.p-11",
+      "source": {
+        "path": "tests/CTAP2/Metadata/Metadata-Stmt-1.js",
+        "case": "P-11"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.metadata-stmt-1.p-13",
+      "source": {
+        "path": "tests/CTAP2/Metadata/Metadata-Stmt-1.js",
+        "case": "P-13"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.metadata-stmt-1.p-14",
+      "source": {
+        "path": "tests/CTAP2/Metadata/Metadata-Stmt-1.js",
+        "case": "P-14"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.metadata-stmt-1.p-15",
+      "source": {
+        "path": "tests/CTAP2/Metadata/Metadata-Stmt-1.js",
+        "case": "P-15"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.metadata-stmt-1.p-16",
+      "source": {
+        "path": "tests/CTAP2/Metadata/Metadata-Stmt-1.js",
+        "case": "P-16"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.metadata-stmt-1.p-17",
+      "source": {
+        "path": "tests/CTAP2/Metadata/Metadata-Stmt-1.js",
+        "case": "P-17"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.metadata-stmt-1.p-18",
+      "source": {
+        "path": "tests/CTAP2/Metadata/Metadata-Stmt-1.js",
+        "case": "P-18"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.metadata-stmt-1.p-19",
+      "source": {
+        "path": "tests/CTAP2/Metadata/Metadata-Stmt-1.js",
+        "case": "P-19"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.metadata-stmt-1.p-20",
+      "source": {
+        "path": "tests/CTAP2/Metadata/Metadata-Stmt-1.js",
+        "case": "P-20"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.metadata-stmt-1.p-22",
+      "source": {
+        "path": "tests/CTAP2/Metadata/Metadata-Stmt-1.js",
+        "case": "P-22"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.metadata-stmt-1.p-24",
+      "source": {
+        "path": "tests/CTAP2/Metadata/Metadata-Stmt-1.js",
+        "case": "P-24"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.metadata-stmt-1.p-25",
+      "source": {
+        "path": "tests/CTAP2/Metadata/Metadata-Stmt-1.js",
+        "case": "P-25"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.metadata-stmt-1.p-26",
+      "source": {
+        "path": "tests/CTAP2/Metadata/Metadata-Stmt-1.js",
+        "case": "P-26"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.metadata-stmt-1.p-27",
+      "source": {
+        "path": "tests/CTAP2/Metadata/Metadata-Stmt-1.js",
+        "case": "P-27"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.metadata-stmt-1.p-28",
+      "source": {
+        "path": "tests/CTAP2/Metadata/Metadata-Stmt-1.js",
+        "case": "P-28"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.metadata-stmt-1.p-29",
+      "source": {
+        "path": "tests/CTAP2/Metadata/Metadata-Stmt-1.js",
+        "case": "P-29"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.metadata-stmt-1.p-31",
+      "source": {
+        "path": "tests/CTAP2/Metadata/Metadata-Stmt-1.js",
+        "case": "P-31"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.metadata-stmt-1.p-32",
+      "source": {
+        "path": "tests/CTAP2/Metadata/Metadata-Stmt-1.js",
+        "case": "P-32"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.metadata-stmt-1.p-33",
+      "source": {
+        "path": "tests/CTAP2/Metadata/Metadata-Stmt-1.js",
+        "case": "P-33"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.metadata-stmt-1.p-34",
+      "source": {
+        "path": "tests/CTAP2/Metadata/Metadata-Stmt-1.js",
+        "case": "P-34"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.metadata-stmt-1.p-35",
+      "source": {
+        "path": "tests/CTAP2/Metadata/Metadata-Stmt-1.js",
+        "case": "P-35"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.metadata-stmt-1.p-36",
+      "source": {
+        "path": "tests/CTAP2/Metadata/Metadata-Stmt-1.js",
+        "case": "P-36"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.metadata-stmt-1.p-37",
+      "source": {
+        "path": "tests/CTAP2/Metadata/Metadata-Stmt-1.js",
+        "case": "P-37"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.metadata-stmt-1.p-38",
+      "source": {
+        "path": "tests/CTAP2/Metadata/Metadata-Stmt-1.js",
+        "case": "P-38"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.metadata-stmt-1.p-39",
+      "source": {
+        "path": "tests/CTAP2/Metadata/Metadata-Stmt-1.js",
+        "case": "P-39"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.metadata-stmt-1.p-40",
+      "source": {
+        "path": "tests/CTAP2/Metadata/Metadata-Stmt-1.js",
+        "case": "P-40"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.metadata-stmt-1.p-41",
+      "source": {
+        "path": "tests/CTAP2/Metadata/Metadata-Stmt-1.js",
+        "case": "P-41"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.metadata-stmt-1.p-42",
+      "source": {
+        "path": "tests/CTAP2/Metadata/Metadata-Stmt-1.js",
+        "case": "P-42"
+      },
+      "status": "ported"
+    },
+    {
+      "moduleId": "ctap2.3-authenticator",
+      "suiteId": "fido.ctap2.3.authenticator",
+      "testId": "fido.ctap2.3.metadata-stmt-1.p-43",
+      "source": {
+        "path": "tests/CTAP2/Metadata/Metadata-Stmt-1.js",
+        "case": "P-43"
+      },
+      "status": "ported"
     }
   ]
 }

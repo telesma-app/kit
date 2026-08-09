@@ -44,6 +44,7 @@ type DeviceManager struct {
 
 	state    atomic.Pointer[DeviceUpdate]
 	selected *Authenticator
+	cycle    *devicePowerCycleLease
 
 	closeOnce sync.Once
 	closeErr  error
@@ -186,7 +187,7 @@ func (m *DeviceManager) run(initial devicewatch.Snapshot) {
 			continue
 		}
 		if m.selected == nil {
-			m.selected = authenticator
+			m.setSelected(authenticator)
 			continue
 		}
 
@@ -225,7 +226,34 @@ func (m *DeviceManager) run(initial devicewatch.Snapshot) {
 					continue
 				}
 
-				err := m.selectRecord(command.ctx, records, command.id)
+				var err error
+				if m.cycle != nil {
+					err = devicePowerCyclePendingError()
+				} else {
+					err = m.selectRecord(command.ctx, records, command.id)
+				}
+				m.publish(records, err)
+				command.reply <- err
+
+			case beginDevicePowerCycle:
+				command.reply <- m.beginPowerCycle(records, command)
+
+			case markDevicePowerCycleDetached:
+				err := m.markPowerCycleDetached(command.lease)
+				m.publish(records, err)
+				command.reply <- err
+
+			case abortDevicePowerCycle:
+				detached, err := m.abortPowerCycle(command.lease)
+				m.publish(records, err)
+				command.reply <- abortDevicePowerCycleResult{detached: detached, err: err}
+
+			case rejectDevicePowerCycleCandidate:
+				err := m.rejectPowerCycleCandidateState(command.lease, command.id)
+				command.reply <- err
+
+			case commitDevicePowerCycle:
+				err := m.commitPowerCycle(records, command)
 				m.publish(records, err)
 				command.reply <- err
 			}
@@ -237,6 +265,10 @@ func (m *DeviceManager) applyEvent(
 	records map[report.AttachmentID]*deviceRecord,
 	event devicewatch.Event,
 ) error {
+	if handled, err := m.applyPowerCycleEvent(records, event); handled {
+		return err
+	}
+
 	attached := newAttachment(event.Candidate)
 	id := attached.report.Attachment.ID
 	if event.Connected {
@@ -256,7 +288,7 @@ func (m *DeviceManager) applyEvent(
 			return err
 		}
 		if m.selected == nil {
-			m.selected = authenticator
+			m.setSelected(authenticator)
 			return nil
 		}
 
@@ -358,7 +390,7 @@ func (m *DeviceManager) openRecord(
 	}
 	record.attachment.report = authenticator.Device()
 
-	m.selected = authenticator
+	m.setSelected(authenticator)
 
 	return nil
 }
@@ -412,6 +444,13 @@ func (m *DeviceManager) closeSelected() error {
 	return selected.Close()
 }
 
+func (m *DeviceManager) setSelected(selected *Authenticator) {
+	m.selected = selected
+	selected.setPowerCycler(func(ctx context.Context, action func(context.Context) error) error {
+		return m.powerCycleSelected(ctx, selected, action)
+	})
+}
+
 func (m *DeviceManager) publish(
 	records map[report.AttachmentID]*deviceRecord,
 	err error,
@@ -423,7 +462,7 @@ func (m *DeviceManager) publish(
 			record.attachment.report,
 		)
 	}
-	if m.selected != nil {
+	if m.selected != nil && (m.cycle == nil || !m.cycle.detached) {
 		update.Snapshot.Selected = m.selected.Device().Attachment.ID
 		update.Selected = m.selected
 	}

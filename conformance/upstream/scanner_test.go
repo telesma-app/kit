@@ -79,6 +79,34 @@ func TestScanReportsMissingReferencedScript(t *testing.T) {
 	}
 }
 
+func TestScanRejectsCaseReferenceOutsideTestList(t *testing.T) {
+	corpus := fstest.MapFS{
+		"modules/example/list.json": {
+			Data: []byte(`{"tests":{"alpha":{"cases":["../outside.js"]}}}`),
+		},
+		"modules/outside.js": {
+			Data: []byte("it('P-1', () => {});"),
+		},
+	}
+	template := upstream.Manifest{
+		SchemaVersion: upstream.SchemaVersion,
+		Source: conformance.Source{
+			Artifact: "example-suite",
+			Version:  "2.0.0",
+			Digest:   "sha256:fixture",
+		},
+		Modules: []upstream.Module{{
+			ID:        "example",
+			Name:      "Example",
+			TestLists: []string{"modules/example/list.json"},
+		}},
+	}
+
+	if _, err := upstream.Scan(corpus, template); err == nil {
+		t.Fatal("Scan succeeded with a case reference outside the test list")
+	}
+}
+
 func TestDiffReportsSourceAndModuleDrift(t *testing.T) {
 	expected := upstream.Manifest{
 		SchemaVersion: upstream.SchemaVersion,

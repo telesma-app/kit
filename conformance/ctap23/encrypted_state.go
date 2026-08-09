@@ -68,15 +68,16 @@ func encryptedStateTest(
 		ID:          member.testID,
 		Name:        member.name + " stability and reset behavior",
 		Description: "Checks fresh encryption IVs, stable plaintext between GetInfo calls, and regenerated ciphertext after reset",
+		Destructive: true,
 		Source: conformance.SourceLocation{
 			Path: getInfoSourcePath,
 			Case: member.caseID,
 		},
 		References: []conformance.RequirementRef{getInfoRequirement, resetRequirement},
 		Run: func(test *conformance.TestContext) {
-			var token []byte
+			var authorization PinUvAuthToken
 			defer func() {
-				clear(token)
+				clear(authorization.Value)
 			}()
 
 			if !test.Step(conformance.Step{
@@ -107,20 +108,22 @@ func encryptedStateTest(
 				References: []conformance.RequirementRef{getInfoRequirement},
 				Run: func(ctx context.Context) error {
 					if provider == nil {
-						return fmt.Errorf("ctap23: persistent token provider is required for %s", member.name)
+						return fmt.Errorf("ctap23: token provider is required for %s", member.name)
 					}
 
 					var err error
-					token, err = provider(
+					authorization, err = provider(
 						ctx,
 						test.Client(),
-						protocol.PermissionPersistentCredentialManagementReadOnly,
+						PinUvAuthTokenRequest{
+							Permission: protocol.PermissionPersistentCredentialManagementReadOnly,
+						},
 					)
 					if err != nil {
 						return err
 					}
-					if len(token) == 0 {
-						return fmt.Errorf("ctap23: persistent token provider returned an empty token")
+					if len(authorization.Value) == 0 {
+						return fmt.Errorf("ctap23: token provider returned an empty token")
 					}
 
 					return nil
@@ -139,7 +142,7 @@ func encryptedStateTest(
 					if err != nil {
 						return err
 					}
-					firstPlaintext, err := member.decrypt(token, first)
+					firstPlaintext, err := member.decrypt(authorization.Value, first)
 					if err != nil {
 						return conformance.Failf("decrypt %s: %v", member.name, err)
 					}
@@ -148,7 +151,7 @@ func encryptedStateTest(
 					if err != nil {
 						return err
 					}
-					secondPlaintext, err := member.decrypt(token, second)
+					secondPlaintext, err := member.decrypt(authorization.Value, second)
 					if err != nil {
 						return conformance.Failf("decrypt %s: %v", member.name, err)
 					}

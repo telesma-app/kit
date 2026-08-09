@@ -1,0 +1,1825 @@
+{
+  "schemaVersion": 1,
+  "moduleId": "ctap2.3-authenticator",
+  "testList": "modules/ctap2.3-conformance-module/authr-testlist.json",
+  "groups": [
+    {
+      "id": "Transports",
+      "helpers": [
+        "/js/meta.js",
+        "/js/BLE.js",
+        "/js/HID.js",
+        "/js/NFC.js",
+        "/js/CTAP2.js",
+        "/js/BioEnrollment2.1.js",
+        "/js/BioEnrollmentPRE.js",
+        "/js/AuthenticatorConfigUtils.js",
+        "/js/ClientPin1Utils.js",
+        "/js/ClientPin2Utils.js",
+        "/js/CredMan2.1.js",
+        "/js/CredManPRE.js",
+        "/js/LargeBlob2.1.js"
+      ],
+      "scripts": [
+        {
+          "source": "tests/CTAP2/Transports/hid-1.js",
+          "sha256": "6ff7aa4e32e487c21676ce51ce3cbb924305a44f7d83a64c62217a4a43c2def1",
+          "cases": [
+            {
+              "marker": "P-1",
+              "line": 91
+            },
+            {
+              "marker": "P-2",
+              "line": 101
+            },
+            {
+              "marker": "P-3",
+              "line": 123
+            },
+            {
+              "marker": "P-4",
+              "line": 162
+            },
+            {
+              "marker": "P-5",
+              "line": 197
+            },
+            {
+              "marker": "P-6",
+              "line": 220
+            },
+            {
+              "marker": "P-7",
+              "line": 242
+            },
+            {
+              "marker": "P-8",
+              "line": 275
+            },
+            {
+              "marker": "P-9",
+              "line": 307
+            },
+            {
+              "marker": "P-10",
+              "line": 356
+            },
+            {
+              "marker": "P-11",
+              "line": 411
+            },
+            {
+              "marker": "P-12",
+              "line": 428
+            },
+            {
+              "marker": "P-13",
+              "line": 456
+            },
+            {
+              "marker": "P-14",
+              "line": 485
+            },
+            {
+              "marker": "P-15",
+              "line": 552
+            },
+            {
+              "marker": "F-1",
+              "line": 594
+            },
+            {
+              "marker": "F-2",
+              "line": 616
+            },
+            {
+              "marker": "F-3",
+              "line": 636
+            },
+            {
+              "marker": "F-4",
+              "line": 656
+            }
+          ]
+        },
+        {
+          "source": "tests/CTAP2/Transports/nfc-1.js",
+          "sha256": "d8ce976b5708e0285884dcf5e6cc998853700195aa4e1c62fef34caebc162b49",
+          "cases": [
+            {
+              "marker": "P-1",
+              "line": 71
+            },
+            {
+              "marker": "P-2",
+              "line": 94
+            },
+            {
+              "marker": "P-3",
+              "line": 116
+            },
+            {
+              "marker": "P-4",
+              "line": 136
+            },
+            {
+              "marker": "F-1",
+              "line": 168
+            },
+            {
+              "marker": "F-2",
+              "line": 183
+            },
+            {
+              "marker": "F-3",
+              "line": 198
+            },
+            {
+              "marker": "F-4",
+              "line": 217
+            }
+          ]
+        },
+        {
+          "source": "tests/CTAP2/Transports/ble-1.js",
+          "sha256": "ac80917577dc07e80a5afad37c53250ec749431d9fcb17989ee9042a6d49076c",
+          "cases": [
+            {
+              "marker": "P-1",
+              "line": 49
+            },
+            {
+              "marker": "P-2",
+              "line": 66
+            },
+            {
+              "marker": "P-3",
+              "line": 82
+            },
+            {
+              "marker": "P-4",
+              "line": 93
+            },
+            {
+              "marker": "P-5",
+              "line": 106
+            },
+            {
+              "marker": "P-6",
+              "line": 116
+            },
+            {
+              "marker": "P-7",
+              "line": 126
+            },
+            {
+              "marker": "P-8",
+              "line": 141
+            },
+            {
+              "marker": "P-9",
+              "line": 159
+            },
+            {
+              "marker": "P-10",
+              "line": 176
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "General",
+      "helpers": [
+        "/js/meta.js",
+        "/js/BLE.js",
+        "/js/HID.js",
+        "/js/NFC.js",
+        "/js/CTAP2.js",
+        "/js/BioEnrollment2.1.js",
+        "/js/BioEnrollmentPRE.js",
+        "/js/AuthenticatorConfigUtils.js",
+        "/js/ClientPin1Utils.js",
+        "/js/ClientPin2Utils.js",
+        "/js/CredMan2.1.js",
+        "/js/CredManPRE.js",
+        "/js/LargeBlob2.1.js"
+      ],
+      "scripts": [
+        {
+          "source": "tests/CTAP2/Protocol/Authr-Generic-1.js",
+          "sha256": "bcace7f7a7ac27d755092db57f63d9cb77256cbde8eb7739b6f12ee14ff449ad",
+          "cases": [
+            {
+              "marker": "P-1",
+              "line": 45
+            },
+            {
+              "marker": "P-2",
+              "line": 499
+            },
+            {
+              "marker": "P-3",
+              "line": 530
+            },
+            {
+              "marker": "P-4",
+              "line": 544
+            },
+            {
+              "marker": "P-5",
+              "line": 597
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "MakeCredentialRequest",
+      "helpers": [
+        "/js/meta.js",
+        "/js/BLE.js",
+        "/js/HID.js",
+        "/js/NFC.js",
+        "/js/CTAP2.js",
+        "/js/BioEnrollment2.1.js",
+        "/js/BioEnrollmentPRE.js",
+        "/js/AuthenticatorConfigUtils.js",
+        "/js/ClientPin1Utils.js",
+        "/js/ClientPin2Utils.js",
+        "/js/CredMan2.1.js",
+        "/js/CredManPRE.js",
+        "/js/LargeBlob2.1.js"
+      ],
+      "scripts": [
+        {
+          "source": "tests/CTAP2/Protocol/Make/Authr-MakeCred-Req-1.js",
+          "sha256": "8fbd8a82450b0278947ff55ac1e4364b952350531029a30ec65e0e2e80cdd78e",
+          "cases": [
+            {
+              "marker": "P-1",
+              "line": 52
+            },
+            {
+              "marker": "F-1",
+              "line": 68
+            },
+            {
+              "marker": "F-2",
+              "line": 83
+            },
+            {
+              "marker": "F-3",
+              "line": 98
+            },
+            {
+              "marker": "F-4",
+              "line": 113
+            },
+            {
+              "marker": "F-5",
+              "line": 128
+            },
+            {
+              "marker": "F-6",
+              "line": 143
+            },
+            {
+              "marker": "F-7",
+              "line": 159
+            },
+            {
+              "marker": "F-8",
+              "line": 175
+            },
+            {
+              "marker": "F-9",
+              "line": 190
+            },
+            {
+              "marker": "F-10",
+              "line": 205
+            },
+            {
+              "marker": "F-11",
+              "line": 220
+            }
+          ]
+        },
+        {
+          "source": "tests/CTAP2/Protocol/Make/Authr-MakeCred-Req-2.js",
+          "sha256": "1897ef978b191a9afcef680eeddd6d52ef5b4f40841a32329c2b427ad6eb7d8e",
+          "cases": [
+            {
+              "marker": "F-1",
+              "line": 52
+            },
+            {
+              "marker": "F-2",
+              "line": 67
+            },
+            {
+              "marker": "F-3",
+              "line": 83
+            }
+          ]
+        },
+        {
+          "source": "tests/CTAP2/Protocol/Make/Authr-MakeCred-Req-3.js",
+          "sha256": "9ea85c002a84a6c91b8a8268aa4fb18d01db9f75c45ea5fad0c6dd5c328869df",
+          "cases": [
+            {
+              "marker": "F-1",
+              "line": 52
+            },
+            {
+              "marker": "F-2",
+              "line": 67
+            },
+            {
+              "marker": "F-3",
+              "line": 82
+            },
+            {
+              "marker": "F-4",
+              "line": 98
+            }
+          ]
+        },
+        {
+          "source": "tests/CTAP2/Protocol/Make/Authr-MakeCred-Req-4.js",
+          "sha256": "0f80de25464264d11ad6b3d036819b1b6b9ba619dd01086c686766b42b12efde",
+          "cases": [
+            {
+              "marker": "P-1",
+              "line": 52
+            },
+            {
+              "marker": "F-1",
+              "line": 83
+            },
+            {
+              "marker": "F-2",
+              "line": 99
+            },
+            {
+              "marker": "F-3",
+              "line": 115
+            },
+            {
+              "marker": "F-4",
+              "line": 132
+            },
+            {
+              "marker": "F-5",
+              "line": 149
+            },
+            {
+              "marker": "F-6",
+              "line": 166
+            },
+            {
+              "marker": "F-7",
+              "line": 186
+            }
+          ]
+        },
+        {
+          "source": "tests/CTAP2/Protocol/Make/Authr-MakeCred-Req-5.js",
+          "sha256": "cbf94987bbeb819a2a79672a4f7e0ad8402da0d5844fc5feb2c4ab99f93d195b",
+          "cases": [
+            {
+              "marker": "P-1",
+              "line": 51
+            },
+            {
+              "marker": "P-2",
+              "line": 70
+            },
+            {
+              "marker": "P-3",
+              "line": 89
+            },
+            {
+              "marker": "P-4",
+              "line": 105
+            },
+            {
+              "marker": "F-1",
+              "line": 124
+            },
+            {
+              "marker": "F-2",
+              "line": 144
+            },
+            {
+              "marker": "F-3",
+              "line": 164
+            },
+            {
+              "marker": "F-5",
+              "line": 183
+            },
+            {
+              "marker": "F-6",
+              "line": 203
+            },
+            {
+              "marker": "F-7",
+              "line": 224
+            }
+          ]
+        },
+        {
+          "source": "tests/CTAP2/Protocol/Make/Authr-MakeCred-Req-6.js",
+          "sha256": "bb552e9156d3f9b720f847b66d2dca7be7d28d20927cc701aafe798f2c31faed",
+          "cases": [
+            {
+              "marker": "P-1",
+              "line": 60
+            },
+            {
+              "marker": "P-2",
+              "line": 88
+            },
+            {
+              "marker": "P-3",
+              "line": 115
+            },
+            {
+              "marker": "F-1",
+              "line": 140
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "MakeCredentialResponse",
+      "helpers": [
+        "/js/meta.js",
+        "/js/BLE.js",
+        "/js/HID.js",
+        "/js/NFC.js",
+        "/js/CTAP2.js",
+        "/js/BioEnrollment2.1.js",
+        "/js/BioEnrollmentPRE.js",
+        "/js/AuthenticatorConfigUtils.js",
+        "/js/ClientPin1Utils.js",
+        "/js/ClientPin2Utils.js",
+        "/js/CredMan2.1.js",
+        "/js/CredManPRE.js",
+        "/js/LargeBlob2.1.js"
+      ],
+      "scripts": [
+        {
+          "source": "tests/CTAP2/Protocol/Make/Authr-MakeCred-Resp-1.js",
+          "sha256": "711ce2f2e0903520aa14a2f751ca6058597a962f30c09a95385bb5f6118f0b36",
+          "cases": [
+            {
+              "marker": "P-01",
+              "line": 70
+            },
+            {
+              "marker": "P-02",
+              "line": 90
+            },
+            {
+              "marker": "P-03",
+              "line": 186
+            },
+            {
+              "marker": "P-04",
+              "line": 207
+            },
+            {
+              "marker": "P-06",
+              "line": 304
+            },
+            {
+              "marker": "F-01",
+              "line": 338
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "GetAssertionReq",
+      "helpers": [
+        "/js/meta.js",
+        "/js/BLE.js",
+        "/js/HID.js",
+        "/js/NFC.js",
+        "/js/CTAP2.js",
+        "/js/BioEnrollment2.1.js",
+        "/js/BioEnrollmentPRE.js",
+        "/js/AuthenticatorConfigUtils.js",
+        "/js/ClientPin1Utils.js",
+        "/js/ClientPin2Utils.js",
+        "/js/CredMan2.1.js",
+        "/js/CredManPRE.js",
+        "/js/LargeBlob2.1.js"
+      ],
+      "scripts": [
+        {
+          "source": "tests/CTAP2/Protocol/Get/Authr-GetAssertion-Req-1.js",
+          "sha256": "195e24fac81729b147b32aec10c2e7ec175faf707fc541bad0a54718328a1c02",
+          "cases": [
+            {
+              "marker": "P-1",
+              "line": 73
+            },
+            {
+              "marker": "F-1",
+              "line": 95
+            },
+            {
+              "marker": "F-2",
+              "line": 115
+            },
+            {
+              "marker": "F-3",
+              "line": 136
+            },
+            {
+              "marker": "F-4",
+              "line": 157
+            },
+            {
+              "marker": "F-5",
+              "line": 178
+            },
+            {
+              "marker": "F-6",
+              "line": 193
+            }
+          ]
+        },
+        {
+          "source": "tests/CTAP2/Protocol/Get/Authr-GetAssertion-Req-2.js",
+          "sha256": "5114f7b290be807f3d32fe6a53f4b17721cd4b89eed5152bc0700318dff34adb",
+          "cases": [
+            {
+              "marker": "P-1",
+              "line": 77
+            },
+            {
+              "marker": "P-2",
+              "line": 92
+            },
+            {
+              "marker": "P-3",
+              "line": 116
+            }
+          ]
+        },
+        {
+          "source": "tests/CTAP2/Protocol/Get/Authr-GetAssertion-Req-3.js",
+          "sha256": "4e5993d34a375c09f2de0deb6b49580a5bf0982c7d4767180616b1dfa9fc3d72",
+          "cases": [
+            {
+              "marker": "P-1",
+              "line": 72
+            },
+            {
+              "marker": "F-1",
+              "line": 94
+            },
+            {
+              "marker": "F-2",
+              "line": 116
+            },
+            {
+              "marker": "F-3",
+              "line": 140
+            },
+            {
+              "marker": "F-4",
+              "line": 164
+            },
+            {
+              "marker": "F-5",
+              "line": 188
+            },
+            {
+              "marker": "F-6",
+              "line": 213
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "GetAssertionResp",
+      "helpers": [
+        "/js/meta.js",
+        "/js/BLE.js",
+        "/js/HID.js",
+        "/js/NFC.js",
+        "/js/CTAP2.js",
+        "/js/BioEnrollment2.1.js",
+        "/js/BioEnrollmentPRE.js",
+        "/js/AuthenticatorConfigUtils.js",
+        "/js/ClientPin1Utils.js",
+        "/js/ClientPin2Utils.js",
+        "/js/CredMan2.1.js",
+        "/js/CredManPRE.js",
+        "/js/LargeBlob2.1.js"
+      ],
+      "scripts": [
+        {
+          "source": "tests/CTAP2/Protocol/Get/Authr-GetAssertion-Resp-1.js",
+          "sha256": "a2627e6f04e7895595af30221c8410cfea308d577ba095a95f9c1f30684f8cd1",
+          "cases": [
+            {
+              "marker": "P-1",
+              "line": 87
+            },
+            {
+              "marker": "P-2",
+              "line": 108
+            },
+            {
+              "marker": "P-3",
+              "line": 122
+            },
+            {
+              "marker": "P-4",
+              "line": 164
+            },
+            {
+              "marker": "F-1",
+              "line": 178
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Reset",
+      "helpers": [
+        "/js/meta.js",
+        "/js/BLE.js",
+        "/js/HID.js",
+        "/js/NFC.js",
+        "/js/CTAP2.js",
+        "/js/BioEnrollment2.1.js",
+        "/js/BioEnrollmentPRE.js",
+        "/js/AuthenticatorConfigUtils.js",
+        "/js/ClientPin1Utils.js",
+        "/js/ClientPin2Utils.js",
+        "/js/CredMan2.1.js",
+        "/js/CredManPRE.js",
+        "/js/LargeBlob2.1.js"
+      ],
+      "scripts": [
+        {
+          "source": "tests/CTAP2/Protocol/Reset/Authr-Reset-1.js",
+          "sha256": "61d827dc27beb9d10a4eaa19cbfc0795d3b8c74fb7b7afc03c4b3f2fb4761fe1",
+          "cases": [
+            {
+              "marker": "P-1",
+              "line": 40
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "OptionsRK",
+      "helpers": [
+        "/js/meta.js",
+        "/js/BLE.js",
+        "/js/HID.js",
+        "/js/NFC.js",
+        "/js/CTAP2.js",
+        "/js/BioEnrollment2.1.js",
+        "/js/BioEnrollmentPRE.js",
+        "/js/AuthenticatorConfigUtils.js",
+        "/js/ClientPin1Utils.js",
+        "/js/ClientPin2Utils.js",
+        "/js/CredMan2.1.js",
+        "/js/CredManPRE.js",
+        "/js/LargeBlob2.1.js"
+      ],
+      "scripts": [
+        {
+          "source": "tests/CTAP2/Protocol/Options/ResidentKey.js",
+          "sha256": "5fbf0f842e71bf4b46d28d68a1fb5c1b07877b1809d0c744576d1d8c507ec106",
+          "cases": [
+            {
+              "marker": "P-1",
+              "line": 85
+            },
+            {
+              "marker": "P-2",
+              "line": 114
+            },
+            {
+              "marker": "P-3",
+              "line": 215
+            },
+            {
+              "marker": "P-4",
+              "line": 399
+            },
+            {
+              "marker": "P-5",
+              "line": 492
+            },
+            {
+              "marker": "P-6",
+              "line": 538
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "OptionsEP",
+      "helpers": [
+        "/js/meta.js",
+        "/js/BLE.js",
+        "/js/HID.js",
+        "/js/NFC.js",
+        "/js/CTAP2.js",
+        "/js/BioEnrollment2.1.js",
+        "/js/BioEnrollmentPRE.js",
+        "/js/AuthenticatorConfigUtils.js",
+        "/js/ClientPin1Utils.js",
+        "/js/ClientPin2Utils.js",
+        "/js/CredMan2.1.js",
+        "/js/CredManPRE.js",
+        "/js/LargeBlob2.1.js"
+      ],
+      "scripts": [
+        {
+          "source": "tests/CTAP2/Protocol/Options/EntepriseAttestation.js",
+          "sha256": "70af42082e01d1de5998232da82bc4ce4a1c90ea02d525c186d702267d9a9299",
+          "cases": [
+            {
+              "marker": "P-1",
+              "line": 83
+            },
+            {
+              "marker": "P-2",
+              "line": 101
+            },
+            {
+              "marker": "P-3",
+              "line": 151
+            },
+            {
+              "marker": "F-1",
+              "line": 190
+            },
+            {
+              "marker": "F-2",
+              "line": 208
+            },
+            {
+              "marker": "F-3",
+              "line": 227
+            },
+            {
+              "marker": "F-4",
+              "line": 246
+            },
+            {
+              "marker": "F-5",
+              "line": 266
+            },
+            {
+              "marker": "F-6",
+              "line": 285
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Extensions",
+      "helpers": [
+        "/js/meta.js",
+        "/js/BLE.js",
+        "/js/HID.js",
+        "/js/NFC.js",
+        "/js/CTAP2.js",
+        "/js/BioEnrollment2.1.js",
+        "/js/BioEnrollmentPRE.js",
+        "/js/AuthenticatorConfigUtils.js",
+        "/js/ClientPin1Utils.js",
+        "/js/ClientPin2Utils.js",
+        "/js/CredMan2.1.js",
+        "/js/CredManPRE.js",
+        "/js/LargeBlob2.1.js"
+      ],
+      "scripts": [
+        {
+          "source": "tests/CTAP2/Protocol/Extensions/hmacSecret.js",
+          "sha256": "62c9276c11e2d033fab99e0c8da1892fe2603f4c0c30de04f0bd80dbdea99931",
+          "cases": [
+            {
+              "marker": "P-1",
+              "line": 87
+            },
+            {
+              "marker": "P-2",
+              "line": 142
+            },
+            {
+              "marker": "P-3",
+              "line": 241
+            },
+            {
+              "marker": "F-1",
+              "line": 269
+            },
+            {
+              "marker": "F-2",
+              "line": 298
+            },
+            {
+              "marker": "F-3",
+              "line": 312
+            }
+          ]
+        },
+        {
+          "source": "tests/CTAP2/Protocol/Extensions/hmacSecret2.js",
+          "sha256": "857aa8f4002c714134d119dabcb702016d70614220c971440aaf045510b346e3",
+          "cases": [
+            {
+              "marker": "P-1",
+              "line": 82
+            },
+            {
+              "marker": "P-2",
+              "line": 137
+            },
+            {
+              "marker": "P-3",
+              "line": 239
+            },
+            {
+              "marker": "F-1",
+              "line": 267
+            },
+            {
+              "marker": "F-2",
+              "line": 296
+            },
+            {
+              "marker": "F-3",
+              "line": 307
+            }
+          ]
+        },
+        {
+          "source": "tests/CTAP2/Protocol/Extensions/hmacSecretMC.js",
+          "sha256": "7007350772540db0a21564a9ccb2fefb819bbd48ce306921ce93de550e0345ff",
+          "cases": [
+            {
+              "marker": "P-1",
+              "line": 93
+            },
+            {
+              "marker": "P-2",
+              "line": 135
+            },
+            {
+              "marker": "P-3",
+              "line": 163
+            },
+            {
+              "marker": "F-1",
+              "line": 205
+            },
+            {
+              "marker": "F-2",
+              "line": 255
+            },
+            {
+              "marker": "F-3",
+              "line": 289
+            },
+            {
+              "marker": "F-4",
+              "line": 302
+            }
+          ]
+        },
+        {
+          "source": "tests/CTAP2/Protocol/Extensions/credProtect.js",
+          "sha256": "804229e6b9669f5fa784565a8a4f0dc513f68e5bb3d19537eb8c7df8299838c6",
+          "cases": [
+            {
+              "marker": "P-1",
+              "line": 96
+            },
+            {
+              "marker": "P-2",
+              "line": 160
+            },
+            {
+              "marker": "P-3",
+              "line": 223
+            },
+            {
+              "marker": "P-4",
+              "line": 287
+            }
+          ]
+        },
+        {
+          "source": "tests/CTAP2/Protocol/Extensions/credBlob.js",
+          "sha256": "12f73ad644fd6637fe9e3388389f47c5b0deb0e52f6e5f4ee8e695f4ff9962f9",
+          "cases": [
+            {
+              "marker": "P-1",
+              "line": 75
+            },
+            {
+              "marker": "P-2",
+              "line": 89
+            },
+            {
+              "marker": "P-3",
+              "line": 142
+            }
+          ]
+        },
+        {
+          "source": "tests/CTAP2/Protocol/Extensions/largeBlob.js",
+          "sha256": "b69f1e8dccdefa5da8da36b55b9a26d3f4ba0b04bd61edaa5796f8012fec7174",
+          "cases": [
+            {
+              "marker": "P-1",
+              "line": 215
+            },
+            {
+              "marker": "P-2",
+              "line": 225
+            },
+            {
+              "marker": "P-3",
+              "line": 237
+            },
+            {
+              "marker": "P-4",
+              "line": 260
+            },
+            {
+              "marker": "P-5",
+              "line": 284
+            },
+            {
+              "marker": "P-6",
+              "line": 307
+            },
+            {
+              "marker": "P-7",
+              "line": 355
+            },
+            {
+              "marker": "F-1",
+              "line": 407
+            },
+            {
+              "marker": "F-2",
+              "line": 425
+            },
+            {
+              "marker": "F-3",
+              "line": 476
+            },
+            {
+              "marker": "F-4",
+              "line": 487
+            },
+            {
+              "marker": "F-5",
+              "line": 496
+            }
+          ]
+        },
+        {
+          "source": "tests/CTAP2/Protocol/Extensions/largeBlobKey.js",
+          "sha256": "ea511da1fc33467fdeddef286ac600db821131a7f5fb872a7b19fa29c42cce79",
+          "cases": [
+            {
+              "marker": "P-1",
+              "line": 86
+            },
+            {
+              "marker": "P-2",
+              "line": 129
+            },
+            {
+              "marker": "F-1",
+              "line": 157
+            },
+            {
+              "marker": "F-2",
+              "line": 177
+            },
+            {
+              "marker": "F-3",
+              "line": 197
+            },
+            {
+              "marker": "F-4",
+              "line": 220
+            }
+          ]
+        },
+        {
+          "source": "tests/CTAP2/Protocol/Extensions/minPINLength.js",
+          "sha256": "40d71d6f9d880eacb2164bf1714e32231bf56df94e536686a903b1493cb969a5",
+          "cases": [
+            {
+              "marker": "P-1",
+              "line": 91
+            },
+            {
+              "marker": "F-1",
+              "line": 129
+            }
+          ]
+        },
+        {
+          "source": "tests/CTAP2/Protocol/Extensions/pinComplexityPolicy.js",
+          "sha256": "79f3c188c2a73f5c6507c862eae5ff7019cf27191a44374f24ddd208dd80d5e5",
+          "cases": [
+            {
+              "marker": "P-1",
+              "line": 110
+            },
+            {
+              "marker": "P-2",
+              "line": 143
+            }
+          ]
+        },
+        {
+          "source": "tests/CTAP2/Protocol/Extensions/thirdPartyPayment.js",
+          "sha256": "5d5e9d9b509bb5d89e6c422e79adc43a60602baf0d6eb37efcd55b8b63aef8d4",
+          "cases": [
+            {
+              "marker": "P-1",
+              "line": 71
+            },
+            {
+              "marker": "P-2",
+              "line": 122
+            },
+            {
+              "marker": "F-1",
+              "line": 175
+            }
+          ]
+        },
+        {
+          "source": "tests/CTAP2/Protocol/Extensions/uvm.js",
+          "sha256": "07fb5224279e2a167eb60f828b60fce1c2ebac630c52980056226ac0166b306f",
+          "cases": [
+            {
+              "marker": "P-1",
+              "line": 60
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ClientPin1",
+      "helpers": [
+        "/js/meta.js",
+        "/js/BLE.js",
+        "/js/HID.js",
+        "/js/NFC.js",
+        "/js/CTAP2.js",
+        "/js/BioEnrollment2.1.js",
+        "/js/BioEnrollmentPRE.js",
+        "/js/AuthenticatorConfigUtils.js",
+        "/js/ClientPin1Utils.js",
+        "/js/ClientPin2Utils.js",
+        "/js/CredMan2.1.js",
+        "/js/CredManPRE.js",
+        "/js/LargeBlob2.1.js"
+      ],
+      "scripts": [
+        {
+          "source": "tests/CTAP2/Protocol/ClientPin/ClientPin1/Authr-ClientPin1-KeyAgreement.js",
+          "sha256": "0bb64deed149f40b82cf281a565cb2ba9661574fd713cec1a41e303dcba2670e",
+          "cases": [
+            {
+              "marker": "P-1",
+              "line": 61
+            }
+          ]
+        },
+        {
+          "source": "tests/CTAP2/Protocol/ClientPin/ClientPin1/Authr-ClientPin1-NewPin.js",
+          "sha256": "500f8e7cec5b3fe004474773c97c74c8634f39645f776778bbc3cce8c620525e",
+          "cases": [
+            {
+              "marker": "P-1",
+              "line": 75
+            },
+            {
+              "marker": "P-2",
+              "line": 86
+            },
+            {
+              "marker": "P-3",
+              "line": 102
+            },
+            {
+              "marker": "P-4",
+              "line": 134
+            },
+            {
+              "marker": "P-5",
+              "line": 166
+            },
+            {
+              "marker": "P-6",
+              "line": 197
+            },
+            {
+              "marker": "F-1",
+              "line": 242
+            }
+          ]
+        },
+        {
+          "source": "tests/CTAP2/Protocol/ClientPin/ClientPin1/Authr-ClientPin1-PinPolicy.js",
+          "sha256": "630cbfb5460aaa703e52700b2a1730ffb4706479c00b3a93026dacf68dc6c1b9",
+          "cases": [
+            {
+              "marker": "P-1",
+              "line": 66
+            },
+            {
+              "marker": "F-1",
+              "line": 83
+            },
+            {
+              "marker": "F-2",
+              "line": 112
+            },
+            {
+              "marker": "F-3",
+              "line": 140
+            },
+            {
+              "marker": "F-4",
+              "line": 168
+            }
+          ]
+        },
+        {
+          "source": "tests/CTAP2/Protocol/ClientPin/ClientPin1/Authr-ClientPin1-GetRetries.js",
+          "sha256": "078cc695859d6fe5b1e118f454e6dfa05e2a47dc3c5c6c8db3b5faf40719b644",
+          "cases": [
+            {
+              "marker": "P-1",
+              "line": 70
+            },
+            {
+              "marker": "P-2",
+              "line": 92
+            },
+            {
+              "marker": "P-3",
+              "line": 143
+            },
+            {
+              "marker": "P-4",
+              "line": 169
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ClientPin2",
+      "helpers": [
+        "/js/meta.js",
+        "/js/BLE.js",
+        "/js/HID.js",
+        "/js/NFC.js",
+        "/js/CTAP2.js",
+        "/js/BioEnrollment2.1.js",
+        "/js/BioEnrollmentPRE.js",
+        "/js/AuthenticatorConfigUtils.js",
+        "/js/ClientPin1Utils.js",
+        "/js/ClientPin2Utils.js",
+        "/js/CredMan2.1.js",
+        "/js/CredManPRE.js",
+        "/js/LargeBlob2.1.js"
+      ],
+      "scripts": [
+        {
+          "source": "tests/CTAP2/Protocol/ClientPin/ClientPin2/Authr-ClientPin2-KeyAgreement.js",
+          "sha256": "610e9c4c7aa8a9bd2dafd3de4a4a2efc44875f55d24fb0fdba8b324de447f540",
+          "cases": [
+            {
+              "marker": "P-1",
+              "line": 54
+            }
+          ]
+        },
+        {
+          "source": "tests/CTAP2/Protocol/ClientPin/ClientPin2/Authr-ClientPin2-NewPin.js",
+          "sha256": "7275fd8ee59125103f60ebd64eb2bfeb20918ef2b256f552bfd774878cc5723d",
+          "cases": [
+            {
+              "marker": "P-1",
+              "line": 70
+            },
+            {
+              "marker": "P-2",
+              "line": 81
+            },
+            {
+              "marker": "P-3",
+              "line": 96
+            },
+            {
+              "marker": "P-4",
+              "line": 138
+            }
+          ]
+        },
+        {
+          "source": "tests/CTAP2/Protocol/ClientPin/ClientPin2/Authr-ClientPin2-GetPinToken.js",
+          "sha256": "6a71c84693a2f5d3c185c394325b2bd55e368322b0be7a9de6db61d04512ee91",
+          "cases": [
+            {
+              "marker": "P-1",
+              "line": 80
+            },
+            {
+              "marker": "P-2",
+              "line": 110
+            },
+            {
+              "marker": "P-3",
+              "line": 138
+            },
+            {
+              "marker": "F-1",
+              "line": 167
+            },
+            {
+              "marker": "F-2",
+              "line": 197
+            },
+            {
+              "marker": "F-3",
+              "line": 237
+            },
+            {
+              "marker": "F-4",
+              "line": 269
+            },
+            {
+              "marker": "F-5",
+              "line": 308
+            }
+          ]
+        },
+        {
+          "source": "tests/CTAP2/Protocol/ClientPin/ClientPin2/Authr-ClientPin2-GetPinUvAuthTokenUsingPinWithPermissions.js",
+          "sha256": "2ba3e869accd7bfe900988585edc6342c870216b7fd9f80f7304dc295391fe26",
+          "cases": [
+            {
+              "marker": "P-1",
+              "line": 82
+            },
+            {
+              "marker": "P-2",
+              "line": 119
+            },
+            {
+              "marker": "P-3",
+              "line": 150
+            },
+            {
+              "marker": "P-4",
+              "line": 178
+            },
+            {
+              "marker": "F-1",
+              "line": 212
+            }
+          ]
+        },
+        {
+          "source": "tests/CTAP2/Protocol/ClientPin/ClientPin2/Authr-ClientPin2-GetPinUvAuthTokenUsingUvWithPermissions.js",
+          "sha256": "cabaf68111c1267f9394cfc915008011bc3582329c924a8490c3096270b57135",
+          "cases": [
+            {
+              "marker": "P-1",
+              "line": 72
+            },
+            {
+              "marker": "P-2",
+              "line": 105
+            },
+            {
+              "marker": "P-3",
+              "line": 135
+            },
+            {
+              "marker": "P-4",
+              "line": 163
+            }
+          ]
+        },
+        {
+          "source": "tests/CTAP2/Protocol/ClientPin/ClientPin2/Authr-ClientPin2-PinPolicy.js",
+          "sha256": "efec7850fc4d5e884b1991bc46bab2abe163bff9a92942cde0dc982b6a4b8f8a",
+          "cases": [
+            {
+              "marker": "P-1",
+              "line": 61
+            },
+            {
+              "marker": "F-1",
+              "line": 81
+            },
+            {
+              "marker": "F-2",
+              "line": 109
+            },
+            {
+              "marker": "F-3",
+              "line": 134
+            },
+            {
+              "marker": "F-4",
+              "line": 161
+            },
+            {
+              "marker": "F-5",
+              "line": 194
+            }
+          ]
+        },
+        {
+          "source": "tests/CTAP2/Protocol/ClientPin/ClientPin2/Authr-ClientPin2-GetRetries.js",
+          "sha256": "78347831838f6d689b98bdae6b9854801aec6c9462390843d3f8be37a3202198",
+          "cases": [
+            {
+              "marker": "P-1",
+              "line": 69
+            },
+            {
+              "marker": "P-2",
+              "line": 91
+            },
+            {
+              "marker": "P-3",
+              "line": 121
+            },
+            {
+              "marker": "P-4",
+              "line": 171
+            },
+            {
+              "marker": "P-5",
+              "line": 197
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "CredManAPI",
+      "helpers": [
+        "/js/meta.js",
+        "/js/BLE.js",
+        "/js/HID.js",
+        "/js/NFC.js",
+        "/js/CTAP2.js",
+        "/js/BioEnrollment2.1.js",
+        "/js/BioEnrollmentPRE.js",
+        "/js/AuthenticatorConfigUtils.js",
+        "/js/ClientPin1Utils.js",
+        "/js/ClientPin2Utils.js",
+        "/js/CredMan2.1.js",
+        "/js/CredManPRE.js",
+        "/js/LargeBlob2.1.js"
+      ],
+      "scripts": [
+        {
+          "source": "tests/CTAP2/Protocol/CredentialManagement/CredentialManagement-EnumerateRPs.js",
+          "sha256": "f3bf830a54e31143f829ac238602b271800bccf84dc511e62e1b0f37327a3ae1",
+          "cases": [
+            {
+              "marker": "P-1",
+              "line": 107
+            },
+            {
+              "marker": "P-2",
+              "line": 159
+            },
+            {
+              "marker": "P-3",
+              "line": 214
+            },
+            {
+              "marker": "P-4",
+              "line": 256
+            },
+            {
+              "marker": "P-5",
+              "line": 291
+            },
+            {
+              "marker": "P-6",
+              "line": 327
+            }
+          ]
+        },
+        {
+          "source": "tests/CTAP2/Protocol/CredentialManagement/CredentialManagement-EnumerateCredentials.js",
+          "sha256": "3cbf290accac132d6655f70fa788e5de27e807c7e8a4b503728dd4606d3cb223",
+          "cases": [
+            {
+              "marker": "P-1",
+              "line": 114
+            },
+            {
+              "marker": "P-2",
+              "line": 199
+            },
+            {
+              "marker": "P-3",
+              "line": 259
+            }
+          ]
+        },
+        {
+          "source": "tests/CTAP2/Protocol/CredentialManagement/CredentialManagement-UpdateAndDelete.js",
+          "sha256": "70a0f273d5cbc4495e8ff306cd663e7aad8f7240e6a3eff85431bbe26695197d",
+          "cases": [
+            {
+              "marker": "P-1",
+              "line": 108
+            },
+            {
+              "marker": "P-2",
+              "line": 196
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "AuthenticatorConfig",
+      "helpers": [
+        "/js/meta.js",
+        "/js/BLE.js",
+        "/js/HID.js",
+        "/js/NFC.js",
+        "/js/CTAP2.js",
+        "/js/BioEnrollment2.1.js",
+        "/js/BioEnrollmentPRE.js",
+        "/js/AuthenticatorConfigUtils.js",
+        "/js/ClientPin1Utils.js",
+        "/js/ClientPin2Utils.js",
+        "/js/CredMan2.1.js",
+        "/js/CredManPRE.js",
+        "/js/LargeBlob2.1.js"
+      ],
+      "scripts": [
+        {
+          "source": "tests/CTAP2/Protocol/AuthenticatorConfig/AuthenticatorConfig.js",
+          "sha256": "f0410de15a2960fe84ed8fa2a75ff43d4855bccdf01dd8c5396c3ba8258ffe46",
+          "cases": [
+            {
+              "marker": "P-1",
+              "line": 166
+            },
+            {
+              "marker": "P-2",
+              "line": 187
+            },
+            {
+              "marker": "P-3",
+              "line": 228
+            },
+            {
+              "marker": "P-4",
+              "line": 263
+            },
+            {
+              "marker": "P-5",
+              "line": 302
+            },
+            {
+              "marker": "P-6",
+              "line": 335
+            },
+            {
+              "marker": "P-7",
+              "line": 366
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "BioEnrollment",
+      "helpers": [
+        "/js/meta.js",
+        "/js/BLE.js",
+        "/js/HID.js",
+        "/js/NFC.js",
+        "/js/CTAP2.js",
+        "/js/BioEnrollment2.1.js",
+        "/js/BioEnrollmentPRE.js",
+        "/js/AuthenticatorConfigUtils.js",
+        "/js/ClientPin1Utils.js",
+        "/js/ClientPin2Utils.js",
+        "/js/CredMan2.1.js",
+        "/js/CredManPRE.js",
+        "/js/LargeBlob2.1.js"
+      ],
+      "scripts": [
+        {
+          "source": "tests/CTAP2/Protocol/BiometricEnrollment/BioEnroll-BioModAndSensorInfo.js",
+          "sha256": "ec3c8290c21233af2c802af603e2f67a39c465952271d6365d79ba335e63e261",
+          "cases": [
+            {
+              "marker": "P-1",
+              "line": 46
+            },
+            {
+              "marker": "P-2",
+              "line": 62
+            }
+          ]
+        },
+        {
+          "source": "tests/CTAP2/Protocol/BiometricEnrollment/BioEnroll-Enroll.js",
+          "sha256": "65a46cd2b05cd186becb5a311ebd05134660667475916f83ae1e42f41f7d73c7",
+          "cases": [
+            {
+              "marker": "P-1",
+              "line": 65
+            },
+            {
+              "marker": "P-2",
+              "line": 163
+            }
+          ]
+        },
+        {
+          "source": "tests/CTAP2/Protocol/BiometricEnrollment/BioEnroll-EnumerateRenameRemove.js",
+          "sha256": "b8c73ce9ce380aa1bfea7ac33e9af1ed789ddd89c4cea87da82aed516f00404f",
+          "cases": [
+            {
+              "marker": "P-1",
+              "line": 79
+            },
+            {
+              "marker": "P-2",
+              "line": 112
+            },
+            {
+              "marker": "P-3",
+              "line": 155
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "LargeBlobs",
+      "helpers": [
+        "/js/meta.js",
+        "/js/BLE.js",
+        "/js/HID.js",
+        "/js/NFC.js",
+        "/js/CTAP2.js",
+        "/js/BioEnrollment2.1.js",
+        "/js/BioEnrollmentPRE.js",
+        "/js/AuthenticatorConfigUtils.js",
+        "/js/ClientPin1Utils.js",
+        "/js/ClientPin2Utils.js",
+        "/js/CredMan2.1.js",
+        "/js/CredManPRE.js",
+        "/js/LargeBlob2.1.js"
+      ],
+      "scripts": [
+        {
+          "source": "tests/CTAP2/Protocol/LargeBlobs/LargeBlobs-1.js",
+          "sha256": "4fe7266cba9f4423b038172ee2239a3444b74fa7970fadda15038633ca9c1f00",
+          "cases": [
+            {
+              "marker": "P-1",
+              "line": 70
+            },
+            {
+              "marker": "P-2",
+              "line": 83
+            },
+            {
+              "marker": "P-3",
+              "line": 104
+            },
+            {
+              "marker": "P-4",
+              "line": 122
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Metadata",
+      "helpers": [
+        "/js/meta.js",
+        "/js/BLE.js",
+        "/js/HID.js",
+        "/js/NFC.js",
+        "/js/CTAP2.js",
+        "/js/BioEnrollment2.1.js",
+        "/js/BioEnrollmentPRE.js",
+        "/js/AuthenticatorConfigUtils.js",
+        "/js/ClientPin1Utils.js",
+        "/js/ClientPin2Utils.js",
+        "/js/CredMan2.1.js",
+        "/js/CredManPRE.js",
+        "/js/LargeBlob2.1.js"
+      ],
+      "scripts": [
+        {
+          "source": "tests/CTAP2/Metadata/Metadata-Stmt-1.js",
+          "sha256": "6f92304ee888faf094a09caeb7e9f2a51a28904520c33000563932611a15108a",
+          "cases": [
+            {
+              "marker": "P-1",
+              "line": 31
+            },
+            {
+              "marker": "P-2",
+              "line": 44
+            },
+            {
+              "marker": "P-3",
+              "line": 55
+            },
+            {
+              "marker": "P-4",
+              "line": 66
+            },
+            {
+              "marker": "P-5",
+              "line": 76
+            },
+            {
+              "marker": "P-6",
+              "line": 98
+            },
+            {
+              "marker": "P-7",
+              "line": 108
+            },
+            {
+              "marker": "P-8",
+              "line": 119
+            },
+            {
+              "marker": "P-11",
+              "line": 132
+            },
+            {
+              "marker": "P-13",
+              "line": 147
+            },
+            {
+              "marker": "P-14",
+              "line": 166
+            },
+            {
+              "marker": "P-15",
+              "line": 183
+            },
+            {
+              "marker": "P-16",
+              "line": 318
+            },
+            {
+              "marker": "P-17",
+              "line": 348
+            },
+            {
+              "marker": "P-18",
+              "line": 360
+            },
+            {
+              "marker": "P-19",
+              "line": 372
+            },
+            {
+              "marker": "P-20",
+              "line": 397
+            },
+            {
+              "marker": "P-22",
+              "line": 410
+            },
+            {
+              "marker": "P-24",
+              "line": 458
+            },
+            {
+              "marker": "P-25",
+              "line": 504
+            },
+            {
+              "marker": "P-26",
+              "line": 526
+            },
+            {
+              "marker": "P-27",
+              "line": 563
+            },
+            {
+              "marker": "P-28",
+              "line": 594
+            },
+            {
+              "marker": "P-29",
+              "line": 645
+            },
+            {
+              "marker": "P-31",
+              "line": 662
+            },
+            {
+              "marker": "P-32",
+              "line": 672
+            },
+            {
+              "marker": "P-33",
+              "line": 938
+            },
+            {
+              "marker": "P-34",
+              "line": 950
+            },
+            {
+              "marker": "P-35",
+              "line": 1001
+            },
+            {
+              "marker": "P-36",
+              "line": 1033
+            },
+            {
+              "marker": "P-37",
+              "line": 1046
+            },
+            {
+              "marker": "P-38",
+              "line": 1070
+            },
+            {
+              "marker": "P-39",
+              "line": 1082
+            },
+            {
+              "marker": "P-40",
+              "line": 1099
+            },
+            {
+              "marker": "P-41",
+              "line": 1116
+            },
+            {
+              "marker": "P-42",
+              "line": 1132
+            },
+            {
+              "marker": "P-43",
+              "line": 1147
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "totals": {
+    "scripts": 49,
+    "cases": 295
+  }
+}

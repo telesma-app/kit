@@ -39,7 +39,8 @@ type Suite struct {
 	Tests       []Test  `json:"tests"`
 }
 
-// Test is one independently reported conformance test. Run declares and
+// Test is one independently reported conformance test. Destructive marks a
+// test that can persistently mutate authenticator state. Run declares and
 // executes its steps using the supplied TestContext.
 type Test struct {
 	ID          TestID           `json:"id"`
@@ -47,6 +48,7 @@ type Test struct {
 	Description string           `json:"description,omitempty"`
 	Source      SourceLocation   `json:"source"`
 	References  []RequirementRef `json:"references"`
+	Destructive bool             `json:"destructive,omitempty"`
 	Run         TestFunc         `json:"-"`
 }
 
@@ -93,6 +95,7 @@ type TestResult struct {
 	Description string           `json:"description,omitempty"`
 	Source      SourceLocation   `json:"source"`
 	References  []RequirementRef `json:"references"`
+	Destructive bool             `json:"destructive,omitempty"`
 	Status      Status           `json:"status"`
 	Steps       []StepResult     `json:"steps"`
 }

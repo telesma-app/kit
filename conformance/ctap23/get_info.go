@@ -200,6 +200,43 @@ func decodeGetInfoResponse(data []byte) (map[uint64]cbor.RawMessage, protocol.Au
 	return fields, info, nil
 }
 
+func rawGetInfoOption(
+	fields map[uint64]cbor.RawMessage,
+	option protocol.Option,
+) (bool, bool, error) {
+	rawOptions, present := fields[4]
+	if !present {
+		return false, false, nil
+	}
+
+	var options map[string]cbor.RawMessage
+	if err := getInfoDecMode.Unmarshal(rawOptions, &options); err != nil {
+		return false, false, conformance.Failf("invalid GetInfo options map: %v", err)
+	}
+	if options == nil {
+		return false, false, conformance.Fail("invalid GetInfo options: want a map, got null")
+	}
+	raw, present := options[string(option)]
+	if !present {
+		return false, false, nil
+	}
+
+	var decoded any
+	if err := getInfoDecMode.Unmarshal(raw, &decoded); err != nil {
+		return false, false, conformance.Failf("invalid GetInfo option %q: %v", option, err)
+	}
+	value, ok := decoded.(bool)
+	if !ok {
+		return false, false, conformance.Failf(
+			"invalid GetInfo option %q type %T, want boolean",
+			option,
+			decoded,
+		)
+	}
+
+	return value, true, nil
+}
+
 func validateRequiredGetInfoFields(fields map[uint64]cbor.RawMessage, info protocol.AuthenticatorGetInfoResponse) error {
 	if _, present := fields[1]; !present {
 		return conformance.Fail("versions field is missing")
@@ -268,14 +305,14 @@ func validateDeclaredGetInfoFields(fields map[uint64]cbor.RawMessage, info proto
 	if present(fields, 11) && info.MaxSerializedLargeBlobArray < 1024 {
 		return conformance.Fail("maxSerializedLargeBlobArray must be at least 1024")
 	}
-	if present(fields, 12) && !present(fields, 6) {
+	if present(fields, 12) && info.ForcePINChange && !present(fields, 6) {
 		return conformance.Fail("forcePINChange requires pinUvAuthProtocols")
 	}
 	if present(fields, 13) && info.MinPINLength < 4 {
 		return conformance.Fail("minPINLength must be at least 4")
 	}
-	if present(fields, 14) && (info.FirmwareVersion == nil || *info.FirmwareVersion == 0) {
-		return conformance.Fail("firmwareVersion must be greater than zero")
+	if present(fields, 14) && info.FirmwareVersion == nil {
+		return conformance.Fail("firmwareVersion must not be null")
 	}
 	if present(fields, 15) && info.MaxCredBlobLength < 32 {
 		return conformance.Fail("maxCredBlobLength must be at least 32")
