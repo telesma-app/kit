@@ -11,10 +11,6 @@ import (
 )
 
 func NewCTAPSink(logs Recorder) diagnostic.Sink {
-	if logs == nil {
-		return nil
-	}
-
 	return func(ctx context.Context, event diagnostic.Exchange) {
 		command, _ := event.Command.Name()
 		entry := model.LogEntry{

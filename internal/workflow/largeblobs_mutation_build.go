@@ -11,7 +11,6 @@ type largeBlobMutationPlan struct {
 	operation   applargeblobs.MutationOperation
 	byteCount   int
 	sizeAfter   int
-	noop        bool
 }
 
 func buildWriteMutationPlan(state targetBlobState, payload []byte) (largeBlobMutationPlan, error) {
@@ -25,7 +24,7 @@ func buildWriteMutationPlan(state targetBlobState, payload []byte) (largeBlobMut
 		return largeBlobMutationPlan{}, err
 	}
 
-	replacement := replaceBlob(state.blobs, state.currentBlobIndex, encrypted, operation)
+	replacement := replaceBlob(state.blobs, state.currentBlobIndex, encrypted)
 
 	sizeAfter, err := serializedLargeBlobArraySize(replacement)
 	if err != nil {
@@ -49,7 +48,6 @@ func buildDeleteMutationPlan(state targetBlobState) (largeBlobMutationPlan, erro
 		return largeBlobMutationPlan{
 			operation: applargeblobs.MutationNoBlob,
 			sizeAfter: state.serializedArraySizeBefore,
-			noop:      true,
 		}, nil
 	}
 
@@ -69,14 +67,4 @@ func buildDeleteMutationPlan(state targetBlobState) (largeBlobMutationPlan, erro
 		operation:   applargeblobs.MutationDelete,
 		sizeAfter:   sizeAfter,
 	}, nil
-}
-
-func (plan largeBlobMutationPlan) result(state targetBlobState) applargeblobs.MutationResult {
-	return buildMutationResult(
-		state,
-		plan.operation,
-		plan.byteCount,
-		plan.sizeAfter,
-		plan.noop,
-	)
 }

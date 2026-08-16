@@ -50,10 +50,6 @@ func CBORDiagnosticPayload(message diagnostic.Message) *model.LogPayload {
 	if truncated {
 		stored = safePreview([]byte(stored), previewBytes)
 	}
-	if message.Bytes < 0 {
-		message.Bytes = 0
-	}
-
 	return &model.LogPayload{
 		CBORDiagnostic:  stored,
 		DiagnosticError: safePreview([]byte(message.Error), previewBytes),

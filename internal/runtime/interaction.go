@@ -21,10 +21,6 @@ type InteractionHandler interface {
 }
 
 func NewInteractionBroker(events EventSink, handler InteractionHandler) *InteractionBroker {
-	if events == nil {
-		events = noopEventSink{}
-	}
-
 	return &InteractionBroker{
 		events:  events,
 		handler: handler,
@@ -35,12 +31,6 @@ func (b *InteractionBroker) RequestInteraction(
 	ctx context.Context,
 	req model.InteractionRequest,
 ) (model.InteractionResponse, error) {
-	if req.Kind == "" {
-		return model.InteractionResponse{}, failure.New(failure.CodeInteractionKindRequired,
-			failure.WithPhase(failure.PhaseInteraction),
-		)
-	}
-
 	b.events.Emit(ctx, model.OperationEvent{
 		Stage:   model.OperationStageInteractionRequired,
 		Kind:    req.Kind,

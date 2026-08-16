@@ -66,11 +66,9 @@ func (r Runner) BioEnroll(
 		return appconfig.BioEnrollOutput{}, err
 	}
 
-	result := buildBioEnrollmentResult(preview, responses)
-
 	return appconfig.BioEnrollOutput{
 		Preview: preview,
-		Result:  &result,
+		Result:  buildBioEnrollmentResult(preview, responses),
 	}, nil
 }
 
@@ -154,8 +152,8 @@ func (r Runner) runBioEnrollment(
 func buildBioEnrollmentResult(
 	preview appconfig.BioEnrollPreview,
 	responses []protocol.AuthenticatorBioEnrollmentResponse,
-) appconfig.BioEnrollResult {
-	result := appconfig.BioEnrollResult{
+) *appconfig.BioEnrollResult {
+	result := &appconfig.BioEnrollResult{
 		AttachmentID: preview.Device.Attachment.ID,
 		PreviewOnly:  preview.PreviewOnly,
 		Samples:      make([]appconfig.BioEnrollSample, 0, len(responses)),
@@ -167,7 +165,7 @@ func buildBioEnrollmentResult(
 		}
 
 		result.LastEnrollSampleStatus = bioEnrollmentSampleStatus(response)
-		result.RemainingSamples = snapshotPtr(response.RemainingSamples)
+		result.RemainingSamples = response.RemainingSamples
 		result.Samples = append(result.Samples, appconfig.BioEnrollSample{
 			Status:           result.LastEnrollSampleStatus,
 			RemainingSamples: result.RemainingSamples,

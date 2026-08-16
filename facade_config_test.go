@@ -1,6 +1,7 @@
 package ctapkit
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -15,6 +16,45 @@ import (
 	appconfig "github.com/telesma-app/kit/model/config"
 	"github.com/telesma-app/kit/model/failure"
 )
+
+func TestConfigMutationCallerInputIsValidatedBeforeDeviceState(t *testing.T) {
+	session := openContractAuthenticator(t, nil, nil)
+	defer func() { _ = session.Close() }()
+
+	_, err := session.SetAlwaysUV(t.Context(), appconfig.SetAlwaysUVOperation{
+		Target: appconfig.AlwaysUVTarget("invalid"),
+	})
+	requireFailureCode(t, err, failure.CodeCTAPParameterInvalid)
+
+	_, err = session.BioRename(t.Context(), appconfig.BioRenameOperation{
+		TemplateIDHex: "not-hex",
+		FriendlyName:  "finger",
+	})
+	requireFailureCode(t, err, failure.CodeBioTemplateIDInvalid)
+}
+
+func TestBioRenameUsesCanonicalTemplateIDAcrossPreviewCommandAndResult(t *testing.T) {
+	a := &bioMutationAuthenticator{}
+	session := openContractAuthenticator(t, nil, a)
+	defer func() { _ = session.Close() }()
+
+	output, err := session.BioRename(t.Context(), appconfig.BioRenameOperation{
+		TemplateIDHex: " 0A0B ",
+		FriendlyName:  "finger",
+	}, session.operationOptions(WithInteractionHandler(userVerificationHandler(t)))...)
+	if err != nil {
+		t.Fatalf("BioRename: %v", err)
+	}
+	if output.Result == nil {
+		t.Fatal("result = nil")
+	}
+	if output.Preview.TemplateIDHex != "0a0b" || output.Result.TemplateIDHex != "0a0b" {
+		t.Fatalf("template IDs = %q/%q, want canonical 0a0b", output.Preview.TemplateIDHex, output.Result.TemplateIDHex)
+	}
+	if !bytes.Equal(a.templateID, []byte{0x0a, 0x0b}) {
+		t.Fatalf("command template ID = %x, want 0a0b", a.templateID)
+	}
+}
 
 func TestBioSensorInfoReportsSpecNamedEnums(t *testing.T) {
 	tests := []struct {
@@ -312,6 +352,30 @@ type contextRecordingConfigAuthenticator struct {
 	contractConfigManager
 	tokenCtx   context.Context
 	commandCtx context.Context
+}
+
+type bioMutationAuthenticator struct {
+	contractAuthenticator
+	templateID []byte
+}
+
+func (a *bioMutationAuthenticator) GetInfoCached() (protocol.AuthenticatorGetInfoResponse, bool) {
+	return protocol.AuthenticatorGetInfoResponse{Options: map[protocol.Option]bool{
+		protocol.OptionBioEnroll:        true,
+		protocol.OptionUvBioEnroll:      true,
+		protocol.OptionPinUvAuthToken:   true,
+		protocol.OptionUserVerification: true,
+	}}, true
+}
+
+func (a *bioMutationAuthenticator) GetPinUvAuthTokenUsingUV(context.Context, protocol.Permission, string) ([]byte, error) {
+	return []byte("token"), nil
+}
+
+func (a *bioMutationAuthenticator) SetFriendlyName(_ context.Context, _ []byte, templateID []byte, _ string) error {
+	a.templateID = templateID
+
+	return nil
 }
 
 func (a *contextRecordingConfigAuthenticator) GetInfoCached() (protocol.AuthenticatorGetInfoResponse, bool) {

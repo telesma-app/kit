@@ -11,9 +11,9 @@ import (
 func TestPINWarningsDescribeCTAPEffects(t *testing.T) {
 	status := StatusReport{PIN: PINStatus{Supported: true, Configured: new(false)}}
 
-	preview, err := BuildSetPINPreview(status, safety.PreviewModeDryRun)
+	preview, err := BuildPINPreview(status, PINMutationSet, safety.PreviewModeDryRun)
 	if err != nil {
-		t.Fatalf("BuildSetPINPreview: %v", err)
+		t.Fatalf("BuildPINPreview(set): %v", err)
 	}
 
 	if got := preview.Warnings[1].Message; !strings.Contains(got, "does not validate either PIN value") {
@@ -24,9 +24,9 @@ func TestPINWarningsDescribeCTAPEffects(t *testing.T) {
 	}
 
 	status.PIN.Configured = new(true)
-	preview, err = BuildChangePINPreview(status, safety.PreviewModeExecute)
+	preview, err = BuildPINPreview(status, PINMutationChange, safety.PreviewModeExecute)
 	if err != nil {
-		t.Fatalf("BuildChangePINPreview: %v", err)
+		t.Fatalf("BuildPINPreview(change): %v", err)
 	}
 	if got := preview.Warnings[0].Message; !strings.Contains(got, "incorrect current PIN consumes a retry") {
 		t.Fatalf("change PIN warning = %q", got)
@@ -81,7 +81,7 @@ func TestAlwaysUVWarningCodesDistinguishTargetState(t *testing.T) {
 		},
 	}}
 
-	enable, err := BuildAlwaysUVPreview(status, AlwaysUVTargetEnable, safety.PreviewModeDryRun)
+	enable, err := BuildAlwaysUVPreview(status, AlwaysUVTargetEnable, true, safety.PreviewModeDryRun)
 	if err != nil {
 		t.Fatalf("BuildAlwaysUVPreview(enable): %v", err)
 	}
@@ -91,7 +91,7 @@ func TestAlwaysUVWarningCodesDistinguishTargetState(t *testing.T) {
 
 	configured = true
 	status.AuthenticatorConfig.AlwaysUV.State = StateConfigured
-	disable, err := BuildAlwaysUVPreview(status, AlwaysUVTargetDisable, safety.PreviewModeDryRun)
+	disable, err := BuildAlwaysUVPreview(status, AlwaysUVTargetDisable, false, safety.PreviewModeDryRun)
 	if err != nil {
 		t.Fatalf("BuildAlwaysUVPreview(disable): %v", err)
 	}

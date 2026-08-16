@@ -2,12 +2,15 @@ package workflow
 
 import (
 	"context"
+	"slices"
 
+	"github.com/telesma-app/ctap/extension"
 	"github.com/telesma-app/ctap/protocol"
 	"github.com/telesma-app/kit/internal/errornorm"
 	"github.com/telesma-app/kit/internal/secret"
 	appcredentials "github.com/telesma-app/kit/model/credentials"
 	"github.com/telesma-app/kit/model/failure"
+	applargeblobs "github.com/telesma-app/kit/model/largeblobs"
 )
 
 // LargeBlobState owns the inventory loaded for the selected authenticator.
@@ -27,23 +30,22 @@ type largeBlobKeyID struct {
 type largeBlobKeyStore map[largeBlobKeyID][]byte
 
 type largeBlobInventory struct {
-	credentials appcredentials.InventoryReport
-	keys        largeBlobKeyStore
-	blobs       []protocol.LargeBlob
-	blobsRead   bool
-}
-
-func NewLargeBlobState() *LargeBlobState {
-	return &LargeBlobState{}
+	credentials         appcredentials.InventoryReport
+	info                protocol.AuthenticatorGetInfoResponse
+	inventoryPermission protocol.Permission
+	support             applargeblobs.SupportReport
+	keys                largeBlobKeyStore
+	blobs               []protocol.LargeBlob
+	blobsRead           bool
 }
 
 func (r Runner) loadLargeBlobInventory(
 	ctx context.Context,
 	device LargeBlobDevice,
 	state *LargeBlobState,
-	grantPermission protocol.Permission,
+	requiredPermission protocol.Permission,
 ) (*largeBlobInventory, error) {
-	inventory, err := r.loadLargeBlobCredentialInventory(ctx, device, state, grantPermission)
+	inventory, err := r.loadLargeBlobCredentialInventory(ctx, device, state, requiredPermission)
 	if err != nil {
 		return nil, err
 	}
@@ -55,7 +57,7 @@ func (r Runner) loadLargeBlobCredentialInventory(
 	ctx context.Context,
 	device LargeBlobDevice,
 	state *LargeBlobState,
-	grantPermission protocol.Permission,
+	requiredPermission protocol.Permission,
 ) (*largeBlobInventory, error) {
 	if err := ctx.Err(); err != nil {
 		return nil, errornorm.Annotate(err, errornorm.WithPhase(failure.PhaseDiscovery))
@@ -65,16 +67,16 @@ func (r Runner) loadLargeBlobCredentialInventory(
 		return inventory, nil
 	}
 
-	return r.refreshLargeBlobCredentialInventory(ctx, device, state, grantPermission)
+	return r.refreshLargeBlobCredentialInventory(ctx, device, state, requiredPermission)
 }
 
 func (r Runner) refreshLargeBlobInventory(
 	ctx context.Context,
 	device LargeBlobDevice,
 	state *LargeBlobState,
-	grantPermission protocol.Permission,
+	requiredPermission protocol.Permission,
 ) (*largeBlobInventory, error) {
-	inventory, err := r.refreshLargeBlobCredentialInventory(ctx, device, state, grantPermission)
+	inventory, err := r.refreshLargeBlobCredentialInventory(ctx, device, state, requiredPermission)
 	if err != nil {
 		return nil, err
 	}
@@ -86,17 +88,29 @@ func (r Runner) refreshLargeBlobCredentialInventory(
 	ctx context.Context,
 	device LargeBlobDevice,
 	state *LargeBlobState,
-	grantPermission protocol.Permission,
+	requiredPermission protocol.Permission,
 ) (*largeBlobInventory, error) {
+	access, err := r.resolveCredentialAccess(ctx, device, requiredPermission)
+	if err != nil {
+		return nil, err
+	}
+
 	keys := make(largeBlobKeyStore)
-	credentials, err := r.credentialInventory(ctx, device, grantPermission, keys)
+	credentials, err := r.credentialInventory(ctx, device, access, keys)
 	if err != nil {
 		return nil, err
 	}
 
 	inventory := &largeBlobInventory{
-		credentials: credentials,
-		keys:        keys,
+		credentials:         credentials,
+		info:                access.info,
+		inventoryPermission: access.inventoryPermission,
+		support: applargeblobs.SupportReport{
+			LargeBlobs:                  access.info.Options[protocol.OptionLargeBlobs],
+			MaxSerializedLargeBlobArray: access.info.MaxSerializedLargeBlobArray,
+			LargeBlobKeyExtension:       slices.Contains(access.info.Extensions, extension.ExtensionIdentifierLargeBlobKey),
+		},
+		keys: keys,
 	}
 	state.replaceInventory(inventory)
 
@@ -112,12 +126,8 @@ func (r Runner) loadLargeBlobArrayIntoInventory(
 		return inventory, nil
 	}
 
-	info, err := r.getAuthenticatorInfo(ctx, device)
-	if err != nil {
-		return nil, err
-	}
-	support := buildLargeBlobSupportReport(info)
-	if support.LargeBlobs {
+	var err error
+	if inventory.support.LargeBlobs {
 		inventory.blobs, err = r.readLargeBlobArray(ctx, device)
 		if err != nil {
 			return nil, err
@@ -129,7 +139,7 @@ func (r Runner) loadLargeBlobArrayIntoInventory(
 }
 
 func (state *LargeBlobState) currentInventory() (*largeBlobInventory, bool) {
-	if state == nil || state.current == nil {
+	if state.current == nil {
 		return nil, false
 	}
 
@@ -137,26 +147,18 @@ func (state *LargeBlobState) currentInventory() (*largeBlobInventory, bool) {
 }
 
 func (state *LargeBlobState) replaceInventory(inventory *largeBlobInventory) {
-	if state == nil {
-		return
-	}
-
 	state.Clear()
 	state.current = inventory
 }
 
 func (state *LargeBlobState) replaceBlobs(blobs []protocol.LargeBlob) {
-	if state == nil || state.current == nil {
-		return
-	}
-
 	state.current.blobs = blobs
 	state.current.blobsRead = true
 }
 
 // Clear releases the credential keys retained for the selected authenticator.
 func (state *LargeBlobState) Clear() {
-	if state == nil || state.current == nil {
+	if state.current == nil {
 		return
 	}
 
@@ -165,28 +167,25 @@ func (state *LargeBlobState) Clear() {
 }
 
 func (inventory *largeBlobInventory) clear() {
-	if inventory == nil {
-		return
-	}
-
 	inventory.keys.zero()
 	inventory.keys = nil
 	inventory.blobs = nil
 	inventory.blobsRead = false
 }
 
+func (inventory *largeBlobInventory) permissionFor(required protocol.Permission) protocol.Permission {
+	return credentialAccessFor(
+		inventory.info,
+		inventory.inventoryPermission,
+		required,
+	).mutationPermission
+}
+
 func (keys largeBlobKeyStore) add(rpIDHashHex, credentialIDHex string, key []byte) {
-	keyID := largeBlobKeyID{
+	keys[largeBlobKeyID{
 		rpIDHashHex:     rpIDHashHex,
 		credentialIDHex: credentialIDHex,
-	}
-	if _, exists := keys[keyID]; exists {
-		secret.Zero(key)
-
-		return
-	}
-
-	keys[keyID] = key
+	}] = key
 }
 
 func (keys largeBlobKeyStore) get(rpIDHashHex, credentialIDHex string) []byte {

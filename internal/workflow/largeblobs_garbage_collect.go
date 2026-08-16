@@ -15,6 +15,7 @@ import (
 
 type garbageCollectState struct {
 	support            applargeblobs.SupportReport
+	mutationPermission protocol.Permission
 	blobs              []protocol.LargeBlob
 	replacement        []protocol.LargeBlob
 	matchedCount       int
@@ -30,20 +31,11 @@ func (r Runner) GarbageCollectLargeBlobs(
 	largeBlobState *LargeBlobState,
 	req applargeblobs.GarbageCollectOperation,
 ) (applargeblobs.MutationOutput, error) {
-	inventoryPermission, mutationPermission, _, err := r.inventoryMutationPermissions(
-		ctx,
-		device,
-		protocol.PermissionLargeBlobWrite,
-	)
-	if err != nil {
-		return applargeblobs.MutationOutput{}, err
-	}
-
 	state, err := r.loadGarbageCollectState(
 		ctx,
 		device,
 		largeBlobState,
-		inventoryPermission,
+		protocol.PermissionLargeBlobWrite,
 	)
 	if err != nil {
 		return applargeblobs.MutationOutput{}, err
@@ -56,18 +48,16 @@ func (r Runner) GarbageCollectLargeBlobs(
 	}
 
 	if state.orphanedCount == 0 {
-		result := r.buildGarbageCollectResult(state)
-
 		return applargeblobs.MutationOutput{
 			Preview: preview,
-			Result:  &result,
+			Result:  r.buildGarbageCollectResult(state),
 		}, nil
 	}
 
 	err = r.env.Tokens.Use(ctx, rtruntime.TokenUse{
-		Permission: mutationPermission,
+		Permission: state.mutationPermission,
 	}, func(token []byte) error {
-		r.recordStateEffect(rtruntime.StateEffectLargeBlobArrayChanged)
+		r.env.Effects.Record(rtruntime.StateEffectLargeBlobArrayChanged)
 
 		return device.SetLargeBlobs(ctx, token, state.replacement)
 	})
@@ -79,12 +69,11 @@ func (r Runner) GarbageCollectLargeBlobs(
 	}
 
 	largeBlobState.replaceBlobs(state.replacement)
-	r.recordStateEffect(rtruntime.StateEffectLargeBlobSnapshotSynchronized)
-	result := r.buildGarbageCollectResult(state)
+	r.env.Effects.Record(rtruntime.StateEffectLargeBlobSnapshotSynchronized)
 
 	return applargeblobs.MutationOutput{
 		Preview: preview,
-		Result:  &result,
+		Result:  r.buildGarbageCollectResult(state),
 	}, nil
 }
 
@@ -92,18 +81,14 @@ func (r Runner) loadGarbageCollectState(
 	ctx context.Context,
 	device LargeBlobDevice,
 	largeBlobState *LargeBlobState,
-	grantPermission protocol.Permission,
+	requiredPermission protocol.Permission,
 ) (garbageCollectState, error) {
-	inventory, err := r.loadLargeBlobInventory(ctx, device, largeBlobState, grantPermission)
+	inventory, err := r.loadLargeBlobInventory(ctx, device, largeBlobState, requiredPermission)
 	if err != nil {
 		return garbageCollectState{}, err
 	}
 
-	info, err := r.getAuthenticatorInfo(ctx, device)
-	if err != nil {
-		return garbageCollectState{}, err
-	}
-	support := buildLargeBlobSupportReport(info)
+	support := inventory.support
 	if !support.LargeBlobs {
 		return garbageCollectState{}, failure.New(failure.CodeLargeBlobUnsupported,
 			failure.WithPhase(failure.PhaseDiscovery),
@@ -147,6 +132,7 @@ func (r Runner) loadGarbageCollectState(
 
 	return garbageCollectState{
 		support:            support,
+		mutationPermission: inventory.permissionFor(requiredPermission),
 		blobs:              inventory.blobs,
 		replacement:        replacement,
 		matchedCount:       matchedCount,
@@ -188,8 +174,8 @@ func (r Runner) buildGarbageCollectPreview(state garbageCollectState) applargebl
 	}
 }
 
-func (r Runner) buildGarbageCollectResult(state garbageCollectState) applargeblobs.MutationResult {
-	return applargeblobs.MutationResult{
+func (r Runner) buildGarbageCollectResult(state garbageCollectState) *applargeblobs.MutationResult {
+	return &applargeblobs.MutationResult{
 		Operation:                          applargeblobs.MutationGC,
 		AttachmentID:                       r.env.Selected.Attachment.ID,
 		SerializedLargeBlobArraySizeBefore: state.sizeBefore,

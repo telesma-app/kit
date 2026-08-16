@@ -17,22 +17,21 @@ type attachment struct {
 }
 
 func newAttachment(candidate devicewatch.Candidate) attachment {
-	id := report.AttachmentID(string(candidate.Transport) + ":" + candidate.Path)
 	attachmentReport := report.AttachmentReport{
-		ID:        id,
+		ID:        report.AttachmentID(string(candidate.Transport) + ":" + candidate.Path),
 		Transport: candidate.Transport,
+	}
+	result := attachment{
+		mode: candidate.Transport,
+		path: candidate.Path,
 	}
 	if candidate.Transport == transport.ModeSmartCard {
 		attachmentReport.SmartCard = &report.SmartCardReport{
 			Reader:    candidate.Path,
 			Interface: candidate.SmartCardInterface,
+			ATR:       hex.EncodeToString(candidate.SmartCard.ATR),
 		}
-		if candidate.SmartCard != nil {
-			attachmentReport.SmartCard.ATR = hex.EncodeToString(
-				candidate.SmartCard.ATR,
-			)
-		}
-	} else if candidate.HID != nil {
+	} else {
 		attachmentReport.USB = &report.USBReport{
 			Manufacturer:   candidate.HID.MfrStr,
 			Product:        candidate.HID.ProductStr,
@@ -40,18 +39,12 @@ func newAttachment(candidate devicewatch.Candidate) attachment {
 			VendorID:       candidate.HID.VendorID,
 			ProductID:      candidate.HID.ProductID,
 		}
-	}
-
-	result := attachment{
-		mode: candidate.Transport,
-		path: candidate.Path,
-		report: report.DeviceReport{
-			Attachment: attachmentReport,
-		},
-	}
-	if candidate.HID != nil {
 		result.hidInstanceID = candidate.HID.InstanceID
 		result.hidParentID = candidate.HID.ParentDeviceID
+	}
+
+	result.report = report.DeviceReport{
+		Attachment: attachmentReport,
 	}
 
 	return result

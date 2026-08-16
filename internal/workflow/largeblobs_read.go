@@ -6,9 +6,7 @@ import (
 
 	"github.com/telesma-app/ctap/crypto"
 	"github.com/telesma-app/ctap/protocol"
-	"github.com/telesma-app/kit/internal/authenticator"
 	rtcredentials "github.com/telesma-app/kit/internal/credentials"
-	"github.com/telesma-app/kit/internal/errornorm"
 	"github.com/telesma-app/kit/internal/secret"
 	"github.com/telesma-app/kit/model/failure"
 	applargeblobs "github.com/telesma-app/kit/model/largeblobs"
@@ -20,7 +18,8 @@ func (r Runner) ReadLargeBlob(
 	largeBlobState *LargeBlobState,
 	req applargeblobs.ReadOperation,
 ) (applargeblobs.ReadReport, error) {
-	if err := r.requireLargeBlobReadSupport(ctx, device); err != nil {
+	_, credentialIDHex, err := rtcredentials.ParseCredentialID(req.CredentialIDHex)
+	if err != nil {
 		return applargeblobs.ReadReport{}, err
 	}
 
@@ -33,38 +32,29 @@ func (r Runner) ReadLargeBlob(
 	if err != nil {
 		return applargeblobs.ReadReport{}, err
 	}
+	if !inventory.support.LargeBlobs || !inventory.support.LargeBlobKeyExtension {
+		return applargeblobs.ReadReport{}, failure.New(failure.CodeLargeBlobUnsupported,
+			failure.WithPhase(failure.PhaseDiscovery),
+		)
+	}
 
-	return r.readLargeBlobFromInventory(ctx, device, req, inventory)
+	return r.readLargeBlobFromInventory(ctx, device, credentialIDHex, inventory)
 }
 
 func (r Runner) readLargeBlobFromInventory(
 	ctx context.Context,
 	device largeBlobArrayReader,
-	req applargeblobs.ReadOperation,
+	credentialIDHex string,
 	inventory *largeBlobInventory,
 ) (applargeblobs.ReadReport, error) {
-	if err := ctx.Err(); err != nil {
-		return applargeblobs.ReadReport{}, errornorm.Annotate(err, errornorm.WithPhase(failure.PhaseValidation))
-	}
-
-	if err := r.requireLargeBlobReadSupport(ctx, device); err != nil {
-		return applargeblobs.ReadReport{}, err
-	}
-
-	target, err := rtcredentials.FindByHexID(inventory.credentials, req.CredentialIDHex)
+	target, err := rtcredentials.FindByCanonicalID(inventory.credentials, credentialIDHex)
 	if err != nil {
 		return applargeblobs.ReadReport{}, err
 	}
 	largeBlobKey := inventory.keys.get(target.RP.IDHashHex, target.Record.CredentialIDHex)
-	if len(largeBlobKey) != 0 && len(largeBlobKey) != 32 {
-		return applargeblobs.ReadReport{}, failure.New(failure.CodeLargeBlobKeyInvalid,
-			failure.WithPhase(failure.PhaseDiscovery),
-		)
-	}
-
 	state := applargeblobs.ReadStateMissing
 	var raw []byte
-	if len(largeBlobKey) == 32 {
+	if largeBlobKey != nil {
 		inventory, err = r.loadLargeBlobArrayIntoInventory(ctx, device, inventory)
 		if err != nil {
 			return applargeblobs.ReadReport{}, err
@@ -109,22 +99,4 @@ func (r Runner) readLargeBlobFromInventory(
 		RawByteCount: len(raw),
 		RawBytes:     raw,
 	}, nil
-}
-
-func (r Runner) requireLargeBlobReadSupport(
-	ctx context.Context,
-	device authenticator.InfoProvider,
-) error {
-	info, err := r.getAuthenticatorInfo(ctx, device)
-	if err != nil {
-		return err
-	}
-	support := buildLargeBlobSupportReport(info)
-	if support.LargeBlobs && support.LargeBlobKeyExtension {
-		return nil
-	}
-
-	return failure.New(failure.CodeLargeBlobUnsupported,
-		failure.WithPhase(failure.PhaseDiscovery),
-	)
 }

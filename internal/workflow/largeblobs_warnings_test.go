@@ -22,7 +22,11 @@ func TestLargeBlobMutationWarningsDescribeFirstMatchingEntry(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			preview := buildMutationPreview(state, test.operation, test.byteCount, test.arraySize, false)
+			preview := buildMutationPreview(state, largeBlobMutationPlan{
+				operation: test.operation,
+				byteCount: test.byteCount,
+				sizeAfter: test.arraySize,
+			})
 			got := preview.Warnings[1].Message
 			if !strings.Contains(got, "first large-blob entry") ||
 				!strings.Contains(got, "additional matching entries remain unchanged") {

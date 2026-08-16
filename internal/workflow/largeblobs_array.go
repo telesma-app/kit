@@ -8,28 +8,13 @@ import (
 
 	"github.com/fxamacker/cbor/v2"
 	ctapauthenticator "github.com/telesma-app/ctap/authenticator"
-	"github.com/telesma-app/ctap/extension"
 	"github.com/telesma-app/ctap/protocol"
-	"github.com/telesma-app/kit/internal/authenticator"
 	"github.com/telesma-app/kit/internal/errornorm"
 	"github.com/telesma-app/kit/model/failure"
-	applargeblobs "github.com/telesma-app/kit/model/largeblobs"
-	"github.com/samber/lo"
 )
 
 type largeBlobArrayReader interface {
-	authenticator.InfoProvider
 	GetLargeBlobs(ctx context.Context) ([]protocol.LargeBlob, error)
-}
-
-func buildLargeBlobSupportReport(info protocol.AuthenticatorGetInfoResponse) applargeblobs.SupportReport {
-	report := applargeblobs.SupportReport{}
-	report.LargeBlobs = info.Options[protocol.OptionLargeBlobs]
-
-	report.MaxSerializedLargeBlobArray = info.MaxSerializedLargeBlobArray
-	report.LargeBlobKeyExtension = lo.Contains(info.Extensions, extension.ExtensionIdentifierLargeBlobKey)
-
-	return report
 }
 
 func serializedLargeBlobArraySize(blobs []protocol.LargeBlob) (int, error) {
@@ -83,10 +68,9 @@ func replaceBlob(
 	blobs []protocol.LargeBlob,
 	index int,
 	blob protocol.LargeBlob,
-	operation applargeblobs.MutationOperation,
 ) []protocol.LargeBlob {
 	replacement := slices.Clone(blobs)
-	if operation == applargeblobs.MutationReplace && index >= 0 {
+	if index >= 0 {
 		replacement[index] = blob
 
 		return replacement
@@ -96,10 +80,6 @@ func replaceBlob(
 }
 
 func removeBlobAt(blobs []protocol.LargeBlob, index int) []protocol.LargeBlob {
-	if index < 0 || index >= len(blobs) {
-		return blobs
-	}
-
 	out := make([]protocol.LargeBlob, 0, len(blobs)-1)
 	for candidateIndex, blob := range blobs {
 		if candidateIndex == index {
@@ -110,12 +90,4 @@ func removeBlobAt(blobs []protocol.LargeBlob, index int) []protocol.LargeBlob {
 	}
 
 	return out
-}
-
-func snapshotPtr[T any](value *T) *T {
-	if value == nil {
-		return nil
-	}
-
-	return new(*value)
 }

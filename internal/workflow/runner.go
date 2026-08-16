@@ -2,7 +2,6 @@ package workflow
 
 import (
 	"github.com/telesma-app/kit/internal/authenticator"
-	rtruntime "github.com/telesma-app/kit/internal/runtime"
 )
 
 type Runner struct {
@@ -11,10 +10,6 @@ type Runner struct {
 
 func NewRunner(env Environment) Runner {
 	return Runner{env: env}
-}
-
-func (r Runner) recordStateEffect(effect rtruntime.StateEffect) {
-	r.env.Effects.Record(effect)
 }
 
 type LargeBlobDevice = authenticator.LargeBlobDevice

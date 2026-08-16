@@ -6,14 +6,8 @@ import (
 )
 
 func BuildDeletePreview(
-	report appcredentials.InventoryReport,
-	credentialIDHex string,
-) (appcredentials.DeletePreview, error) {
-	target, err := FindByHexID(report, credentialIDHex)
-	if err != nil {
-		return appcredentials.DeletePreview{}, err
-	}
-
+	target appcredentials.CredentialTarget,
+) appcredentials.DeletePreview {
 	return appcredentials.DeletePreview{
 		CredentialIDHex: target.Record.CredentialIDHex,
 		RPID:            target.RP.ID,
@@ -33,5 +27,5 @@ func BuildDeletePreview(
 				Message:  "CTAP does not require credential deletion to remove its associated large blob; delete that blob separately or leave it for later garbage collection.",
 			},
 		},
-	}, nil
+	}
 }

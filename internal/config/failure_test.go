@@ -42,13 +42,13 @@ func TestPINPreviewFailuresUseStableCodes(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := buildPINPreview(tt.status, tt.operation, safety.PreviewModeDryRun)
+			_, err := BuildPINPreview(tt.status, tt.operation, safety.PreviewModeDryRun)
 			if !failure.IsCode(err, tt.wantCode) {
-				t.Fatalf("buildPINPreview error = %v, want %s", err, tt.wantCode)
+				t.Fatalf("BuildPINPreview error = %v, want %s", err, tt.wantCode)
 			}
 
 			if got := failure.Snapshot(err).Phase; got != failure.PhaseValidation {
-				t.Fatalf("buildPINPreview phase = %q, want %q", got, failure.PhaseValidation)
+				t.Fatalf("BuildPINPreview phase = %q, want %q", got, failure.PhaseValidation)
 			}
 		})
 	}
@@ -69,7 +69,7 @@ func TestBioPreviewFailuresUseStableCodes(t *testing.T) {
 }
 
 func TestAuthenticatorConfigPreviewFailuresUseStableCodes(t *testing.T) {
-	_, err := BuildAlwaysUVPreview(StatusReport{}, AlwaysUVTargetEnable, safety.PreviewModeDryRun)
+	_, err := BuildAlwaysUVPreview(StatusReport{}, AlwaysUVTargetEnable, true, safety.PreviewModeDryRun)
 	if !failure.IsCode(err, failure.CodeAuthenticatorConfigUnsupported) {
 		t.Fatalf("BuildAlwaysUVPreview(unsupported) error = %v, want %s", err, failure.CodeAuthenticatorConfigUnsupported)
 	}
@@ -81,14 +81,14 @@ func TestAuthenticatorConfigPreviewFailuresUseStableCodes(t *testing.T) {
 			State:     StateUnknown,
 		},
 	}}
-	_, err = BuildAlwaysUVPreview(status, AlwaysUVTargetEnable, safety.PreviewModeDryRun)
+	_, err = BuildAlwaysUVPreview(status, AlwaysUVTargetEnable, true, safety.PreviewModeDryRun)
 	if !failure.IsCode(err, failure.CodeAlwaysUVStateUnknown) {
 		t.Fatalf("BuildAlwaysUVPreview(unknown) error = %v, want %s", err, failure.CodeAlwaysUVStateUnknown)
 	}
 
 	status.AuthenticatorConfig.AlwaysUV.State = StateConfigured
 	status.AuthenticatorConfig.AlwaysUV.Configured = new(true)
-	_, err = BuildAlwaysUVPreview(status, AlwaysUVTargetEnable, safety.PreviewModeDryRun)
+	_, err = BuildAlwaysUVPreview(status, AlwaysUVTargetEnable, true, safety.PreviewModeDryRun)
 	if !failure.IsCode(err, failure.CodeAlwaysUVAlreadyTarget) {
 		t.Fatalf("BuildAlwaysUVPreview(already target) error = %v, want %s", err, failure.CodeAlwaysUVAlreadyTarget)
 	}
@@ -153,10 +153,6 @@ func TestMinPINLengthPreviewUsesZeroValuesAsAbsent(t *testing.T) {
 		t.Fatalf("preview = %#v", preview)
 	}
 
-	result := MinPINLengthResult("device", operation)
-	if len(result.MinPINLengthRPIDs) != 1 || !result.ForceChangePIN || !result.PINComplexityPolicy {
-		t.Fatalf("result = %#v", result)
-	}
 }
 
 func TestEnableLongTouchForResetPreviewValidation(t *testing.T) {

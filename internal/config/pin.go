@@ -12,15 +12,7 @@ const (
 	warningPINDryRunLocal    = "pin.dry_run.local_only"
 )
 
-func BuildSetPINPreview(status appconfig.StatusReport, mode safety.PreviewMode) (appconfig.PINMutationPreview, error) {
-	return buildPINPreview(status, appconfig.PINMutationSet, mode)
-}
-
-func BuildChangePINPreview(status appconfig.StatusReport, mode safety.PreviewMode) (appconfig.PINMutationPreview, error) {
-	return buildPINPreview(status, appconfig.PINMutationChange, mode)
-}
-
-func buildPINPreview(status appconfig.StatusReport, operation appconfig.PINMutationOperation, mode safety.PreviewMode) (appconfig.PINMutationPreview, error) {
+func BuildPINPreview(status appconfig.StatusReport, operation appconfig.PINMutationOperation, mode safety.PreviewMode) (appconfig.PINMutationPreview, error) {
 	if !status.PIN.Supported {
 		return appconfig.PINMutationPreview{}, failure.New(failure.CodePINUnsupported, failure.WithPhase(failure.PhaseValidation))
 	}
@@ -37,7 +29,7 @@ func buildPINPreview(status appconfig.StatusReport, operation appconfig.PINMutat
 			return appconfig.PINMutationPreview{}, failure.New(failure.CodePINNotConfigured, failure.WithPhase(failure.PhaseValidation))
 		}
 	default:
-		return appconfig.PINMutationPreview{}, failure.New(failure.CodePINUnsupported, failure.WithPhase(failure.PhaseValidation))
+		panic("config: invalid PIN mutation operation: " + string(operation))
 	}
 
 	warnings := []safety.Warning{pinMutationWarning(operation)}
@@ -73,10 +65,6 @@ func pinMutationWarning(operation appconfig.PINMutationOperation) safety.Warning
 			Message:  "Changing the PIN invalidates every existing pinUvAuthToken and clears persistent permissions; an incorrect current PIN consumes a retry and can block PIN use.",
 		}
 	default:
-		return safety.Warning{
-			Severity: safety.SeverityWarning,
-			Code:     "pin.mutation",
-			Message:  "A PIN mutation will be sent to this authenticator.",
-		}
+		panic("config: invalid PIN mutation operation: " + string(operation))
 	}
 }

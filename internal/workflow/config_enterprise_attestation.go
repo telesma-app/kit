@@ -47,10 +47,12 @@ func (r Runner) EnableEnterpriseAttestation(
 			protocol.ConfigSubCommandEnableEnterpriseAttestation,
 		))
 	}
-	result := rtconfig.EnterpriseAttestationResult(r.env.Selected.Attachment.ID)
-
 	return appconfig.AuthenticatorConfigOutput{
 		Preview: preview,
-		Result:  &result,
+		Result: &appconfig.AuthenticatorConfigResult{
+			Operation:    appconfig.AuthenticatorConfigEnterprise,
+			AttachmentID: r.env.Selected.Attachment.ID,
+			State:        appconfig.StateConfigured,
+		},
 	}, nil
 }

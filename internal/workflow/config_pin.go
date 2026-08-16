@@ -20,14 +20,17 @@ func (r Runner) SetPIN(
 	if err != nil {
 		return appconfig.PINOutput{}, err
 	}
-	status := rtconfig.BuildStatusReport(r.env.Selected, info)
 
 	mode := safety.PreviewModeDryRun
 	if !req.DryRun {
 		mode = safety.PreviewModeExecute
 	}
 
-	preview, err := rtconfig.BuildSetPINPreview(status, mode)
+	preview, err := rtconfig.BuildPINPreview(
+		rtconfig.BuildStatusReport(r.env.Selected, info),
+		appconfig.PINMutationSet,
+		mode,
+	)
 	if err != nil {
 		return appconfig.PINOutput{}, err
 	}
@@ -45,11 +48,13 @@ func (r Runner) SetPIN(
 			protocol.ClientPINSubCommandSetPIN,
 		))
 	}
-	result := rtconfig.PINSetResult(r.env.Selected.Attachment.ID)
-
 	return appconfig.PINOutput{
 		Preview: preview,
-		Result:  &result,
+		Result: &appconfig.PINMutationResult{
+			Operation:    appconfig.PINMutationSet,
+			AttachmentID: r.env.Selected.Attachment.ID,
+			PINState:     appconfig.StateConfigured,
+		},
 	}, nil
 }
 
@@ -62,14 +67,17 @@ func (r Runner) ChangePIN(
 	if err != nil {
 		return appconfig.PINOutput{}, err
 	}
-	status := rtconfig.BuildStatusReport(r.env.Selected, info)
 
 	mode := safety.PreviewModeDryRun
 	if !req.DryRun {
 		mode = safety.PreviewModeExecute
 	}
 
-	preview, err := rtconfig.BuildChangePINPreview(status, mode)
+	preview, err := rtconfig.BuildPINPreview(
+		rtconfig.BuildStatusReport(r.env.Selected, info),
+		appconfig.PINMutationChange,
+		mode,
+	)
 	if err != nil {
 		return appconfig.PINOutput{}, err
 	}
@@ -87,10 +95,12 @@ func (r Runner) ChangePIN(
 			protocol.ClientPINSubCommandChangePIN,
 		))
 	}
-	result := rtconfig.PINChangeResult(r.env.Selected.Attachment.ID)
-
 	return appconfig.PINOutput{
 		Preview: preview,
-		Result:  &result,
+		Result: &appconfig.PINMutationResult{
+			Operation:    appconfig.PINMutationChange,
+			AttachmentID: r.env.Selected.Attachment.ID,
+			PINState:     appconfig.StateConfigured,
+		},
 	}, nil
 }

@@ -97,7 +97,6 @@ func newCodeRegistry() map[Code]codeSpec {
 		CodeAuthenticatorSelectionCanceled,
 	)
 	register(CategoryInvalidOperation,
-		CodeInteractionKindRequired,
 		CodeInteractionHandlerRequired,
 		CodeMDSAAGUIDInvalid,
 		CodeRelyingPartyIDRequired,

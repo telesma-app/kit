@@ -3,6 +3,7 @@ package webauthn
 import (
 	"strings"
 
+	"github.com/samber/lo"
 	"github.com/telesma-app/ctap/attestation"
 	"github.com/telesma-app/ctap/credential"
 	"github.com/telesma-app/ctap/protocol"
@@ -10,55 +11,44 @@ import (
 	"github.com/telesma-app/kit/model/report"
 	"github.com/telesma-app/kit/model/safety"
 	appwebauthn "github.com/telesma-app/kit/model/webauthn"
-	"github.com/samber/lo"
 )
 
 func BuildMakeCredentialPreview(
 	device report.DeviceReport,
 	info protocol.AuthenticatorGetInfoResponse,
 	input appwebauthn.MakeCredentialInput,
-) (appwebauthn.MakeCredentialPreview, error) {
-	normalized, err := NormalizeMakeCredentialInput(input)
-	if err != nil {
-		return appwebauthn.MakeCredentialPreview{}, err
-	}
-
+) appwebauthn.MakeCredentialPreview {
 	warnings := []safety.Warning{{
 		Severity: safety.SeverityWarning,
 		Code:     "webauthn.make_credential.mutation",
 		Message:  "On success, authenticatorMakeCredential creates a new credential key pair.",
 	}}
-	if normalized.Options.ResidentKey != nil && *normalized.Options.ResidentKey {
+	if input.Options.ResidentKey != nil && *input.Options.ResidentKey {
 		warnings = append(warnings, safety.Warning{
 			Severity: safety.SeverityDestructive,
 			Code:     "webauthn.make_credential.discoverable_overwrite",
 			Message:  "With rk=true, an existing discoverable credential for the same RP ID and user ID is overwritten; its old credential ID stops resolving, and its large blob may be erased or orphaned.",
 		})
 	}
-	warnings = append(warnings, makeCredentialExtensionWarnings(info, normalized.Extensions)...)
+	warnings = append(warnings, makeCredentialExtensionWarnings(info, input.Extensions)...)
 
 	return appwebauthn.MakeCredentialPreview{
 		Device:   device,
-		Input:    normalized,
+		Input:    input,
 		Warnings: warnings,
-	}, nil
+	}
 }
 
 func BuildGetAssertionPreview(
 	device report.DeviceReport,
 	info protocol.AuthenticatorGetInfoResponse,
 	input appwebauthn.GetAssertionInput,
-) (appwebauthn.GetAssertionPreview, error) {
-	normalized, err := NormalizeGetAssertionInput(input)
-	if err != nil {
-		return appwebauthn.GetAssertionPreview{}, err
-	}
-
+) appwebauthn.GetAssertionPreview {
 	return appwebauthn.GetAssertionPreview{
 		Device:   device,
-		Input:    normalized,
-		Warnings: getAssertionExtensionWarnings(info, normalized.Extensions),
-	}, nil
+		Input:    input,
+		Warnings: getAssertionExtensionWarnings(info, input.Extensions),
+	}
 }
 
 func NormalizeMakeCredentialInput(

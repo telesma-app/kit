@@ -9,10 +9,10 @@ import (
 	"github.com/telesma-app/kit/model/safety"
 )
 
-func TestFindByHexID(t *testing.T) {
-	target, err := FindByHexID(sampleInventoryReport(), "deadbeef")
+func TestFindByCanonicalID(t *testing.T) {
+	target, err := FindByCanonicalID(sampleInventoryReport(), "deadbeef")
 	if err != nil {
-		t.Fatalf("FindByHexID: %v", err)
+		t.Fatalf("FindByCanonicalID: %v", err)
 	}
 
 	if target.RP.ID != "example.com" {
@@ -26,11 +26,11 @@ func TestFindByHexID(t *testing.T) {
 
 func TestBuildDeletePreview(t *testing.T) {
 	inventory := sampleInventoryReport()
-
-	preview, err := BuildDeletePreview(inventory, "deadbeef")
+	target, err := FindByCanonicalID(inventory, "deadbeef")
 	if err != nil {
-		t.Fatalf("BuildDeletePreview: %v", err)
+		t.Fatalf("FindByCanonicalID: %v", err)
 	}
+	preview := BuildDeletePreview(target)
 
 	if preview.CredentialIDHex != "deadbeef" {
 		t.Fatalf("CredentialIDHex = %q, want deadbeef", preview.CredentialIDHex)
@@ -53,28 +53,42 @@ func TestBuildDeletePreview(t *testing.T) {
 	}
 }
 
-func TestBuildDeletePreviewMissingCredential(t *testing.T) {
-	_, err := BuildDeletePreview(sampleInventoryReport(), "")
+func TestParseCredentialIDValidatesAndCanonicalizes(t *testing.T) {
+	id, canonical, err := ParseCredentialID(" DEADBEEF ")
+	if err != nil {
+		t.Fatalf("ParseCredentialID: %v", err)
+	}
+	if string(id) != "\xde\xad\xbe\xef" || canonical != "deadbeef" {
+		t.Fatalf("parsed ID = %x/%q, want deadbeef", id, canonical)
+	}
+
+	_, _, err = ParseCredentialID("")
 	if !failure.IsCode(err, failure.CodeCredentialIDRequired) {
-		t.Fatalf("BuildDeletePreview(empty) error = %v, want %s", err, failure.CodeCredentialIDRequired)
+		t.Fatalf("ParseCredentialID(empty) error = %v, want %s", err, failure.CodeCredentialIDRequired)
 	}
 
 	if got := failure.Snapshot(err).Phase; got != failure.PhaseValidation {
-		t.Fatalf("BuildDeletePreview(empty) phase = %q, want %q", got, failure.PhaseValidation)
+		t.Fatalf("ParseCredentialID(empty) phase = %q, want %q", got, failure.PhaseValidation)
+	}
+
+	_, _, err = ParseCredentialID("not-hex")
+	if !failure.IsCode(err, failure.CodeCTAPParameterInvalid) {
+		t.Fatalf("ParseCredentialID(invalid) error = %v, want %s", err, failure.CodeCTAPParameterInvalid)
 	}
 }
 
-func TestBuildUpdateUserPreviewKeepsUserID(t *testing.T) {
+func TestPrepareUpdateUserKeepsUserID(t *testing.T) {
 	target := sampleCredentialTarget(t)
 
-	preview, err := BuildUpdateUserPreview(UpdateUserOperation{
+	plan, err := PrepareUpdateUser(UpdateUserOperation{
 		Target:       target,
 		Name:         "alice-new@example.com",
 		NameProvided: true,
 	})
 	if err != nil {
-		t.Fatalf("BuildUpdateUserPreview: %v", err)
+		t.Fatalf("PrepareUpdateUser: %v", err)
 	}
+	preview := plan.Preview
 	if preview.Proposed.UserIDHex != "0102" {
 		t.Fatalf("Proposed.UserIDHex = %q, want unchanged user ID", preview.Proposed.UserIDHex)
 	}
@@ -84,10 +98,10 @@ func TestBuildUpdateUserPreviewKeepsUserID(t *testing.T) {
 	}
 }
 
-func TestBuildUpdateUserPreviewRequiresTargetAndChange(t *testing.T) {
-	_, err := BuildUpdateUserPreview(UpdateUserOperation{NameProvided: true})
+func TestPrepareUpdateUserRequiresTargetAndChange(t *testing.T) {
+	_, err := PrepareUpdateUser(UpdateUserOperation{NameProvided: true})
 	if !failure.IsCode(err, failure.CodeCredentialIDRequired) {
-		t.Fatalf("BuildUpdateUserPreview(empty target) error = %v, want %s", err, failure.CodeCredentialIDRequired)
+		t.Fatalf("PrepareUpdateUser(empty target) error = %v, want %s", err, failure.CodeCredentialIDRequired)
 	}
 
 	_, err = ResolveUpdatedUser(UpdateUserOperation{})
@@ -99,9 +113,9 @@ func TestBuildUpdateUserPreviewRequiresTargetAndChange(t *testing.T) {
 func sampleCredentialTarget(t *testing.T) CredentialTarget {
 	t.Helper()
 
-	target, err := FindByHexID(sampleInventoryReport(), "deadbeef")
+	target, err := FindByCanonicalID(sampleInventoryReport(), "deadbeef")
 	if err != nil {
-		t.Fatalf("FindByHexID: %v", err)
+		t.Fatalf("FindByCanonicalID: %v", err)
 	}
 
 	return target

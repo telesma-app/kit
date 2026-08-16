@@ -31,9 +31,7 @@ func Open(ctx context.Context, mode transport.Mode, path string) (*Opened, error
 	case transport.ModeSmartCard:
 		deviceTransport, err = ctappcsc.Open(ctx, path)
 	default:
-		return nil, failure.New(failure.CodeTransportModeUnsupported,
-			failure.WithPhase(failure.PhaseAuthenticator),
-		)
+		panic("authenticator: invalid transport mode: " + string(mode))
 	}
 
 	var opts []options.Option

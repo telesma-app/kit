@@ -38,10 +38,6 @@ func resolveDeviceMetadata(
 	}
 
 	usb := target.report.Attachment.USB
-	if usb == nil || vendor == nil {
-		return deviceMetadata{}, nil
-	}
-
 	switch usb.VendorID {
 	case yubicoVendorID:
 		info, err := yubicoctaphid.GetDeviceInfo(ctx, vendor)

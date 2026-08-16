@@ -47,10 +47,12 @@ func (r Runner) EnableLongTouchForReset(
 			protocol.ConfigSubCommandEnableLongTouchForReset,
 		))
 	}
-	result := rtconfig.LongTouchForResetResult(r.env.Selected.Attachment.ID)
-
 	return appconfig.AuthenticatorConfigOutput{
 		Preview: preview,
-		Result:  &result,
+		Result: &appconfig.AuthenticatorConfigResult{
+			Operation:    appconfig.AuthenticatorConfigLongTouch,
+			AttachmentID: r.env.Selected.Attachment.ID,
+			State:        appconfig.StateConfigured,
+		},
 	}, nil
 }

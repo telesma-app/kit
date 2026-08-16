@@ -10,11 +10,7 @@ import (
 	"github.com/telesma-app/kit/model/failure"
 )
 
-func (r Runner) ConfigStatus(ctx context.Context, device ConfigStatusDevice) (appconfig.StatusReport, error) {
-	return r.statusWithRetries(ctx, device)
-}
-
-func (r Runner) statusWithRetries(
+func (r Runner) ConfigStatus(
 	ctx context.Context,
 	device ConfigStatusDevice,
 ) (appconfig.StatusReport, error) {

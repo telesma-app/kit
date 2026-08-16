@@ -4,17 +4,17 @@ import (
 	"context"
 	"encoding/hex"
 
+	"github.com/samber/lo"
 	"github.com/telesma-app/ctap/protocol"
 	rtconfig "github.com/telesma-app/kit/internal/config"
 	"github.com/telesma-app/kit/internal/errornorm"
 	rtruntime "github.com/telesma-app/kit/internal/runtime"
 	appconfig "github.com/telesma-app/kit/model/config"
 	"github.com/telesma-app/kit/model/failure"
-	"github.com/samber/lo"
 )
 
 func (r Runner) BioList(ctx context.Context, device BioDevice) (appconfig.BioListReport, error) {
-	status, err := r.statusWithRetries(ctx, device)
+	status, err := r.ConfigStatus(ctx, device)
 	if err != nil {
 		return appconfig.BioListReport{}, err
 	}
@@ -141,18 +141,16 @@ func (r Runner) bioListReport(
 		))
 	}
 
-	records := lo.Map(resp.TemplateInfos, func(info protocol.TemplateInfo, _ int) appconfig.BioEnrollmentRecord {
-		return appconfig.BioEnrollmentRecord{
-			TemplateIDHex: hex.EncodeToString(info.TemplateID),
-			FriendlyName:  info.TemplateFriendlyName,
-		}
-	})
-
 	return appconfig.BioListReport{
 		Device:      status.Device,
 		Supported:   true,
 		PreviewOnly: status.Bio.PreviewOnly,
-		Enrollments: records,
+		Enrollments: lo.Map(resp.TemplateInfos, func(info protocol.TemplateInfo, _ int) appconfig.BioEnrollmentRecord {
+			return appconfig.BioEnrollmentRecord{
+				TemplateIDHex: hex.EncodeToString(info.TemplateID),
+				FriendlyName:  info.TemplateFriendlyName,
+			}
+		}),
 	}, nil
 }
 

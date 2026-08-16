@@ -76,12 +76,10 @@ func normalizeCTAP(
 		annotation.phase = failure.PhaseAssertionContinuation
 	}
 
-	detail := ctapDetail(ctapErr, annotation)
-
 	return failure.Wrap(
 		codeForCTAP(ctapErr.StatusCode, annotation),
 		err,
-		failureOptions(operation, annotation.phase, detail)...,
+		failureOptions(operation, annotation.phase, ctapDetail(ctapErr, annotation))...,
 	)
 }
 
@@ -92,8 +90,7 @@ func ctapDetail(ctapErr *ctaptransport.CTAPError, annotation Annotation) *failur
 	}
 
 	if annotation.subCommand != 0 {
-		subCommand := annotation.subCommand
-		detail.SubCommandCode = &subCommand
+		detail.SubCommandCode = new(annotation.subCommand)
 	}
 
 	return detail

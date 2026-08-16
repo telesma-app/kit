@@ -117,8 +117,13 @@ func optionFact(options map[protocol.Option]bool, id model.FactID, source string
 
 	value, present := options[option]
 	if !present {
-		defaultState := stateFor(semantics.defaultValue, semantics.trueState, model.FactStateUnsupported)
-		return boolFact(id, source, defaultState, model.FactOriginSpecDefault, semantics.defaultValue)
+		return boolFact(
+			id,
+			source,
+			stateFor(semantics.defaultValue, semantics.trueState, model.FactStateUnsupported),
+			model.FactOriginSpecDefault,
+			semantics.defaultValue,
+		)
 	}
 
 	return boolFact(id, source, stateFor(value, semantics.trueState, semantics.falseState), model.FactOriginReported, value)
@@ -355,9 +360,7 @@ func userVerifyPointer(value *protocol.UserVerify) *uint {
 		return nil
 	}
 
-	converted := uint(*value)
-
-	return &converted
+	return new(uint(*value))
 }
 
 var extensionFacts = [...]struct {

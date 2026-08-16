@@ -3,6 +3,7 @@ package workflow
 import (
 	"context"
 
+	"github.com/telesma-app/ctap/credential"
 	"github.com/telesma-app/ctap/protocol"
 	"github.com/telesma-app/kit/internal/authenticator"
 	rtcredentials "github.com/telesma-app/kit/internal/credentials"
@@ -17,7 +18,12 @@ func (r Runner) DeleteCredential(
 	device authenticator.CredentialManager,
 	req appcredentials.DeleteOperation,
 ) (appcredentials.DeleteOutput, error) {
-	inventoryPermission, mutationPermission, command, err := r.inventoryMutationPermissions(
+	credentialID, credentialIDHex, err := rtcredentials.ParseCredentialID(req.CredentialIDHex)
+	if err != nil {
+		return appcredentials.DeleteOutput{}, err
+	}
+
+	access, err := r.resolveCredentialAccess(
 		ctx,
 		device,
 		protocol.PermissionCredentialManagement,
@@ -29,57 +35,54 @@ func (r Runner) DeleteCredential(
 	report, err := r.credentialInventory(
 		ctx,
 		device,
-		inventoryPermission,
+		access,
 		nil,
 	)
 	if err != nil {
 		return appcredentials.DeleteOutput{}, err
 	}
-	preview, err := rtcredentials.BuildDeletePreview(report, req.CredentialIDHex)
+	publicTarget, err := rtcredentials.FindByCanonicalID(report, credentialIDHex)
 	if err != nil {
 		return appcredentials.DeleteOutput{}, err
 	}
+	preview := rtcredentials.BuildDeletePreview(publicTarget)
 
 	if req.DryRun {
 		return appcredentials.DeleteOutput{Preview: preview}, nil
 	}
 
-	publicTarget, err := rtcredentials.FindByHexID(report, req.CredentialIDHex)
-	if err != nil {
-		return appcredentials.DeleteOutput{}, err
+	var transports []credential.AuthenticatorTransport
+	for _, transport := range publicTarget.Record.CredentialTransports {
+		transports = append(transports, credential.AuthenticatorTransport(transport))
 	}
-
-	descriptor, err := credentialDescriptor(publicTarget.Record)
-	if err != nil {
-		return appcredentials.DeleteOutput{}, err
-	}
-
 	err = r.env.Tokens.Use(ctx, rtruntime.TokenUse{
-		Permission: mutationPermission,
+		Permission: access.mutationPermission,
 	}, func(token []byte) error {
-		r.recordStateEffect(rtruntime.StateEffectCredentialInventoryChanged)
+		r.env.Effects.Record(rtruntime.StateEffectCredentialInventoryChanged)
 
-		return device.DeleteCredential(ctx, token, descriptor)
+		return device.DeleteCredential(ctx, token, credential.PublicKeyCredentialDescriptor{
+			Type:       credential.PublicKeyCredentialType(publicTarget.Record.CredentialType),
+			ID:         credentialID,
+			Transports: transports,
+		})
 	})
 	if err != nil {
 		return appcredentials.DeleteOutput{}, errornorm.Annotate(err, errornorm.WithCredentialManagementSubCommand(
 			failure.PhaseAuthenticatorCommand,
-			command,
+			access.command,
 			protocol.CredentialManagementSubCommandDeleteCredential,
 		))
 	}
-	result := appcredentials.DeleteResult{
-		AttachmentID:    r.env.Selected.Attachment.ID,
-		CredentialIDHex: publicTarget.Record.CredentialIDHex,
-		RPID:            publicTarget.RP.ID,
-		RPName:          publicTarget.RP.Name,
-		UserIDHex:       publicTarget.User.UserIDHex,
-		UserName:        publicTarget.User.Name,
-		DisplayName:     publicTarget.User.DisplayName,
-	}
-
 	return appcredentials.DeleteOutput{
 		Preview: preview,
-		Result:  &result,
+		Result: &appcredentials.DeleteResult{
+			AttachmentID:    r.env.Selected.Attachment.ID,
+			CredentialIDHex: publicTarget.Record.CredentialIDHex,
+			RPID:            publicTarget.RP.ID,
+			RPName:          publicTarget.RP.Name,
+			UserIDHex:       publicTarget.User.UserIDHex,
+			UserName:        publicTarget.User.Name,
+			DisplayName:     publicTarget.User.DisplayName,
+		},
 	}, nil
 }

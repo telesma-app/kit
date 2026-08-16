@@ -72,22 +72,19 @@ func executeSerializedOperation[T any](
 
 	events := rtruntime.NewEventDispatcher(config.events)
 	interactions := rtruntime.NewInteractionBroker(events, config.handler)
-	effects := rtruntime.NewStateEffects()
-	tokens := rtruntime.NewTokenService(
-		a.tokens,
-		a.tokenProvider,
-		interactions,
-		rtruntime.VerificationFlow(config.verificationFlow),
-	)
-	runner := workflow.NewRunner(workflow.Environment{
+	effects := &rtruntime.StateEffects{}
+	result, err := call(workflow.NewRunner(workflow.Environment{
 		Selected:     a.selected,
 		Events:       events,
 		Interactions: interactions,
-		Tokens:       tokens,
-		Effects:      effects,
-	})
-
-	result, err := call(runner, childCtx)
+		Tokens: rtruntime.NewTokenService(
+			a.tokens,
+			a.tokenProvider,
+			interactions,
+			rtruntime.VerificationFlow(config.verificationFlow),
+		),
+		Effects: effects,
+	}), childCtx)
 	if effects.InvalidatesLargeBlobSnapshot() {
 		a.largeBlobState.Clear()
 	}

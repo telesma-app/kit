@@ -2,9 +2,7 @@ package workflow
 
 import (
 	"context"
-	"encoding/hex"
 
-	"github.com/telesma-app/ctap/credential"
 	"github.com/telesma-app/ctap/protocol"
 	"github.com/telesma-app/kit/internal/authenticator"
 	rtcredentials "github.com/telesma-app/kit/internal/credentials"
@@ -19,16 +17,16 @@ func (r Runner) UpdateCredentialUser(
 	device authenticator.CredentialManager,
 	req appcredentials.UpdateUserOperation,
 ) (appcredentials.UpdateUserOutput, error) {
-	preview, err := rtcredentials.BuildUpdateUserPreview(req)
+	plan, err := rtcredentials.PrepareUpdateUser(req)
 	if err != nil {
 		return appcredentials.UpdateUserOutput{}, err
 	}
 
 	if req.DryRun {
-		return appcredentials.UpdateUserOutput{Preview: preview}, nil
+		return appcredentials.UpdateUserOutput{Preview: plan.Preview}, nil
 	}
 
-	_, mutationPermission, command, err := r.inventoryMutationPermissions(
+	access, err := r.resolveCredentialAccess(
 		ctx,
 		device,
 		protocol.PermissionCredentialManagement,
@@ -37,60 +35,29 @@ func (r Runner) UpdateCredentialUser(
 		return appcredentials.UpdateUserOutput{}, err
 	}
 
-	userID, err := decodeCredentialHex(preview.Proposed.UserIDHex)
-	if err != nil {
-		return appcredentials.UpdateUserOutput{}, err
-	}
-
-	descriptor, err := credentialDescriptor(req.Target.Record)
-	if err != nil {
-		return appcredentials.UpdateUserOutput{}, err
-	}
-
-	updatedUser := credential.PublicKeyCredentialUserEntity{
-		ID:          userID,
-		Name:        preview.Proposed.Name,
-		DisplayName: preview.Proposed.DisplayName,
-	}
-
 	err = r.env.Tokens.Use(ctx, rtruntime.TokenUse{
-		Permission: mutationPermission,
+		Permission: access.mutationPermission,
 	}, func(token []byte) error {
-		r.recordStateEffect(rtruntime.StateEffectCredentialInventoryChanged)
+		r.env.Effects.Record(rtruntime.StateEffectCredentialInventoryChanged)
 
-		return device.UpdateUserInformation(ctx, token, descriptor, updatedUser)
+		return device.UpdateUserInformation(ctx, token, plan.Descriptor, plan.User)
 	})
 	if err != nil {
 		return appcredentials.UpdateUserOutput{}, errornorm.Annotate(err, errornorm.WithCredentialManagementSubCommand(
 			failure.PhaseAuthenticatorCommand,
-			command,
+			access.command,
 			protocol.CredentialManagementSubCommandUpdateUserInformation,
 		))
 	}
-	result := appcredentials.UpdateUserResult{
-		AttachmentID:    r.env.Selected.Attachment.ID,
-		CredentialIDHex: req.Target.Record.CredentialIDHex,
-		RPID:            req.Target.RP.ID,
-		RPName:          req.Target.RP.Name,
-		Previous:        req.Target.User,
-		Current:         preview.Proposed,
-	}
-
 	return appcredentials.UpdateUserOutput{
-		Preview: preview,
-		Result:  &result,
+		Preview: plan.Preview,
+		Result: &appcredentials.UpdateUserResult{
+			AttachmentID:    r.env.Selected.Attachment.ID,
+			CredentialIDHex: plan.Preview.CredentialIDHex,
+			RPID:            plan.Preview.RPID,
+			RPName:          plan.Preview.RPName,
+			Previous:        plan.Preview.Current,
+			Current:         plan.Preview.Proposed,
+		},
 	}, nil
-}
-
-func decodeCredentialHex(value string) ([]byte, error) {
-	decoded, err := hex.DecodeString(value)
-	if err != nil {
-		return nil, failure.Wrap(
-			failure.CodeUserIDHexInvalid,
-			err,
-			failure.WithPhase(failure.PhaseDecode),
-		)
-	}
-
-	return decoded, nil
 }

@@ -164,7 +164,7 @@ func TestAuthenticatorPreCompletedContextHasAuthenticatorPhase(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := opened.ConfigStatus(tt.ctx, nil)
+			_, err := opened.ConfigStatus(tt.ctx)
 			requireFailureCode(t, err, tt.code)
 
 			snapshot := failure.Snapshot(err)

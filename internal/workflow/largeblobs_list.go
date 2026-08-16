@@ -5,11 +5,8 @@ import (
 
 	"github.com/telesma-app/ctap/crypto"
 	"github.com/telesma-app/ctap/protocol"
-	"github.com/telesma-app/kit/internal/authenticator"
-	"github.com/telesma-app/kit/internal/errornorm"
 	"github.com/telesma-app/kit/internal/secret"
 	appcredentials "github.com/telesma-app/kit/model/credentials"
-	"github.com/telesma-app/kit/model/failure"
 	applargeblobs "github.com/telesma-app/kit/model/largeblobs"
 )
 
@@ -23,12 +20,7 @@ func (r Runner) ListLargeBlobs(
 		return applargeblobs.ListReport{}, err
 	}
 
-	report, err := r.listLargeBlobsFromInventory(ctx, device, inventory)
-	if err != nil {
-		return applargeblobs.ListReport{}, err
-	}
-
-	return report, nil
+	return r.listLargeBlobsFromInventory(inventory), nil
 }
 
 type listCredentialKey struct {
@@ -37,19 +29,9 @@ type listCredentialKey struct {
 }
 
 func (r Runner) listLargeBlobsFromInventory(
-	ctx context.Context,
-	device authenticator.InfoProvider,
 	inventory *largeBlobInventory,
-) (applargeblobs.ListReport, error) {
-	if err := ctx.Err(); err != nil {
-		return applargeblobs.ListReport{}, errornorm.Annotate(err, errornorm.WithPhase(failure.PhaseDiscovery))
-	}
-
-	info, err := r.getAuthenticatorInfo(ctx, device)
-	if err != nil {
-		return applargeblobs.ListReport{}, err
-	}
-	support := buildLargeBlobSupportReport(info)
+) applargeblobs.ListReport {
+	support := inventory.support
 	summary := applargeblobs.ListArraySummary{}
 	var entries []applargeblobs.ArrayEntry
 	if support.LargeBlobs {
@@ -80,7 +62,7 @@ func (r Runner) listLargeBlobsFromInventory(
 		Support: support,
 		Array:   summary,
 		Entries: entries,
-	}, nil
+	}
 }
 
 func listCredentialKeys(inventory *largeBlobInventory) []listCredentialKey {
@@ -88,7 +70,7 @@ func listCredentialKeys(inventory *largeBlobInventory) []listCredentialKey {
 	for _, group := range inventory.credentials.Groups {
 		for _, record := range group.Credentials {
 			key := inventory.keys.get(group.RPIDHashHex, record.CredentialIDHex)
-			if len(key) != 32 {
+			if key == nil {
 				continue
 			}
 
@@ -135,8 +117,7 @@ func classifyLargeBlobEntry(
 			continue
 		}
 
-		target := candidate.target
-		entry.Target = &target
+		entry.Target = &candidate.target
 		raw, err := crypto.DecompressLargeBlobData(compressed, blob.OrigSize)
 		secret.Zero(compressed)
 		if err != nil {

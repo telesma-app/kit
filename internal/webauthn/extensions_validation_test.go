@@ -46,10 +46,7 @@ func TestBuildWebAuthnPreviewsKeepRawWarningsAndPRFSemantics(t *testing.T) {
 		CredentialProtectionPolicy: extension.CredentialProtectionPolicyUserVerificationOptional,
 	}
 	makeExtensions.CreateCredentialBlobInputs = &ctapwebauthn.CreateCredentialBlobInputs{CredBlob: []byte("blob")}
-	makePreview, err := BuildMakeCredentialPreview(device, info, validMakeCredentialInput(makeExtensions))
-	if err != nil {
-		t.Fatalf("BuildMakeCredentialPreview: %v", err)
-	}
+	makePreview := BuildMakeCredentialPreview(device, info, validMakeCredentialInput(makeExtensions))
 
 	if len(makePreview.Warnings) != 4 || makePreview.Warnings[3].Code != "webauthn.extension.prf.not_advertised" {
 		t.Fatalf("Make warnings = %#v, want mutation plus raw and PRF warnings", makePreview.Warnings)
@@ -58,12 +55,9 @@ func TestBuildWebAuthnPreviewsKeepRawWarningsAndPRFSemantics(t *testing.T) {
 		!strings.Contains(got, "ignore unsupported extension inputs") {
 		t.Fatalf("PRF warning = %q", got)
 	}
-	supportedPreview, err := BuildMakeCredentialPreview(device, protocol.AuthenticatorGetInfoResponse{
+	supportedPreview := BuildMakeCredentialPreview(device, protocol.AuthenticatorGetInfoResponse{
 		Extensions: []extension.ExtensionIdentifier{extension.ExtensionIdentifierHMACSecret},
 	}, validMakeCredentialInput(makeExtensions))
-	if err != nil {
-		t.Fatalf("BuildMakeCredentialPreview with PRF support: %v", err)
-	}
 
 	for _, warning := range supportedPreview.Warnings {
 		if warning.Code == "webauthn.extension.prf.not_advertised" {
@@ -71,15 +65,11 @@ func TestBuildWebAuthnPreviewsKeepRawWarningsAndPRFSemantics(t *testing.T) {
 		}
 	}
 
-	getPreview, err := BuildGetAssertionPreview(device, info, GetAssertionInput{
+	getPreview := BuildGetAssertionPreview(device, info, GetAssertionInput{
 		RPID:           "example.com",
 		ClientDataJSON: []byte("client-data"),
 		Extensions:     getPRFExtensions(ctapwebauthn.AuthenticationExtensionsPRFInputs{}),
 	})
-	if err != nil {
-		t.Fatalf("BuildGetAssertionPreview: %v", err)
-	}
-
 	if len(getPreview.Warnings) != 0 {
 		t.Fatalf("Get warnings = %#v, want no warning for an empty PRF request", getPreview.Warnings)
 	}
@@ -89,15 +79,11 @@ func TestBuildMakeCredentialPreviewWarnsAboutDiscoverableOverwrite(t *testing.T)
 	input := validMakeCredentialInput(nil)
 	input.Options.ResidentKey = new(true)
 
-	preview, err := BuildMakeCredentialPreview(
+	preview := BuildMakeCredentialPreview(
 		report.DeviceReport{},
 		protocol.AuthenticatorGetInfoResponse{},
 		input,
 	)
-	if err != nil {
-		t.Fatalf("BuildMakeCredentialPreview: %v", err)
-	}
-
 	if len(preview.Warnings) != 2 {
 		t.Fatalf("Warnings = %#v, want mutation and overwrite warnings", preview.Warnings)
 	}
@@ -108,17 +94,13 @@ func TestBuildMakeCredentialPreviewWarnsAboutDiscoverableOverwrite(t *testing.T)
 }
 
 func TestBuildMakeCredentialPreviewDefersCredentialBlobLimitToCTAP(t *testing.T) {
-	preview, err := BuildMakeCredentialPreview(
+	preview := BuildMakeCredentialPreview(
 		report.DeviceReport{},
 		protocol.AuthenticatorGetInfoResponse{MaxCredBlobLength: 3},
 		validMakeCredentialInput(&ctapwebauthn.CreateAuthenticationExtensionsClientInputs{
 			CreateCredentialBlobInputs: &ctapwebauthn.CreateCredentialBlobInputs{CredBlob: []byte("four")},
 		}),
 	)
-	if err != nil {
-		t.Fatalf("BuildMakeCredentialPreview: %v", err)
-	}
-
 	if got := string(preview.Input.Extensions.CredBlob); got != "four" {
 		t.Fatalf("credential blob = %q, want preserved for ctap validation", got)
 	}
@@ -148,7 +130,7 @@ func validMakeCredentialInput(
 		User:           credential.PublicKeyCredentialUserEntity{ID: []byte{0x01}},
 		ClientDataJSON: []byte("client-data"),
 		PubKeyCredParams: []credential.PublicKeyCredentialParameters{
-			{Algorithm: -7},
+			{Type: credential.PublicKeyCredentialTypePublicKey, Algorithm: -7},
 		},
 		Extensions: extensions,
 	}

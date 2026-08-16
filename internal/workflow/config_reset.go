@@ -22,8 +22,7 @@ func (r Runner) ResetFactory(
 	if err != nil {
 		return appconfig.ResetFactoryOutput{}, err
 	}
-	status := rtconfig.BuildStatusReport(r.env.Selected, info)
-	preview := rtconfig.BuildResetFactoryPreview(status)
+	preview := rtconfig.BuildResetFactoryPreview(rtconfig.BuildStatusReport(r.env.Selected, info))
 
 	if req.DryRun {
 		preview.Mode = safety.PreviewModeDryRun
@@ -40,7 +39,7 @@ func (r Runner) ResetFactory(
 		return appconfig.ResetFactoryOutput{}, err
 	}
 
-	r.recordStateEffect(rtruntime.StateEffectAuthenticatorReset)
+	r.env.Effects.Record(rtruntime.StateEffectAuthenticatorReset)
 
 	err = device.Reset(ctx)
 	r.env.Tokens.Invalidate()
@@ -51,10 +50,11 @@ func (r Runner) ResetFactory(
 			protocol.AuthenticatorReset,
 		))
 	}
-	result := rtconfig.ResetResultForDevice(r.env.Selected.Attachment.ID)
-
 	return appconfig.ResetFactoryOutput{
 		Preview: preview,
-		Result:  &result,
+		Result: &appconfig.ResetResult{
+			AttachmentID: r.env.Selected.Attachment.ID,
+			Reset:        true,
+		},
 	}, nil
 }

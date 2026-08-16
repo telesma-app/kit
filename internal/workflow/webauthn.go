@@ -6,6 +6,7 @@ import (
 	"slices"
 
 	"github.com/fxamacker/cbor/v2"
+	"github.com/samber/lo"
 	"github.com/telesma-app/ctap/extension"
 	"github.com/telesma-app/ctap/protocol"
 	ctapwebauthn "github.com/telesma-app/ctap/webauthn"
@@ -16,7 +17,6 @@ import (
 	"github.com/telesma-app/kit/model/failure"
 	"github.com/telesma-app/kit/model/report"
 	appwebauthn "github.com/telesma-app/kit/model/webauthn"
-	"github.com/samber/lo"
 )
 
 func (r Runner) MakeCredential(
@@ -33,10 +33,7 @@ func (r Runner) MakeCredential(
 	if err != nil {
 		return appwebauthn.MakeCredentialOutput{}, err
 	}
-	preview, err := rtwebauthn.BuildMakeCredentialPreview(r.env.Selected, info, input)
-	if err != nil {
-		return appwebauthn.MakeCredentialOutput{}, err
-	}
+	preview := rtwebauthn.BuildMakeCredentialPreview(r.env.Selected, info, input)
 	if req.DryRun {
 		return appwebauthn.MakeCredentialOutput{Preview: preview}, nil
 	}
@@ -47,7 +44,7 @@ func (r Runner) MakeCredential(
 		RPID:            input.RP.ID,
 		TryWithoutToken: makeCredentialShouldTryWithoutToken(info, input),
 	}, func(token []byte) error {
-		r.recordStateEffect(rtruntime.StateEffectCredentialInventoryChanged)
+		r.env.Effects.Record(rtruntime.StateEffectCredentialInventoryChanged)
 
 		current, err := device.MakeCredential(
 			ctx,
@@ -101,12 +98,10 @@ func makeCredentialShouldTryWithoutToken(
 		return true
 	}
 
-	uvTokenAvailable := info.Options[protocol.OptionUserVerification] &&
-		info.Options[protocol.OptionPinUvAuthToken]
-	pinTokenAvailable := info.Options[protocol.OptionClientPIN] &&
-		!info.Options[protocol.OptionNoMcGaPermissionsWithClientPin]
-
-	return !uvTokenAvailable && !pinTokenAvailable
+	return (!info.Options[protocol.OptionUserVerification] ||
+		!info.Options[protocol.OptionPinUvAuthToken]) &&
+		(!info.Options[protocol.OptionClientPIN] ||
+			info.Options[protocol.OptionNoMcGaPermissionsWithClientPin])
 }
 
 func (r Runner) GetAssertion(
@@ -123,21 +118,22 @@ func (r Runner) GetAssertion(
 	if err != nil {
 		return appwebauthn.GetAssertionOutput{}, err
 	}
-	preview, err := rtwebauthn.BuildGetAssertionPreview(r.env.Selected, info, input)
-	if err != nil {
-		return appwebauthn.GetAssertionOutput{}, err
-	}
+	preview := rtwebauthn.BuildGetAssertionPreview(r.env.Selected, info, input)
 	if req.DryRun {
 		return appwebauthn.GetAssertionOutput{Preview: preview}, nil
 	}
 
 	var responses []protocol.AuthenticatorGetAssertionResponse
 
-	readAssertions := func(token []byte) error {
+	if err := r.env.Tokens.Use(ctx, rtruntime.TokenUse{
+		Permission:      protocol.PermissionGetAssertion,
+		RPID:            input.RPID,
+		TryWithoutToken: true,
+	}, func(token []byte) error {
 		if input.Extensions != nil &&
 			input.Extensions.LargeBlobInputs != nil &&
 			input.Extensions.LargeBlob.Write != nil {
-			r.recordStateEffect(rtruntime.StateEffectLargeBlobArrayChanged)
+			r.env.Effects.Record(rtruntime.StateEffectLargeBlobArrayChanged)
 		}
 
 		var current []protocol.AuthenticatorGetAssertionResponse
@@ -163,13 +159,7 @@ func (r Runner) GetAssertion(
 		responses = current
 
 		return nil
-	}
-
-	if err := r.env.Tokens.Use(ctx, rtruntime.TokenUse{
-		Permission:      protocol.PermissionGetAssertion,
-		RPID:            input.RPID,
-		TryWithoutToken: true,
-	}, readAssertions); err != nil {
+	}); err != nil {
 		return appwebauthn.GetAssertionOutput{}, err
 	}
 

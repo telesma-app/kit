@@ -39,7 +39,7 @@ func TestStateEffectsInvalidateLargeBlobSnapshot(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			effects := NewStateEffects()
+			effects := &StateEffects{}
 			for _, effect := range tt.effects {
 				effects.Record(effect)
 			}

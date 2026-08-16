@@ -10,7 +10,7 @@ import (
 func TestLargeBlobStateRetainsInventory(t *testing.T) {
 	blobs := []protocol.LargeBlob{{Ciphertext: []byte{0x01}}}
 	inventory := &largeBlobInventory{blobs: blobs}
-	state := NewLargeBlobState()
+	state := &LargeBlobState{}
 	state.replaceInventory(inventory)
 
 	loaded, ok := state.currentInventory()
@@ -33,7 +33,7 @@ func TestLargeBlobStateRetainsInventory(t *testing.T) {
 
 func TestLargeBlobStateClearZerosOwnedKeys(t *testing.T) {
 	key := bytes.Repeat([]byte{0x11}, 32)
-	state := NewLargeBlobState()
+	state := &LargeBlobState{}
 	state.replaceInventory(&largeBlobInventory{
 		keys: largeBlobKeyStore{
 			{rpIDHashHex: "rp", credentialIDHex: "credential"}: key,

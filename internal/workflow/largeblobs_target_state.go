@@ -1,8 +1,6 @@
 package workflow
 
 import (
-	"context"
-
 	"github.com/telesma-app/ctap/crypto"
 	"github.com/telesma-app/ctap/protocol"
 	rtcredentials "github.com/telesma-app/kit/internal/credentials"
@@ -25,25 +23,15 @@ type targetBlobState struct {
 }
 
 func (r Runner) loadTargetBlobState(
-	ctx context.Context,
-	device LargeBlobDevice,
 	inventory *largeBlobInventory,
 	credentialIDHex string,
 ) (targetBlobState, error) {
-	if err := ctx.Err(); err != nil {
-		return targetBlobState{}, err
-	}
-
-	target, err := rtcredentials.FindByHexID(inventory.credentials, credentialIDHex)
+	target, err := rtcredentials.FindByCanonicalID(inventory.credentials, credentialIDHex)
 	if err != nil {
 		return targetBlobState{}, err
 	}
 
-	info, err := r.getAuthenticatorInfo(ctx, device)
-	if err != nil {
-		return targetBlobState{}, err
-	}
-	support := buildLargeBlobSupportReport(info)
+	support := inventory.support
 	if !support.LargeBlobs || !support.LargeBlobKeyExtension {
 		return targetBlobState{}, failure.New(failure.CodeLargeBlobUnsupported,
 			failure.WithPhase(failure.PhaseDiscovery),
@@ -56,12 +44,6 @@ func (r Runner) loadTargetBlobState(
 			failure.WithPhase(failure.PhaseDiscovery),
 		)
 	}
-	if len(largeBlobKey) != 32 {
-		return targetBlobState{}, failure.New(failure.CodeLargeBlobKeyInvalid,
-			failure.WithPhase(failure.PhaseDiscovery),
-		)
-	}
-
 	sizeBefore, err := serializedLargeBlobArraySize(inventory.blobs)
 	if err != nil {
 		return targetBlobState{}, err

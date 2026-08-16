@@ -1,21 +1,35 @@
 package credentials
 
 import (
+	"encoding/hex"
 	"strings"
 
 	appcredentials "github.com/telesma-app/kit/model/credentials"
 	"github.com/telesma-app/kit/model/failure"
 )
 
-func FindByHexID(report appcredentials.InventoryReport, credentialIDHex string) (appcredentials.CredentialTarget, error) {
-	credentialIDHex = strings.TrimSpace(credentialIDHex)
-	if credentialIDHex == "" {
-		return appcredentials.CredentialTarget{}, failure.New(
+func ParseCredentialID(value string) ([]byte, string, error) {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return nil, "", failure.New(
 			failure.CodeCredentialIDRequired,
 			failure.WithPhase(failure.PhaseValidation),
 		)
 	}
 
+	id, err := hex.DecodeString(value)
+	if err != nil {
+		return nil, "", failure.Wrap(
+			failure.CodeCTAPParameterInvalid,
+			err,
+			failure.WithPhase(failure.PhaseValidation),
+		)
+	}
+
+	return id, hex.EncodeToString(id), nil
+}
+
+func FindByCanonicalID(report appcredentials.InventoryReport, credentialIDHex string) (appcredentials.CredentialTarget, error) {
 	for _, group := range report.Groups {
 		for _, record := range group.Credentials {
 			if record.CredentialIDHex != credentialIDHex {

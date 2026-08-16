@@ -3,7 +3,6 @@ package devicewatch
 import (
 	"context"
 	"errors"
-	"fmt"
 	"iter"
 	"maps"
 	"slices"
@@ -14,6 +13,7 @@ import (
 	"github.com/telesma-app/ctap/backend/hidproxy"
 	ctapiso7816 "github.com/telesma-app/ctap/transport/iso7816"
 	ghid "github.com/telesma-app/hid"
+	"github.com/telesma-app/kit/model/failure"
 	"github.com/telesma-app/kit/transport"
 	"github.com/telesma-app/pcsc"
 )
@@ -487,6 +487,8 @@ func sourceModes(requested transport.Mode) ([]transport.Mode, error) {
 	case transport.ModeSmartCard:
 		return []transport.Mode{transport.ModeSmartCard}, nil
 	default:
-		return nil, fmt.Errorf("ctapkit: unsupported transport mode %q", requested)
+		return nil, failure.New(failure.CodeTransportModeUnsupported,
+			failure.WithPhase(failure.PhaseValidation),
+		)
 	}
 }

@@ -3,13 +3,13 @@ package config
 import (
 	"strconv"
 
+	"github.com/samber/lo"
 	"github.com/telesma-app/ctap/credential"
 	"github.com/telesma-app/ctap/protocol"
 	"github.com/telesma-app/kit/internal/getinfo"
 	appconfig "github.com/telesma-app/kit/model/config"
 	appinspect "github.com/telesma-app/kit/model/inspect"
 	"github.com/telesma-app/kit/model/report"
-	"github.com/samber/lo"
 )
 
 func BuildStatusReport(device report.DeviceReport, info protocol.AuthenticatorGetInfoResponse) appconfig.StatusReport {
@@ -176,7 +176,7 @@ func factCapability(assessment appinspect.Assessment, id appinspect.FactID, prev
 	case appinspect.FactStateUnknown:
 		state.State = appconfig.StateUnknown
 	default:
-		state.State = appconfig.StateUnknown
+		panic("config: invalid fact state: " + string(fact.State))
 	}
 
 	if previewOnly && state.Supported {

@@ -27,9 +27,5 @@ func NewEventDispatcher(sink EventSink) *EventDispatcher {
 }
 
 func (d *EventDispatcher) Emit(ctx context.Context, event model.OperationEvent) {
-	if d == nil || d.sink == nil {
-		return
-	}
-
 	d.sink.Emit(ctx, event)
 }

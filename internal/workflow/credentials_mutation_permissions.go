@@ -2,70 +2,68 @@ package workflow
 
 import (
 	"context"
-	"encoding/hex"
 
-	"github.com/telesma-app/ctap/credential"
 	"github.com/telesma-app/ctap/protocol"
 	"github.com/telesma-app/kit/internal/authenticator"
-	appcredentials "github.com/telesma-app/kit/model/credentials"
-	"github.com/telesma-app/kit/model/failure"
 )
 
-func (r Runner) inventoryMutationPermissions(
+type credentialAccess struct {
+	info                protocol.AuthenticatorGetInfoResponse
+	command             protocol.Command
+	inventoryPermission protocol.Permission
+	grantPermission     protocol.Permission
+	mutationPermission  protocol.Permission
+}
+
+func (r Runner) resolveCredentialAccess(
 	ctx context.Context,
 	device authenticator.CredentialInventoryReader,
 	required protocol.Permission,
-) (protocol.Permission, protocol.Permission, protocol.Command, error) {
+) (credentialAccess, error) {
 	info, err := r.getAuthenticatorInfo(ctx, device)
 	if err != nil {
-		return protocol.PermissionNone, protocol.PermissionNone, 0, err
+		return credentialAccess{}, err
 	}
-	command := credentialManagementCommand(info)
 
 	inventory, err := inventoryPermission(info)
 	if err != nil {
-		return protocol.PermissionNone, protocol.PermissionNone, 0, err
+		return credentialAccess{}, err
+	}
+
+	return credentialAccessFor(info, inventory, required), nil
+}
+
+func credentialAccessFor(
+	info protocol.AuthenticatorGetInfoResponse,
+	inventory protocol.Permission,
+	required protocol.Permission,
+) credentialAccess {
+	command := protocol.AuthenticatorCredentialManagement
+	if info.Versions.IsPreviewOnly() {
+		command = protocol.PrototypeAuthenticatorCredentialManagement
+	}
+	access := credentialAccess{
+		info:                info,
+		command:             command,
+		inventoryPermission: inventory,
 	}
 
 	if required&protocol.PermissionCredentialManagement != 0 {
-		return required, required, command, nil
+		access.grantPermission = required
+		access.mutationPermission = required
+
+		return access
 	}
 
 	if inventory == protocol.PermissionPersistentCredentialManagementReadOnly {
-		return inventory, required, command, nil
+		access.grantPermission = inventory
+		access.mutationPermission = required
+
+		return access
 	}
 
-	grant := required | protocol.PermissionCredentialManagement
+	access.grantPermission = required | protocol.PermissionCredentialManagement
+	access.mutationPermission = access.grantPermission
 
-	return grant, grant, command, nil
-}
-
-func credentialDescriptor(record appcredentials.CredentialRecord) (credential.PublicKeyCredentialDescriptor, error) {
-	id, err := hex.DecodeString(record.CredentialIDHex)
-	if err != nil {
-		return credential.PublicKeyCredentialDescriptor{}, failure.Wrap(
-			failure.CodeInternalError,
-			err,
-			failure.WithPhase(failure.PhaseDecode),
-		)
-	}
-
-	return credential.PublicKeyCredentialDescriptor{
-		Type:       credential.PublicKeyCredentialType(record.CredentialType),
-		ID:         id,
-		Transports: credentialAuthenticatorTransports(record.CredentialTransports),
-	}, nil
-}
-
-func credentialAuthenticatorTransports(transports []string) []credential.AuthenticatorTransport {
-	if len(transports) == 0 {
-		return nil
-	}
-
-	out := make([]credential.AuthenticatorTransport, 0, len(transports))
-	for _, transport := range transports {
-		out = append(out, credential.AuthenticatorTransport(transport))
-	}
-
-	return out
+	return access
 }

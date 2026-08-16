@@ -35,12 +35,12 @@ func TestBioMutationPreviewRejectsKnownEmptyEnrollmentSet(t *testing.T) {
 		},
 	})
 
-	if _, err := BuildBioRenamePreview(status, "01", "left thumb", safety.PreviewModeDryRun); !failure.IsCode(err, failure.CodeBioNoEnrollments) {
-		t.Fatalf("BuildBioRenamePreview error = %v, want %s", err, failure.CodeBioNoEnrollments)
+	if _, err := BuildBioMutationPreview(status, BioMutationRename, "01", "left thumb", safety.PreviewModeDryRun); !failure.IsCode(err, failure.CodeBioNoEnrollments) {
+		t.Fatalf("BuildBioMutationPreview(rename) error = %v, want %s", err, failure.CodeBioNoEnrollments)
 	}
 
-	if _, err := BuildBioRemovePreview(status, "01", safety.PreviewModeDryRun); !failure.IsCode(err, failure.CodeBioNoEnrollments) {
-		t.Fatalf("BuildBioRemovePreview error = %v, want %s", err, failure.CodeBioNoEnrollments)
+	if _, err := BuildBioMutationPreview(status, BioMutationRemove, "01", "", safety.PreviewModeDryRun); !failure.IsCode(err, failure.CodeBioNoEnrollments) {
+		t.Fatalf("BuildBioMutationPreview(remove) error = %v, want %s", err, failure.CodeBioNoEnrollments)
 	}
 }
 

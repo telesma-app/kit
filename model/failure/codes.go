@@ -10,7 +10,6 @@ const (
 	CodeOperationCanceled                     Code = "OPERATION_CANCELED"
 	CodeOperationTimeout                      Code = "OPERATION_TIMEOUT"
 	CodeVerificationFlowUnsupported           Code = "VERIFICATION_FLOW_UNSUPPORTED"
-	CodeInteractionKindRequired               Code = "INTERACTION_KIND_REQUIRED"
 	CodeInteractionHandlerRequired            Code = "INTERACTION_HANDLER_REQUIRED"
 	CodeInteractionCanceled                   Code = "INTERACTION_CANCELED"
 	CodeAuthenticatorClosed                   Code = "AUTHENTICATOR_CLOSED"

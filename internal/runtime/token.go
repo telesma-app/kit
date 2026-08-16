@@ -124,8 +124,7 @@ func (s *TokenService) Use(
 			return nil
 		}
 
-		normalized := errornorm.Normalize(err, "")
-		if normalized.Code != failure.CodePINUVAuthInvalid {
+		if errornorm.Normalize(err, "").Code != failure.CodePINUVAuthInvalid {
 			return err
 		}
 
@@ -276,9 +275,7 @@ func (s *TokenService) acquireUsingPIN(
 
 func (s *TokenService) storeToken(key TokenKey, token []byte) []byte {
 	out := slices.Clone(token)
-	handle := secret.New(token)
-
-	s.cache.SetToken(key, handle)
+	s.cache.SetToken(key, secret.New(token))
 
 	return out
 }

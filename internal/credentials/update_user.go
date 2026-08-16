@@ -1,52 +1,88 @@
 package credentials
 
 import (
+	"encoding/hex"
 	"strings"
 
+	"github.com/telesma-app/ctap/credential"
 	appcredentials "github.com/telesma-app/kit/model/credentials"
 	"github.com/telesma-app/kit/model/failure"
 	"github.com/telesma-app/kit/model/safety"
 )
 
-func BuildUpdateUserPreview(operation appcredentials.UpdateUserOperation) (appcredentials.UpdateUserPreview, error) {
+type UpdateUserPlan struct {
+	Preview    appcredentials.UpdateUserPreview
+	Descriptor credential.PublicKeyCredentialDescriptor
+	User       credential.PublicKeyCredentialUserEntity
+}
+
+func PrepareUpdateUser(operation appcredentials.UpdateUserOperation) (UpdateUserPlan, error) {
 	target := operation.Target
 
-	if strings.TrimSpace(target.Record.CredentialIDHex) == "" {
-		return appcredentials.UpdateUserPreview{}, failure.New(
-			failure.CodeCredentialIDRequired,
-			failure.WithPhase(failure.PhaseValidation),
-		)
+	credentialID, credentialIDHex, err := ParseCredentialID(target.Record.CredentialIDHex)
+	if err != nil {
+		return UpdateUserPlan{}, err
 	}
+	target.Record.CredentialIDHex = credentialIDHex
 
-	if strings.TrimSpace(target.RP.ID) == "" {
-		return appcredentials.UpdateUserPreview{}, failure.New(
+	target.RP.ID = strings.TrimSpace(target.RP.ID)
+	if target.RP.ID == "" {
+		return UpdateUserPlan{}, failure.New(
 			failure.CodeRelyingPartyIDRequired,
 			failure.WithPhase(failure.PhaseValidation),
 		)
 	}
 
+	userID, err := hex.DecodeString(strings.TrimSpace(target.User.UserIDHex))
+	if err != nil {
+		return UpdateUserPlan{}, failure.Wrap(
+			failure.CodeUserIDHexInvalid,
+			err,
+			failure.WithPhase(failure.PhaseValidation),
+		)
+	}
+	target.User.UserIDHex = hex.EncodeToString(userID)
+	operation.Target = target
+
 	proposed, err := ResolveUpdatedUser(operation)
 	if err != nil {
-		return appcredentials.UpdateUserPreview{}, err
+		return UpdateUserPlan{}, err
 	}
 
-	return appcredentials.UpdateUserPreview{
-		CredentialIDHex: target.Record.CredentialIDHex,
-		RPID:            target.RP.ID,
-		RPName:          target.RP.Name,
-		Current:         target.User,
-		Proposed:        proposed,
-		Warnings: []safety.Warning{
-			{
-				Severity: safety.SeverityDestructive,
-				Code:     "credential.update_user.mutation",
-				Message:  "Changing the stored user information may prevent you from signing in with this passkey.",
+	var transports []credential.AuthenticatorTransport
+	for _, value := range target.Record.CredentialTransports {
+		transports = append(transports, credential.AuthenticatorTransport(value))
+	}
+
+	return UpdateUserPlan{
+		Preview: appcredentials.UpdateUserPreview{
+			CredentialIDHex: target.Record.CredentialIDHex,
+			RPID:            target.RP.ID,
+			RPName:          target.RP.Name,
+			Current:         target.User,
+			Proposed:        proposed,
+			Warnings: []safety.Warning{
+				{
+					Severity: safety.SeverityDestructive,
+					Code:     "credential.update_user.mutation",
+					Message:  "Changing the stored user information may prevent you from signing in with this passkey.",
+				},
+				{
+					Severity: safety.SeverityInfo,
+					Code:     "credential.update_user.scope",
+					Message:  "CTAP requires user.id to remain identical and leaves the credential ID, key pair, and relying-party binding unchanged.",
+				},
 			},
-			{
-				Severity: safety.SeverityInfo,
-				Code:     "credential.update_user.scope",
-				Message:  "CTAP requires user.id to remain identical and leaves the credential ID, key pair, and relying-party binding unchanged.",
-			},
+		},
+		Descriptor: credential.PublicKeyCredentialDescriptor{
+			Type:       credential.PublicKeyCredentialType(target.Record.CredentialType),
+			ID:         credentialID,
+			Transports: transports,
+		},
+		User: credential.PublicKeyCredentialUserEntity{
+			ID:          userID,
+			Name:        proposed.Name,
+			DisplayName: proposed.DisplayName,
 		},
 	}, nil
 }

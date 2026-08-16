@@ -51,9 +51,7 @@ func BuildEnableEnterpriseAttestationPreview(status appconfig.StatusReport, mode
 	}, nil
 }
 
-func BuildAlwaysUVPreview(status appconfig.StatusReport, target appconfig.AlwaysUVTarget, mode safety.PreviewMode) (appconfig.AuthenticatorConfigPreview, error) {
-	requested := target == appconfig.AlwaysUVTargetEnable
-
+func BuildAlwaysUVPreview(status appconfig.StatusReport, target appconfig.AlwaysUVTarget, requested bool, mode safety.PreviewMode) (appconfig.AuthenticatorConfigPreview, error) {
 	if !status.AuthenticatorConfig.Supported {
 		return appconfig.AuthenticatorConfigPreview{}, failure.New(failure.CodeAuthenticatorConfigUnsupported, failure.WithPhase(failure.PhaseValidation))
 	}
@@ -79,12 +77,23 @@ func BuildAlwaysUVPreview(status appconfig.StatusReport, target appconfig.Always
 		CurrentAlwaysUV:   alwaysUV.Configured,
 		RequestedAlwaysUV: requested,
 		Mode:              mode,
-		Warnings:          []safety.Warning{alwaysUVWarning(target)},
+		Warnings:          []safety.Warning{alwaysUVWarning(requested)},
 	}, nil
 }
 
-func alwaysUVWarning(target appconfig.AlwaysUVTarget) safety.Warning {
-	if target == appconfig.AlwaysUVTargetEnable {
+func ParseAlwaysUVTarget(target appconfig.AlwaysUVTarget) (bool, error) {
+	switch target {
+	case appconfig.AlwaysUVTargetEnable:
+		return true, nil
+	case appconfig.AlwaysUVTargetDisable:
+		return false, nil
+	default:
+		return false, failure.New(failure.CodeCTAPParameterInvalid, failure.WithPhase(failure.PhaseValidation))
+	}
+}
+
+func alwaysUVWarning(requested bool) safety.Warning {
+	if requested {
 		return safety.Warning{
 			Severity: safety.SeverityWarning,
 			Code:     warningAlwaysUVEnable,

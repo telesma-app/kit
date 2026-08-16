@@ -1,99 +1,16 @@
 package workflow
 
 import (
-	"github.com/telesma-app/ctap/crypto"
 	applargeblobs "github.com/telesma-app/kit/model/largeblobs"
 	"github.com/telesma-app/kit/model/safety"
 )
 
 const sharedArrayRewriteWarning = "CTAP updates one credential's blob by rewriting the authenticator's entire shared serialized large-blob array."
 
-func buildWritePreviewFromState(state targetBlobState, payload []byte) (applargeblobs.MutationPreview, error) {
-	operation := applargeblobs.MutationCreate
-	if state.currentBlobIndex >= 0 {
-		operation = applargeblobs.MutationReplace
-	}
-
-	proposedSize, err := estimateSerializedArraySize(state, payload, operation)
-	if err != nil {
-		return applargeblobs.MutationPreview{}, err
-	}
-
-	if err := checkSerializedArrayLimit(state.support.MaxSerializedLargeBlobArray, proposedSize); err != nil {
-		return applargeblobs.MutationPreview{}, err
-	}
-
-	return buildMutationPreview(state, operation, len(payload), proposedSize, false), nil
-}
-
-func buildDeletePreviewFromState(state targetBlobState) (applargeblobs.MutationPreview, error) {
-	operation := applargeblobs.MutationDelete
-	noBlob := false
-
-	proposedSize := state.serializedArraySizeBefore
-	if state.currentBlobIndex < 0 {
-		operation = applargeblobs.MutationNoBlob
-		noBlob = true
-	} else {
-		blobs := removeBlobAt(state.blobs, state.currentBlobIndex)
-
-		var err error
-
-		proposedSize, err = serializedLargeBlobArraySize(blobs)
-		if err != nil {
-			return applargeblobs.MutationPreview{}, err
-		}
-	}
-
-	return buildMutationPreview(state, operation, 0, proposedSize, noBlob), nil
-}
-
-func estimateSerializedArraySize(state targetBlobState, payload []byte, operation applargeblobs.MutationOperation) (int, error) {
-	blob, err := crypto.EncryptLargeBlob(state.key, payload)
-	if err != nil {
-		return 0, err
-	}
-
-	if operation == applargeblobs.MutationReplace && state.currentBlobIndex >= 0 {
-		current := state.blobs[state.currentBlobIndex]
-		state.blobs[state.currentBlobIndex] = blob
-		size, sizeErr := serializedLargeBlobArraySize(state.blobs)
-		state.blobs[state.currentBlobIndex] = current
-		if sizeErr != nil {
-			return 0, sizeErr
-		}
-
-		return size, nil
-	}
-
-	size, err := serializedLargeBlobArraySize(append(state.blobs, blob))
-	if err != nil {
-		return 0, err
-	}
-
-	return size, nil
-}
-
 func buildMutationPreview(
 	state targetBlobState,
-	operation applargeblobs.MutationOperation,
-	proposedByteCount int,
-	sizeAfter int,
-	noBlob bool,
+	plan largeBlobMutationPlan,
 ) applargeblobs.MutationPreview {
-	blobCountAfter := len(state.blobs)
-
-	switch operation {
-	case applargeblobs.MutationCreate:
-		blobCountAfter++
-	case applargeblobs.MutationDelete:
-		blobCountAfter--
-	}
-
-	if blobCountAfter < 0 {
-		blobCountAfter = 0
-	}
-
 	warnings := []safety.Warning{
 		{
 			Severity: safety.SeverityWarning,
@@ -102,7 +19,8 @@ func buildMutationPreview(
 		},
 	}
 
-	switch operation {
+	switch plan.operation {
+	case applargeblobs.MutationCreate:
 	case applargeblobs.MutationReplace:
 		warnings = append(warnings, safety.Warning{
 			Severity: safety.SeverityWarning,
@@ -121,10 +39,12 @@ func buildMutationPreview(
 			Code:     "large_blob.delete_noop",
 			Message:  "No large blob exists for this credential; delete is a no-op.",
 		})
+	default:
+		panic("workflow: invalid large-blob mutation operation: " + string(plan.operation))
 	}
 
 	return applargeblobs.MutationPreview{
-		Operation: operation,
+		Operation: plan.operation,
 		Device:    state.selected,
 		Support:   state.support,
 		Target: applargeblobs.BlobTarget{
@@ -134,13 +54,13 @@ func buildMutationPreview(
 		},
 		LargeBlobKeyState:                  applargeblobs.LargeBlobKeyAvailable,
 		CurrentByteCount:                   state.currentByteCount,
-		ProposedByteCount:                  proposedByteCount,
+		ProposedByteCount:                  plan.byteCount,
 		SerializedLargeBlobArraySizeBefore: state.serializedArraySizeBefore,
-		SerializedLargeBlobArraySizeAfter:  sizeAfter,
+		SerializedLargeBlobArraySizeAfter:  plan.sizeAfter,
 		SerializedLargeBlobArrayLimit:      state.support.MaxSerializedLargeBlobArray,
 		BlobCountBefore:                    len(state.blobs),
-		BlobCountAfter:                     blobCountAfter,
-		NoBlob:                             noBlob,
+		BlobCountAfter:                     mutationBlobCountAfter(len(state.blobs), plan.operation),
+		NoBlob:                             plan.operation == applargeblobs.MutationNoBlob,
 		Warnings:                           warnings,
 	}
 }

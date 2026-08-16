@@ -9,7 +9,6 @@ import (
 	"testing"
 
 	"github.com/telesma-app/ctap/crypto"
-	"github.com/telesma-app/ctap/extension"
 	"github.com/telesma-app/ctap/protocol"
 	appcredentials "github.com/telesma-app/kit/model/credentials"
 	"github.com/telesma-app/kit/model/failure"
@@ -28,101 +27,57 @@ func TestReadLargeBlobFollowsPerCredentialReadAlgorithm(t *testing.T) {
 	}
 
 	tests := []struct {
-		name         string
-		supported    bool
-		keyExtension bool
-		key          []byte
-		blobs        []protocol.LargeBlob
-		wantState    applargeblobs.ReadState
-		wantPayload  []byte
-		wantFailure  failure.Code
-		wantReads    int
+		name        string
+		key         []byte
+		blobs       []protocol.LargeBlob
+		wantState   applargeblobs.ReadState
+		wantPayload []byte
+		wantFailure failure.Code
+		wantReads   int
 	}{
 		{
-			name:         "large blobs unsupported",
-			key:          key,
-			keyExtension: true,
-			wantFailure:  failure.CodeLargeBlobUnsupported,
+			name:      "key missing means blob missing",
+			wantState: applargeblobs.ReadStateMissing,
 		},
 		{
-			name:        "large blob key extension unsupported",
-			supported:   true,
+			name:      "blob missing",
+			key:       key,
+			wantState: applargeblobs.ReadStateMissing,
+			wantReads: 1,
+		},
+		{
+			name:      "nonconforming entry skipped",
+			key:       key,
+			blobs:     []protocol.LargeBlob{nonconforming},
+			wantState: applargeblobs.ReadStateMissing,
+			wantReads: 1,
+		},
+		{
+			name:        "blob present",
 			key:         key,
-			wantFailure: failure.CodeLargeBlobUnsupported,
+			blobs:       []protocol.LargeBlob{present},
+			wantState:   applargeblobs.ReadStatePresent,
+			wantPayload: []byte("payload"),
+			wantReads:   1,
 		},
 		{
-			name:         "key missing means blob missing",
-			supported:    true,
-			keyExtension: true,
-			wantState:    applargeblobs.ReadStateMissing,
-		},
-		{
-			name:         "key invalid",
-			supported:    true,
-			keyExtension: true,
-			key:          []byte{1},
-			wantFailure:  failure.CodeLargeBlobKeyInvalid,
-		},
-		{
-			name:         "blob missing",
-			supported:    true,
-			keyExtension: true,
-			key:          key,
-			wantState:    applargeblobs.ReadStateMissing,
-			wantReads:    1,
-		},
-		{
-			name:         "nonconforming entry skipped",
-			supported:    true,
-			keyExtension: true,
-			key:          key,
-			blobs:        []protocol.LargeBlob{nonconforming},
-			wantState:    applargeblobs.ReadStateMissing,
-			wantReads:    1,
-		},
-		{
-			name:         "blob present",
-			supported:    true,
-			keyExtension: true,
-			key:          key,
-			blobs:        []protocol.LargeBlob{present},
-			wantState:    applargeblobs.ReadStatePresent,
-			wantPayload:  []byte("payload"),
-			wantReads:    1,
-		},
-		{
-			name:         "authenticated blob with corrupt compressed data",
-			supported:    true,
-			keyExtension: true,
-			key:          key,
-			blobs:        []protocol.LargeBlob{corrupt},
-			wantFailure:  failure.CodeLargeBlobIntegrityFailure,
-			wantReads:    1,
+			name:        "authenticated blob with corrupt compressed data",
+			key:         key,
+			blobs:       []protocol.LargeBlob{corrupt},
+			wantFailure: failure.CodeLargeBlobIntegrityFailure,
+			wantReads:   1,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			options := map[protocol.Option]bool{}
-			if tt.supported {
-				options[protocol.OptionLargeBlobs] = true
-			}
-			var extensions []extension.ExtensionIdentifier
-			if tt.keyExtension {
-				extensions = []extension.ExtensionIdentifier{extension.ExtensionIdentifierLargeBlobKey}
-			}
-
 			device := &largeBlobReadDeviceStub{
-				inspectDeviceStub: inspectDeviceStub{info: protocol.AuthenticatorGetInfoResponse{
-					Extensions: extensions,
-					Options:    options,
-				}},
 				blobs: tt.blobs,
 			}
 			report, err := (Runner{}).readLargeBlobFromInventory(
 				t.Context(),
 				device,
-				applargeblobs.ReadOperation{CredentialIDHex: "c05e"},
+				"c05e",
 				workflowLargeBlobInventory(tt.key, tt.blobs),
 			)
 			if device.reads != tt.wantReads {
@@ -171,6 +126,10 @@ func workflowLargeBlobInventory(key []byte, blobs []protocol.LargeBlob) *largeBl
 	}
 
 	return &largeBlobInventory{
+		support: applargeblobs.SupportReport{
+			LargeBlobs:            true,
+			LargeBlobKeyExtension: true,
+		},
 		credentials: appcredentials.InventoryReport{
 			Summary: appcredentials.InventorySummary{TotalCredentials: 1},
 			Groups: []appcredentials.CredentialGroup{{

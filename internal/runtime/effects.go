@@ -16,29 +16,17 @@ type StateEffects struct {
 	recorded StateEffect
 }
 
-func NewStateEffects() *StateEffects {
-	return &StateEffects{}
-}
-
 func (effects *StateEffects) Record(effect StateEffect) {
-	if effects == nil {
-		return
-	}
-
 	effects.recorded |= effect
 }
 
 func (effects *StateEffects) Has(effect StateEffect) bool {
-	return effects != nil && effects.recorded&effect != 0
+	return effects.recorded&effect != 0
 }
 
 // InvalidatesLargeBlobSnapshot reports whether the retained credential and
 // large-blob inventory can no longer be trusted after the operation.
 func (effects *StateEffects) InvalidatesLargeBlobSnapshot() bool {
-	if effects == nil {
-		return false
-	}
-
 	if effects.Has(StateEffectCredentialInventoryChanged) ||
 		effects.Has(StateEffectAuthenticatorReset) {
 		return true

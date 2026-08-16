@@ -415,6 +415,12 @@ func TestLargeBlobWriteReplacesAuthenticatedEntryWithCorruptCompressedData(t *te
 		output.Result.BlobCountAfter != 1 {
 		t.Fatalf("result = %#v, want one replaced entry with declared previous size 7", output.Result)
 	}
+	if output.Preview.Operation != output.Result.Operation ||
+		output.Preview.ProposedByteCount != output.Result.ProposedByteCount ||
+		output.Preview.SerializedLargeBlobArraySizeAfter != output.Result.SerializedLargeBlobArraySizeAfter ||
+		output.Preview.BlobCountAfter != output.Result.BlobCountAfter {
+		t.Fatalf("preview/result diverged: %#v / %#v", output.Preview, output.Result)
+	}
 	if len(a.lastSetLargeBlobs) != 1 {
 		t.Fatalf("written blobs = %d, want 1", len(a.lastSetLargeBlobs))
 	}

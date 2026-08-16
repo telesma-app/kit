@@ -11,12 +11,26 @@ import (
 	ghid "github.com/telesma-app/hid"
 	rtauthenticator "github.com/telesma-app/kit/internal/authenticator"
 	"github.com/telesma-app/kit/internal/devicewatch"
+	"github.com/telesma-app/kit/model/failure"
 	"github.com/telesma-app/kit/model/report"
 	"github.com/telesma-app/kit/transport"
 	"github.com/telesma-app/pcsc"
 	"github.com/telesma-app/token2"
 	"github.com/telesma-app/yubico"
 )
+
+func TestNewDeviceManagerRejectsInvalidTransportMode(t *testing.T) {
+	manager, err := NewDeviceManager(t.Context(), transport.Mode("invalid"))
+	if manager != nil {
+		t.Fatal("manager != nil")
+	}
+	if !failure.IsCode(err, failure.CodeTransportModeUnsupported) {
+		t.Fatalf("error = %v, want %s", err, failure.CodeTransportModeUnsupported)
+	}
+	if got := failure.Snapshot(err).Phase; got != failure.PhaseValidation {
+		t.Fatalf("phase = %q, want %q", got, failure.PhaseValidation)
+	}
+}
 
 type fakeDeviceWatcher struct {
 	snapshot devicewatch.Snapshot

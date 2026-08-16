@@ -8,7 +8,7 @@ import (
 )
 
 func TestTokenStoreReplacesAndWipesToken(t *testing.T) {
-	store := NewTokenStore()
+	store := &TokenStore{}
 	previous := secret.New([]byte("previous"))
 	store.SetToken(TokenKey{Permission: protocol.PermissionCredentialManagement}, previous)
 
@@ -23,7 +23,7 @@ func TestTokenStoreReplacesAndWipesToken(t *testing.T) {
 }
 
 func TestTokenStoreCompositeGrantCoversSubset(t *testing.T) {
-	store := NewTokenStore()
+	store := &TokenStore{}
 	store.SetToken(TokenKey{
 		Permission: protocol.PermissionCredentialManagement |
 			protocol.PermissionLargeBlobWrite,
@@ -37,7 +37,7 @@ func TestTokenStoreCompositeGrantCoversSubset(t *testing.T) {
 }
 
 func TestTokenStoreInvalidateUnlessPermissionNarrowsGrant(t *testing.T) {
-	store := NewTokenStore()
+	store := &TokenStore{}
 	store.SetToken(TokenKey{
 		Permission: protocol.PermissionCredentialManagement |
 			protocol.PermissionLargeBlobWrite,

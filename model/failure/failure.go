@@ -124,8 +124,7 @@ func Snapshot(err error) *Failure {
 		return &typed.Failure
 	}
 
-	snapshot := canonicalFailure(Failure{Code: CodeInternalError})
-	return &snapshot
+	return new(canonicalFailure(Failure{Code: CodeInternalError}))
 }
 
 func canonicalFailure(failure Failure) Failure {

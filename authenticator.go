@@ -109,9 +109,7 @@ func openAuthenticatorHandle(
 ) (*Authenticator, error) {
 	var config authenticatorConfig
 	for _, opt := range opts {
-		if opt != nil {
-			opt(&config)
-		}
+		opt(&config)
 	}
 
 	var recorder logging.Recorder
@@ -141,8 +139,8 @@ func openAuthenticatorHandle(
 		configStatus:        opened.ConfigStatus,
 		config:              opened.Config,
 		bio:                 opened.Bio,
-		tokens:              rtruntime.NewTokenStore(),
-		largeBlobState:      workflow.NewLargeBlobState(),
+		tokens:              &rtruntime.TokenStore{},
+		largeBlobState:      &workflow.LargeBlobState{},
 	}, nil
 }
 
@@ -159,9 +157,7 @@ func (a *Authenticator) Close() error {
 		// Close the transport before waiting for the active operation. Context
 		// cancellation normally releases an in-flight command, but a blocked
 		// device read may require closing the transport to unblock it.
-		if a.lifecycle != nil {
-			a.closeErr = a.lifecycle.Close()
-		}
+		a.closeErr = a.lifecycle.Close()
 
 		a.runMu.Lock()
 		defer a.runMu.Unlock()
@@ -212,9 +208,7 @@ func (a *Authenticator) finish() {
 func newOperationConfig(opts ...OperationOption) (operationConfig, error) {
 	var config operationConfig
 	for _, opt := range opts {
-		if opt != nil {
-			opt(&config)
-		}
+		opt(&config)
 	}
 
 	switch config.verificationFlow {

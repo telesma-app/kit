@@ -19,16 +19,7 @@ func TestListLargeBlobsClassifiesEveryArrayEntry(t *testing.T) {
 		authenticatedCorruptWorkflowLargeBlob(t, key, []byte("not-deflate"), 7),
 	}
 
-	report, err := (Runner{}).listLargeBlobsFromInventory(
-		t.Context(),
-		inspectDeviceStub{info: protocol.AuthenticatorGetInfoResponse{
-			Options: map[protocol.Option]bool{protocol.OptionLargeBlobs: true},
-		}},
-		workflowLargeBlobInventory(key, blobs),
-	)
-	if err != nil {
-		t.Fatalf("ListLargeBlobs: %v", err)
-	}
+	report := (Runner{}).listLargeBlobsFromInventory(workflowLargeBlobInventory(key, blobs))
 
 	wantStates := []applargeblobs.EntryState{
 		applargeblobs.EntryStateMatched,
@@ -67,16 +58,7 @@ func TestListLargeBlobsIgnoresMissingCredentialKeysWhenClassifyingOrphans(t *tes
 	otherKey[0] = 2
 	blob := encryptedWorkflowLargeBlob(t, otherKey, []byte("unknown"))
 
-	report, err := (Runner{}).listLargeBlobsFromInventory(
-		t.Context(),
-		inspectDeviceStub{info: protocol.AuthenticatorGetInfoResponse{
-			Options: map[protocol.Option]bool{protocol.OptionLargeBlobs: true},
-		}},
-		workflowLargeBlobInventory(nil, []protocol.LargeBlob{blob}),
-	)
-	if err != nil {
-		t.Fatalf("ListLargeBlobs: %v", err)
-	}
+	report := (Runner{}).listLargeBlobsFromInventory(workflowLargeBlobInventory(nil, []protocol.LargeBlob{blob}))
 
 	if len(report.Entries) != 1 || report.Entries[0].State != applargeblobs.EntryStateOrphaned {
 		t.Fatalf("entries = %#v, want orphaned", report.Entries)

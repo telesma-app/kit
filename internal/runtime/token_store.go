@@ -16,10 +16,6 @@ type TokenStore struct {
 	secret *secret.Handle
 }
 
-func NewTokenStore() *TokenStore {
-	return &TokenStore{}
-}
-
 func (s *TokenStore) GetToken(key TokenKey) ([]byte, bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()

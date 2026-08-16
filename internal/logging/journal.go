@@ -116,7 +116,7 @@ func (j *Journal) trimLocked() {
 func entrySize(entry model.LogEntry) int {
 	encoded, err := json.Marshal(entry)
 	if err != nil {
-		return 0
+		panic(err)
 	}
 
 	return len(encoded)

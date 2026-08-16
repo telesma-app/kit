@@ -176,6 +176,61 @@ func TestCredentialInventoryWorkflowReturnsZeroAfterMidstreamFailureAndWipesStag
 	}
 }
 
+func TestCredentialInventoryRejectsInvalidLargeBlobKey(t *testing.T) {
+	stagedKey := []byte{0x5a}
+	a := &progressCredentialAuthenticator{stagedLargeBlobKey: stagedKey}
+	session := openContractAuthenticator(t, nil, a)
+	defer func() { _ = session.Close() }()
+
+	output, err := session.ListCredentials(
+		t.Context(),
+		session.operationOptions(WithInteractionHandler(userVerificationHandler(t)))...,
+	)
+	requireFailureCode(t, err, failure.CodeLargeBlobKeyInvalid)
+	requireZero(t, output)
+
+	if stagedKey[0] != 0 {
+		t.Fatalf("staged large-blob key = %x, want wiped buffer", stagedKey)
+	}
+}
+
+func TestCredentialInventoryRejectsDuplicateLargeBlobKeyBinding(t *testing.T) {
+	firstKey := bytes.Repeat([]byte{0x11}, 32)
+	secondKey := bytes.Repeat([]byte{0x22}, 32)
+	a := &progressCredentialAuthenticator{
+		stagedLargeBlobKey:  firstKey,
+		secondLargeBlobKey:  secondKey,
+		duplicateKeyBinding: true,
+	}
+	session := openContractAuthenticator(t, nil, a)
+	defer func() { _ = session.Close() }()
+
+	output, err := session.ListCredentials(
+		t.Context(),
+		session.operationOptions(WithInteractionHandler(userVerificationHandler(t)))...,
+	)
+	requireFailureCode(t, err, failure.CodeCTAPSpecViolation)
+	requireZero(t, output)
+
+	if !bytes.Equal(firstKey, make([]byte, len(firstKey))) ||
+		!bytes.Equal(secondKey, make([]byte, len(secondKey))) {
+		t.Fatal("duplicate large-blob key buffers were not wiped")
+	}
+}
+
+func TestCredentialMutationCallerInputIsValidatedBeforeInventory(t *testing.T) {
+	session := openContractAuthenticator(t, nil, nil)
+	defer func() { _ = session.Close() }()
+
+	_, err := session.DeleteCredential(t.Context(), appcredentials.DeleteOperation{CredentialIDHex: "not-hex"})
+	requireFailureCode(t, err, failure.CodeCTAPParameterInvalid)
+
+	operation := credentialUpdate(true)
+	operation.Target.Record.CredentialIDHex = "not-hex"
+	_, err = session.UpdateCredentialUser(t.Context(), operation)
+	requireFailureCode(t, err, failure.CodeCTAPParameterInvalid)
+}
+
 func TestCredentialMutationsUseUnscopedGrant(t *testing.T) {
 	tests := []struct {
 		name              string
@@ -288,8 +343,10 @@ func credentialMutationTarget() appcredentials.CredentialTarget {
 
 type progressCredentialAuthenticator struct {
 	contractAuthenticator
-	credentialErr      error
-	stagedLargeBlobKey []byte
+	credentialErr       error
+	stagedLargeBlobKey  []byte
+	secondLargeBlobKey  []byte
+	duplicateKeyBinding bool
 }
 
 type emptyCredentialAuthenticator struct {
@@ -538,7 +595,13 @@ func (a *progressCredentialAuthenticator) EnumerateCredentials(
 				return
 			}
 
-			yield(progressCredentialResponse("alpha-user-2", []byte{0xa2}, 0), nil)
+			secondCredentialID := []byte{0xa2}
+			if a.duplicateKeyBinding {
+				secondCredentialID = []byte{0xa1}
+			}
+			second := progressCredentialResponse("alpha-user-2", secondCredentialID, 0)
+			second.LargeBlobKey = a.secondLargeBlobKey
+			yield(second, nil)
 
 			return
 		}

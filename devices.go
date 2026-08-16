@@ -131,8 +131,7 @@ func (m *DeviceManager) Select(
 	id report.AttachmentID,
 ) error {
 	reply := make(chan error, 1)
-	command := selectDevice{ctx: ctx, id: id, reply: reply}
-	if err := m.send(ctx, command); err != nil {
+	if err := m.send(ctx, selectDevice{ctx: ctx, id: id, reply: reply}); err != nil {
 		return err
 	}
 
@@ -211,8 +210,7 @@ func (m *DeviceManager) run(initial devicewatch.Snapshot) {
 				continue
 			}
 
-			err := m.applyEvent(records, event)
-			m.publish(records, err)
+			m.publish(records, m.applyEvent(records, event))
 
 		case command := <-m.commands:
 			switch command := command.(type) {
@@ -303,9 +301,8 @@ func (m *DeviceManager) selectRecord(
 	cancel()
 	if err != nil {
 		target.openErr = err
-		fallbackErr := m.selectFirst(records)
 
-		return errors.Join(closeErr, err, fallbackErr)
+		return errors.Join(closeErr, err, m.selectFirst(records))
 	}
 
 	return closeErr
@@ -453,9 +450,10 @@ func sortedRecords(
 		sorted = append(sorted, record)
 	}
 	slices.SortFunc(sorted, func(left, right *deviceRecord) int {
-		leftOrder := transportOrder(left.attachment.mode)
-		rightOrder := transportOrder(right.attachment.mode)
-		if order := cmp.Compare(leftOrder, rightOrder); order != 0 {
+		if order := cmp.Compare(
+			transportOrder(left.attachment.mode),
+			transportOrder(right.attachment.mode),
+		); order != 0 {
 			return order
 		}
 
