@@ -60,6 +60,11 @@ type PreviewSignGeneratedKey struct {
 	AttestationObjectCBORHex string         `json:"attestationObjectCBORHex"`
 }
 
+type PreviewSignARKGP256Derivation struct {
+	AdditionalArgumentsHex string `json:"additionalArgumentsHex"`
+	VerificationKeyCOSEHex string `json:"verificationKeyCOSEHex"`
+}
+
 type MakeCredentialPreviewSignOutput struct {
 	GeneratedKey *PreviewSignGeneratedKey `json:"generatedKey,omitempty"`
 }
