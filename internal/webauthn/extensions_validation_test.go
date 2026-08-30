@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/telesma-app/ctap/cose"
 	"github.com/telesma-app/ctap/credential"
 	"github.com/telesma-app/ctap/extension"
 	"github.com/telesma-app/ctap/protocol"
@@ -22,6 +23,13 @@ func TestWebAuthnExtensionJSONUsesLevel3Shapes(t *testing.T) {
 		PRFInputs: &ctapwebauthn.PRFInputs{PRF: ctapwebauthn.AuthenticationExtensionsPRFInputs{
 			Eval: ctapwebauthn.AuthenticationExtensionsPRFValues{First: []byte("first")},
 		}},
+		PreviewSignInputs: &ctapwebauthn.PreviewSignInputs{
+			PreviewSign: ctapwebauthn.AuthenticationExtensionsPreviewSignInputs{
+				GenerateKey: &ctapwebauthn.PreviewSignGenerateKeyInputs{
+					Algorithms: []cose.Algorithm{cose.AlgorithmES256},
+				},
+			},
+		},
 	}
 
 	raw, err := json.Marshal(input)
@@ -29,10 +37,45 @@ func TestWebAuthnExtensionJSONUsesLevel3Shapes(t *testing.T) {
 		t.Fatalf("Marshal: %v", err)
 	}
 
-	for _, want := range []string{`"credProps":true`, `"prf":{"eval":{"first":"Zmlyc3Q="}}`} {
+	for _, want := range []string{
+		`"credProps":true`,
+		`"prf":{"eval":{"first":"Zmlyc3Q="}}`,
+		`"previewSign":{"generateKey":{"algorithms":[-7]}}`,
+	} {
 		if !bytes.Contains(raw, []byte(want)) {
 			t.Fatalf("JSON = %s, want %s", raw, want)
 		}
+	}
+}
+
+func TestWebAuthnPreviewSignWarningsFollowAdvertisedSupport(t *testing.T) {
+	makeInput := &ctapwebauthn.CreateAuthenticationExtensionsClientInputs{
+		PreviewSignInputs: &ctapwebauthn.PreviewSignInputs{},
+	}
+	getInput := &ctapwebauthn.GetAuthenticationExtensionsClientInputs{
+		PreviewSignInputs: &ctapwebauthn.PreviewSignInputs{},
+	}
+
+	makeWarnings := makeCredentialExtensionWarnings(protocol.AuthenticatorGetInfoResponse{}, makeInput)
+	if len(makeWarnings) != 1 || makeWarnings[0].Code != "webauthn.extension.preview_sign.not_advertised" ||
+		!strings.Contains(makeWarnings[0].Message, "does not advertise previewSign") {
+		t.Fatalf("MakeCredential previewSign warnings = %#v", makeWarnings)
+	}
+
+	getWarnings := getAssertionExtensionWarnings(protocol.AuthenticatorGetInfoResponse{}, getInput)
+	if len(getWarnings) != 1 || getWarnings[0].Code != "webauthn.extension.preview_sign.not_advertised" ||
+		!strings.Contains(getWarnings[0].Message, "does not advertise previewSign") {
+		t.Fatalf("GetAssertion previewSign warnings = %#v", getWarnings)
+	}
+
+	supported := protocol.AuthenticatorGetInfoResponse{
+		Extensions: []extension.ExtensionIdentifier{extension.ExtensionIdentifierPreviewSign},
+	}
+	if warnings := makeCredentialExtensionWarnings(supported, makeInput); len(warnings) != 0 {
+		t.Fatalf("supported MakeCredential previewSign warnings = %#v", warnings)
+	}
+	if warnings := getAssertionExtensionWarnings(supported, getInput); len(warnings) != 0 {
+		t.Fatalf("supported GetAssertion previewSign warnings = %#v", warnings)
 	}
 }
 

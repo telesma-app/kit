@@ -92,6 +92,19 @@ func makeCredentialExtensionResults(
 		}
 	}
 
+	if output != nil && output.PreviewSignOutputs != nil {
+		hasClientResult = true
+		client.PreviewSign = &appwebauthn.MakeCredentialPreviewSignOutput{}
+		if output.PreviewSign.GeneratedKey != nil {
+			client.PreviewSign.GeneratedKey = &appwebauthn.PreviewSignGeneratedKey{
+				KeyHandleHex:             hex.EncodeToString(output.PreviewSign.GeneratedKey.KeyHandle),
+				PublicKeyCOSEHex:         hex.EncodeToString(output.PreviewSign.GeneratedKey.PublicKey),
+				Algorithm:                output.PreviewSign.GeneratedKey.Algorithm,
+				AttestationObjectCBORHex: hex.EncodeToString(output.PreviewSign.GeneratedKey.AttestationObject),
+			}
+		}
+	}
+
 	if hasClientResult {
 		result.Client = client
 	}
@@ -142,6 +155,13 @@ func getAssertionExtensionResults(
 			largeBlob.BlobHex = new(hex.EncodeToString(output.LargeBlob.Blob))
 		}
 		client.LargeBlob = largeBlob
+	}
+
+	if output != nil && output.PreviewSignOutputs != nil {
+		hasClientResult = true
+		client.PreviewSign = &appwebauthn.GetAssertionPreviewSignOutput{
+			SignatureHex: hex.EncodeToString(output.PreviewSign.Signature),
+		}
 	}
 
 	authenticator := new(appwebauthn.GetAssertionAuthenticatorExtensionOutputs)

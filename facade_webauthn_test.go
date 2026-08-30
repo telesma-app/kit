@@ -10,6 +10,8 @@ import (
 	"slices"
 	"testing"
 
+	"github.com/google/uuid"
+	"github.com/samber/lo"
 	"github.com/telesma-app/ctap/attestation"
 	ctapdevice "github.com/telesma-app/ctap/authenticator"
 	"github.com/telesma-app/ctap/cose"
@@ -20,8 +22,6 @@ import (
 	"github.com/telesma-app/ctap/webauthn"
 	"github.com/telesma-app/kit/model/failure"
 	appwebauthn "github.com/telesma-app/kit/model/webauthn"
-	"github.com/google/uuid"
-	"github.com/samber/lo"
 )
 
 func TestMakeCredentialDryRunDoesNotConfirmAcquireTokenOrMutate(t *testing.T) {
@@ -473,6 +473,66 @@ func TestWebAuthnDelegatesPRFRoutingToCTAP(t *testing.T) {
 	if a.getAssertionExtensions == nil || a.getAssertionExtensions.PRFInputs == nil ||
 		string(a.getAssertionExtensions.PRF.Eval.First) != "get" {
 		t.Fatalf("GetAssertion extensions = %#v, want unmodified PRF input", a.getAssertionExtensions)
+	}
+}
+
+func TestWebAuthnDelegatesPreviewSignToCTAP(t *testing.T) {
+	a := &webauthnTestAuthenticator{
+		makeCredentialUvNotRequired: true,
+		extensions:                  []extension.ExtensionIdentifier{extension.ExtensionIdentifierPreviewSign},
+	}
+	session := openContractAuthenticator(t, nil, a)
+	defer func() { _ = session.Close() }()
+
+	makeOperation := sampleMakeCredentialOperation(false)
+	makeOperation.Extensions = &webauthn.CreateAuthenticationExtensionsClientInputs{
+		PreviewSignInputs: &webauthn.PreviewSignInputs{
+			PreviewSign: webauthn.AuthenticationExtensionsPreviewSignInputs{
+				GenerateKey: &webauthn.PreviewSignGenerateKeyInputs{
+					Algorithms: []cose.Algorithm{cose.AlgorithmES256},
+				},
+			},
+		},
+	}
+	if _, err := session.MakeCredential(
+		context.Background(),
+		makeOperation,
+		session.operationOptions()...,
+	); err != nil {
+		t.Fatalf("MakeCredential: %v", err)
+	}
+
+	if a.makeCredentialExtensions == nil || a.makeCredentialExtensions.PreviewSignInputs == nil ||
+		a.makeCredentialExtensions.PreviewSign.GenerateKey == nil ||
+		!slices.Equal(a.makeCredentialExtensions.PreviewSign.GenerateKey.Algorithms, []cose.Algorithm{cose.AlgorithmES256}) {
+		t.Fatalf("MakeCredential previewSign extensions = %#v", a.makeCredentialExtensions)
+	}
+
+	getOperation := sampleGetAssertionOperation()
+	getOperation.AllowList = []credential.PublicKeyCredentialDescriptor{{ID: []byte{0xc0, 0x5e}}}
+	getOperation.Extensions = &webauthn.GetAuthenticationExtensionsClientInputs{
+		PreviewSignInputs: &webauthn.PreviewSignInputs{
+			PreviewSign: webauthn.AuthenticationExtensionsPreviewSignInputs{
+				SignByCredential: map[string]webauthn.PreviewSignSignInputs{
+					"wF4": {
+						KeyHandle:  []byte{0x01, 0x02},
+						ToBeSigned: []byte("message"),
+					},
+				},
+			},
+		},
+	}
+	if _, err := session.GetAssertion(
+		context.Background(),
+		getOperation,
+		session.operationOptions()...,
+	); err != nil {
+		t.Fatalf("GetAssertion: %v", err)
+	}
+
+	if a.getAssertionExtensions == nil || a.getAssertionExtensions.PreviewSignInputs == nil ||
+		string(a.getAssertionExtensions.PreviewSign.SignByCredential["wF4"].ToBeSigned) != "message" {
+		t.Fatalf("GetAssertion previewSign extensions = %#v", a.getAssertionExtensions)
 	}
 }
 

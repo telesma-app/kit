@@ -1,6 +1,7 @@
 package webauthn
 
 import (
+	"github.com/telesma-app/ctap/cose"
 	"github.com/telesma-app/ctap/extension"
 	ctapwebauthn "github.com/telesma-app/ctap/webauthn"
 )
@@ -52,6 +53,21 @@ type GetAssertionPRFOutput struct {
 	Results ctapwebauthn.AuthenticationExtensionsPRFValues `json:"results,omitzero"`
 }
 
+type PreviewSignGeneratedKey struct {
+	KeyHandleHex             string         `json:"keyHandleHex"`
+	PublicKeyCOSEHex         string         `json:"publicKeyCOSEHex"`
+	Algorithm                cose.Algorithm `json:"algorithm"`
+	AttestationObjectCBORHex string         `json:"attestationObjectCBORHex"`
+}
+
+type MakeCredentialPreviewSignOutput struct {
+	GeneratedKey *PreviewSignGeneratedKey `json:"generatedKey,omitempty"`
+}
+
+type GetAssertionPreviewSignOutput struct {
+	SignatureHex string `json:"signatureHex"`
+}
+
 type MakeCredentialClientExtensionResults struct {
 	CredentialProperties *ctapwebauthn.CredentialPropertiesOutput `json:"credProps,omitempty"`
 	CredentialBlob       *CredentialBlobCreateOutput              `json:"credBlob,omitempty"`
@@ -59,6 +75,7 @@ type MakeCredentialClientExtensionResults struct {
 	HMACSecretMC         *HMACSecretOutput                        `json:"hmac-secret-mc,omitempty"`
 	PRF                  *MakeCredentialPRFOutput                 `json:"prf,omitempty"`
 	LargeBlob            *LargeBlobCreateOutput                   `json:"largeBlob,omitempty"`
+	PreviewSign          *MakeCredentialPreviewSignOutput         `json:"previewSign,omitempty"`
 }
 
 type MakeCredentialAuthenticatorExtensionOutputs struct {
@@ -73,10 +90,11 @@ type MakeCredentialExtensionResults struct {
 }
 
 type GetAssertionClientExtensionResults struct {
-	CredentialBlob *CredentialBlobGetOutput `json:"getCredBlob,omitempty"`
-	HMACSecret     *HMACSecretOutput        `json:"hmac-secret,omitempty"`
-	PRF            *GetAssertionPRFOutput   `json:"prf,omitempty"`
-	LargeBlob      *LargeBlobGetOutput      `json:"largeBlob,omitempty"`
+	CredentialBlob *CredentialBlobGetOutput       `json:"getCredBlob,omitempty"`
+	HMACSecret     *HMACSecretOutput              `json:"hmac-secret,omitempty"`
+	PRF            *GetAssertionPRFOutput         `json:"prf,omitempty"`
+	LargeBlob      *LargeBlobGetOutput            `json:"largeBlob,omitempty"`
+	PreviewSign    *GetAssertionPreviewSignOutput `json:"previewSign,omitempty"`
 }
 
 type GetAssertionAuthenticatorExtensionOutputs struct {

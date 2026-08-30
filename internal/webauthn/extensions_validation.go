@@ -18,7 +18,7 @@ func makeCredentialExtensionWarnings(
 		return nil
 	}
 
-	warnings := make([]safety.Warning, 0, 7)
+	warnings := make([]safety.Warning, 0, 9)
 	appendMissing := func(included bool, identifier extension.ExtensionIdentifier, code, label string) {
 		if included && !slices.Contains(info.Extensions, identifier) {
 			warnings = append(warnings, unsupportedExtensionWarning(code, label, string(identifier)))
@@ -40,6 +40,8 @@ func makeCredentialExtensionWarnings(
 		"webauthn.extension.large_blob.not_advertised", "largeBlob")
 	appendMissing(input.PaymentInputs != nil && input.Payment.IsPayment, extension.ExtensionIdentifierThirdPartyPayment,
 		"webauthn.extension.third_party_payment.not_advertised", "thirdPartyPayment")
+	appendMissing(input.PreviewSignInputs != nil, extension.ExtensionIdentifierPreviewSign,
+		"webauthn.extension.preview_sign.not_advertised", "previewSign")
 	if input.PRFInputs != nil {
 		appendMissing(true, extension.ExtensionIdentifierHMACSecret,
 			"webauthn.extension.prf.not_advertised", "prf")
@@ -56,7 +58,7 @@ func getAssertionExtensionWarnings(
 		return nil
 	}
 
-	warnings := make([]safety.Warning, 0, 3)
+	warnings := make([]safety.Warning, 0, 6)
 	if input.GetCredentialBlobInputs != nil && !slices.Contains(info.Extensions, extension.ExtensionIdentifierCredentialBlob) {
 		warnings = append(warnings, unsupportedExtensionWarning(
 			"webauthn.extension.cred_blob.not_advertised", "credBlob", "credBlob"))
@@ -83,6 +85,11 @@ func getAssertionExtensionWarnings(
 		!slices.Contains(info.Extensions, extension.ExtensionIdentifierThirdPartyPayment) {
 		warnings = append(warnings, unsupportedExtensionWarning(
 			"webauthn.extension.third_party_payment.not_advertised", "thirdPartyPayment", "thirdPartyPayment"))
+	}
+
+	if input.PreviewSignInputs != nil && !slices.Contains(info.Extensions, extension.ExtensionIdentifierPreviewSign) {
+		warnings = append(warnings, unsupportedExtensionWarning(
+			"webauthn.extension.preview_sign.not_advertised", "previewSign", "previewSign"))
 	}
 
 	return warnings

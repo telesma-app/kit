@@ -73,15 +73,22 @@ func TestResolveVersionsAndExtensions(t *testing.T) {
 	if fact := requireFact(t, absent, model.FactIDExtensionLargeBlobKey); fact.State != model.FactStateUnknown {
 		t.Fatalf("absent extension = %#v, want unknown", fact)
 	}
+	if fact := requireFact(t, absent, model.FactIDExtensionPreviewSign); fact.State != model.FactStateUnknown {
+		t.Fatalf("absent previewSign extension = %#v, want unknown", fact)
+	}
 
 	reported := Resolve(protocol.AuthenticatorGetInfoResponse{
-		Versions:   protocol.Versions{protocol.FIDO_2_1, protocol.FIDO_2_3},
-		Extensions: []extension.ExtensionIdentifier{extension.ExtensionIdentifierLargeBlobKey},
+		Versions: protocol.Versions{protocol.FIDO_2_1, protocol.FIDO_2_3},
+		Extensions: []extension.ExtensionIdentifier{
+			extension.ExtensionIdentifierLargeBlobKey,
+			extension.ExtensionIdentifierPreviewSign,
+		},
 	})
 	assertBooleanFact(t, reported, model.FactIDVersionFIDO23, model.FactStateSupported, model.FactOriginDerived, true)
 	assertBooleanFact(t, reported, model.FactIDVersionFIDO20, model.FactStateUnsupported, model.FactOriginDerived, false)
 	assertBooleanFact(t, reported, model.FactIDLargeBlobKey, model.FactStateSupported, model.FactOriginDerived, true)
 	assertBooleanFact(t, reported, model.FactIDExtensionLargeBlob, model.FactStateUnsupported, model.FactOriginDerived, false)
+	assertBooleanFact(t, reported, model.FactIDExtensionPreviewSign, model.FactStateSupported, model.FactOriginDerived, true)
 }
 
 func TestResolveListsAndJSONAreDeterministic(t *testing.T) {

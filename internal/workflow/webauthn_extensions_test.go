@@ -3,6 +3,7 @@ package workflow
 import (
 	"testing"
 
+	"github.com/telesma-app/ctap/cose"
 	"github.com/telesma-app/ctap/extension"
 	"github.com/telesma-app/ctap/protocol"
 	ctapwebauthn "github.com/telesma-app/ctap/webauthn"
@@ -214,6 +215,61 @@ func TestGetAssertionExtensionResultsKeepRawOutputs(t *testing.T) {
 		got.Client.CredentialBlob.ValueHex != "0102" || got.Client.HMACSecret == nil ||
 		got.Client.HMACSecret.Output1Hex != "0304" || got.Client.HMACSecret.Output2Hex != "0506" {
 		t.Fatalf("raw GetAssertion extension results = %#v", got)
+	}
+}
+
+func TestPreviewSignExtensionResultsUseHexArtifacts(t *testing.T) {
+	makeResult := makeCredentialExtensionResults(nil, protocol.AuthenticatorMakeCredentialResponse{
+		ExtensionOutputs: &ctapwebauthn.CreateAuthenticationExtensionsClientOutputs{
+			PreviewSignOutputs: &ctapwebauthn.PreviewSignOutputs{
+				PreviewSign: ctapwebauthn.AuthenticationExtensionsPreviewSignOutputs{
+					GeneratedKey: &ctapwebauthn.PreviewSignGeneratedKey{
+						KeyHandle:         []byte{0x01, 0x02},
+						PublicKey:         []byte{0xa5, 0x01},
+						Algorithm:         cose.AlgorithmES256,
+						AttestationObject: []byte{0xa3, 0x01},
+					},
+				},
+			},
+		},
+	})
+	if makeResult == nil || makeResult.Client == nil || makeResult.Client.PreviewSign == nil ||
+		makeResult.Client.PreviewSign.GeneratedKey == nil {
+		t.Fatalf("MakeCredential previewSign result = %#v", makeResult)
+	}
+
+	generatedKey := makeResult.Client.PreviewSign.GeneratedKey
+	if generatedKey.KeyHandleHex != "0102" || generatedKey.PublicKeyCOSEHex != "a501" ||
+		generatedKey.Algorithm != cose.AlgorithmES256 || generatedKey.AttestationObjectCBORHex != "a301" {
+		t.Fatalf("previewSign generated key = %#v", generatedKey)
+	}
+
+	getResult := getAssertionExtensionResults(protocol.AuthenticatorGetAssertionResponse{
+		ExtensionOutputs: &ctapwebauthn.GetAuthenticationExtensionsClientOutputs{
+			PreviewSignOutputs: &ctapwebauthn.PreviewSignOutputs{
+				PreviewSign: ctapwebauthn.AuthenticationExtensionsPreviewSignOutputs{
+					Signature: []byte{0x03, 0x04},
+				},
+			},
+		},
+	})
+	if getResult == nil || getResult.Client == nil || getResult.Client.PreviewSign == nil ||
+		getResult.Client.PreviewSign.SignatureHex != "0304" {
+		t.Fatalf("GetAssertion previewSign result = %#v", getResult)
+	}
+
+	emptySignature := getAssertionExtensionResults(protocol.AuthenticatorGetAssertionResponse{
+		ExtensionOutputs: &ctapwebauthn.GetAuthenticationExtensionsClientOutputs{
+			PreviewSignOutputs: &ctapwebauthn.PreviewSignOutputs{
+				PreviewSign: ctapwebauthn.AuthenticationExtensionsPreviewSignOutputs{
+					Signature: []byte{},
+				},
+			},
+		},
+	})
+	if emptySignature == nil || emptySignature.Client == nil || emptySignature.Client.PreviewSign == nil ||
+		emptySignature.Client.PreviewSign.SignatureHex != "" {
+		t.Fatalf("present-empty previewSign signature = %#v", emptySignature)
 	}
 }
 

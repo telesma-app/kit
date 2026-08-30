@@ -75,6 +75,7 @@ const (
 	FactIDExtensionHMACSecret              FactID = "extension_hmac_secret"
 	FactIDExtensionHMACSecretMC            FactID = "extension_hmac_secret_mc"
 	FactIDExtensionThirdPartyPayment       FactID = "extension_third_party_payment"
+	FactIDExtensionPreviewSign             FactID = "extension_preview_sign"
 	FactIDEffectiveMaxMessageSize          FactID = "effective_max_message_size"
 	FactIDMaxCredentialCountInList         FactID = "max_credential_count_in_list"
 	FactIDMaxCredentialIDLength            FactID = "max_credential_id_length"

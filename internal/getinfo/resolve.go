@@ -376,4 +376,5 @@ var extensionFacts = [...]struct {
 	{model.FactIDExtensionHMACSecret, "hmac-secret"},
 	{model.FactIDExtensionHMACSecretMC, "hmac-secret-mc"},
 	{model.FactIDExtensionThirdPartyPayment, "thirdPartyPayment"},
+	{model.FactIDExtensionPreviewSign, "previewSign"},
 }

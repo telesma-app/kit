@@ -513,6 +513,23 @@ func TestPublicDTOJSONContractsUseCTAP23Spellings(t *testing.T) {
 	}
 }
 
+func TestPreviewSignResultJSONUsesArtifactSpellings(t *testing.T) {
+	assertJSON(t, webauthn2.MakeCredentialClientExtensionResults{
+		PreviewSign: &webauthn2.MakeCredentialPreviewSignOutput{
+			GeneratedKey: &webauthn2.PreviewSignGeneratedKey{
+				KeyHandleHex:             "0102",
+				PublicKeyCOSEHex:         "a501",
+				Algorithm:                -7,
+				AttestationObjectCBORHex: "a301",
+			},
+		},
+	}, `{"previewSign":{"generatedKey":{"keyHandleHex":"0102","publicKeyCOSEHex":"a501","algorithm":-7,"attestationObjectCBORHex":"a301"}}}`)
+
+	assertJSON(t, webauthn2.GetAssertionClientExtensionResults{
+		PreviewSign: &webauthn2.GetAssertionPreviewSignOutput{},
+	}, `{"previewSign":{"signatureHex":""}}`)
+}
+
 func TestDeviceReportSmartCardInterfaceJSON(t *testing.T) {
 	value := report.DeviceReport{
 		Attachment: report.AttachmentReport{
