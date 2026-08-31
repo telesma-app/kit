@@ -5,8 +5,8 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
-	"reflect"
 
+	"github.com/fxamacker/cbor/v2"
 	"github.com/telesma-app/ctap/attestation"
 	"github.com/telesma-app/ctap/cose"
 	"github.com/telesma-app/ctap/protocol"
@@ -163,7 +163,7 @@ func makeCredentialResultMatches(
 		return false
 	}
 	resultKey, err := decodeCredentialKeyHex(result.PublicKeyCOSEHex)
-	if err != nil || !reflect.DeepEqual(resultKey, credentialKey) {
+	if err != nil || !credentialKeysEqual(resultKey, credentialKey) {
 		return false
 	}
 
@@ -171,6 +171,23 @@ func makeCredentialResultMatches(
 		result.UserPresent == authData.Flags.UserPresent() &&
 		result.UserVerified == authData.Flags.UserVerified() &&
 		result.AAGUID == authData.AttestedCredentialData.AAGUID.String()
+}
+
+func credentialKeysEqual(left, right cose.Key) bool {
+	encMode, err := cbor.CanonicalEncOptions().EncMode()
+	if err != nil {
+		return false
+	}
+	leftEncoded, err := encMode.Marshal(left)
+	if err != nil {
+		return false
+	}
+	rightEncoded, err := encMode.Marshal(right)
+	if err != nil {
+		return false
+	}
+
+	return bytes.Equal(leftEncoded, rightEncoded)
 }
 
 func applyAttestationStatementVerification(

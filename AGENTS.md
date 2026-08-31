@@ -42,7 +42,7 @@
 - Keep `New` minimal; add runtime configuration only when consumers truly need it.
 - Prefer `go-ctap/ctaphid` helpers for HID/proxy discovery; authenticator opening belongs behind the runtime's private opener.
 - Custom sentinel errors should include the `ctapkit: ` prefix, with small explicit runtime category mapping.
-- Supported Go version: Go 1.26.x only. Keep `go.mod` aligned; do not add old-version shims.
+- Supported Go version: Go 1.27.x only. Keep `go.mod` aligned; do not add old-version shims.
 - Keep file splits coarse and domain-shaped; keep hardware-dependent behavior out of default no-hardware tests.
 
 ## Verification

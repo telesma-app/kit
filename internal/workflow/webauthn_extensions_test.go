@@ -191,20 +191,20 @@ func TestMakeCredentialExtensionResultsStillRoutesRawHMACMC(t *testing.T) {
 }
 
 func TestGetAssertionExtensionResultsUseLevel3PRFOutputWithoutEnabled(t *testing.T) {
-	got := getAssertionExtensionResults(getAssertionPRFResponse([]byte{0x07, 0x08}, nil))
+	got := getAssertionExtensionResults(nil, getAssertionPRFResponse([]byte{0x07, 0x08}, nil))
 	if got == nil || got.Client == nil || got.Client.PRF == nil ||
 		len(got.Client.PRF.Results.First) != 2 {
 		t.Fatalf("GetAssertion PRF result = %#v", got)
 	}
 
-	empty := getAssertionExtensionResults(getAssertionPRFResponse(nil, nil))
+	empty := getAssertionExtensionResults(nil, getAssertionPRFResponse(nil, nil))
 	if empty == nil || empty.Client == nil || empty.Client.PRF == nil || !empty.Client.PRF.Results.IsZero() {
 		t.Fatalf("empty PRF result = %#v, want {prf:{}}", empty)
 	}
 }
 
 func TestGetAssertionExtensionResultsKeepRawOutputs(t *testing.T) {
-	got := getAssertionExtensionResults(protocol.AuthenticatorGetAssertionResponse{ExtensionOutputs: &ctapwebauthn.GetAuthenticationExtensionsClientOutputs{
+	got := getAssertionExtensionResults(nil, protocol.AuthenticatorGetAssertionResponse{ExtensionOutputs: &ctapwebauthn.GetAuthenticationExtensionsClientOutputs{
 		GetCredentialBlobOutputs: &ctapwebauthn.GetCredentialBlobOutputs{GetCredBlob: []byte{0x01, 0x02}},
 		GetHMACSecretOutputs: &ctapwebauthn.GetHMACSecretOutputs{HMACGetSecret: ctapwebauthn.HMACGetSecretOutput{
 			Output1: []byte{0x03, 0x04},
@@ -244,7 +244,7 @@ func TestPreviewSignExtensionResultsUseHexArtifacts(t *testing.T) {
 		t.Fatalf("previewSign generated key = %#v", generatedKey)
 	}
 
-	getResult := getAssertionExtensionResults(protocol.AuthenticatorGetAssertionResponse{
+	getResult := getAssertionExtensionResults(nil, protocol.AuthenticatorGetAssertionResponse{
 		ExtensionOutputs: &ctapwebauthn.GetAuthenticationExtensionsClientOutputs{
 			PreviewSignOutputs: &ctapwebauthn.PreviewSignOutputs{
 				PreviewSign: ctapwebauthn.AuthenticationExtensionsPreviewSignOutputs{
@@ -258,7 +258,7 @@ func TestPreviewSignExtensionResultsUseHexArtifacts(t *testing.T) {
 		t.Fatalf("GetAssertion previewSign result = %#v", getResult)
 	}
 
-	emptySignature := getAssertionExtensionResults(protocol.AuthenticatorGetAssertionResponse{
+	emptySignature := getAssertionExtensionResults(nil, protocol.AuthenticatorGetAssertionResponse{
 		ExtensionOutputs: &ctapwebauthn.GetAuthenticationExtensionsClientOutputs{
 			PreviewSignOutputs: &ctapwebauthn.PreviewSignOutputs{
 				PreviewSign: ctapwebauthn.AuthenticationExtensionsPreviewSignOutputs{
@@ -288,7 +288,7 @@ func TestWebAuthnLargeBlobOutputsPreserveOptionalPresence(t *testing.T) {
 	}
 
 	written := false
-	getResult := getAssertionExtensionResults(protocol.AuthenticatorGetAssertionResponse{
+	getResult := getAssertionExtensionResults(nil, protocol.AuthenticatorGetAssertionResponse{
 		ExtensionOutputs: &ctapwebauthn.GetAuthenticationExtensionsClientOutputs{
 			LargeBlobOutputs: &ctapwebauthn.LargeBlobOutputs{LargeBlob: ctapwebauthn.AuthenticationExtensionsLargeBlobOutputs{
 				Blob:    []byte{},

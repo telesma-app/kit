@@ -4,12 +4,12 @@ go 1.27.0
 
 require (
 	github.com/fxamacker/cbor/v2 v2.9.3
-	github.com/telesma-app/ctap v0.49.2
+	github.com/telesma-app/ctap v0.49.3
 	github.com/telesma-app/hid v0.12.1
 	github.com/telesma-app/iso7816 v0.2.0
 	github.com/telesma-app/pcsc v0.9.0
-	github.com/telesma-app/token2 v0.11.1
-	github.com/telesma-app/yubico v0.5.1
+	github.com/telesma-app/token2 v0.11.2
+	github.com/telesma-app/yubico v0.5.2
 	golang.org/x/sys v0.47.0
 )
 

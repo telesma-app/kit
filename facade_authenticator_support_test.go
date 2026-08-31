@@ -15,8 +15,7 @@ import (
 func requireZero[T any](t *testing.T, value T) {
 	t.Helper()
 
-	var zero T
-	if !reflect.DeepEqual(value, zero) {
+	if !reflect.ValueOf(value).IsZero() {
 		t.Fatalf("value = %#v, want zero value", value)
 	}
 }

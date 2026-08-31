@@ -121,6 +121,7 @@ func makeCredentialExtensionResults(
 }
 
 func getAssertionExtensionResults(
+	input *ctapwebauthn.GetAuthenticationExtensionsClientInputs,
 	response protocol.AuthenticatorGetAssertionResponse,
 ) *appwebauthn.GetAssertionExtensionResults {
 	output := response.ExtensionOutputs
@@ -161,6 +162,7 @@ func getAssertionExtensionResults(
 		hasClientResult = true
 		client.PreviewSign = &appwebauthn.GetAssertionPreviewSignOutput{
 			SignatureHex: hex.EncodeToString(output.PreviewSign.Signature),
+			Inspection:   inspectPreviewSignSignature(input, response),
 		}
 	}
 

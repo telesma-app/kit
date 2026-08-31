@@ -168,7 +168,7 @@ func (r Runner) GetAssertion(
 		Assertions:   make([]appwebauthn.Assertion, 0, len(responses)),
 	}
 	for index, response := range responses {
-		result.Assertions = append(result.Assertions, assertionResult(uint(index), response))
+		result.Assertions = append(result.Assertions, assertionResult(uint(index), input.Extensions, response))
 	}
 	for _, assertion := range result.Assertions {
 		if assertion.UserPresent {
@@ -218,6 +218,21 @@ func makeCredentialResult(
 		)
 	}
 
+	extensionResults := makeCredentialExtensionResults(extensions, response)
+	if response.ExtensionOutputs != nil && response.ExtensionOutputs.PreviewSignOutputs != nil &&
+		response.ExtensionOutputs.PreviewSign.GeneratedKey != nil {
+		inspection, inspectionErr := inspectPreviewSignGeneratedKey(
+			response.ExtensionOutputs.PreviewSign.GeneratedKey,
+		)
+		if inspectionErr != nil {
+			return appwebauthn.MakeCredentialResult{}, errornorm.Annotate(
+				inspectionErr,
+				errornorm.WithPhase(failure.PhaseDecode),
+			)
+		}
+		extensionResults.Client.PreviewSign.GeneratedKey.Inspection = inspection
+	}
+
 	return appwebauthn.MakeCredentialResult{
 		AttachmentID:             attachmentID,
 		RPID:                     rpID,
@@ -231,7 +246,7 @@ func makeCredentialResult(
 		UserPresent:              response.AuthData.Flags.UserPresent(),
 		UserVerified:             response.AuthData.Flags.UserVerified(),
 		EnterpriseAttestation:    response.EnterpriseAttestation,
-		ExtensionResults:         makeCredentialExtensionResults(extensions, response),
+		ExtensionResults:         extensionResults,
 	}, nil
 }
 
@@ -260,6 +275,7 @@ func attestationObjectCBOR(response protocol.AuthenticatorMakeCredentialResponse
 
 func assertionResult(
 	index uint,
+	extensions *ctapwebauthn.GetAuthenticationExtensionsClientInputs,
 	response protocol.AuthenticatorGetAssertionResponse,
 ) appwebauthn.Assertion {
 	assertion := appwebauthn.Assertion{
@@ -269,7 +285,7 @@ func assertionResult(
 		SignatureHex:         hex.EncodeToString(response.Signature),
 		NumberOfCredentials:  response.NumberOfCredentials,
 		UserSelected:         response.UserSelected,
-		ExtensionResults:     getAssertionExtensionResults(response),
+		ExtensionResults:     getAssertionExtensionResults(extensions, response),
 	}
 
 	if response.AuthData != nil {
