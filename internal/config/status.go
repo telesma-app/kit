@@ -3,8 +3,6 @@ package config
 import (
 	"strconv"
 
-	"github.com/samber/lo"
-	"github.com/telesma-app/ctap/credential"
 	"github.com/telesma-app/ctap/protocol"
 	"github.com/telesma-app/kit/internal/getinfo"
 	appconfig "github.com/telesma-app/kit/model/config"
@@ -47,9 +45,10 @@ func BuildStatusReport(device report.DeviceReport, info protocol.AuthenticatorGe
 		r.Bio.UVModality = new(uint(*info.UvModality))
 		r.Bio.UVModalityLabel = info.UvModality.String()
 	}
-	r.ResetHints.TransportsForReset = lo.Map(info.TransportsForReset, func(value credential.AuthenticatorTransport, _ int) string {
-		return string(value)
-	})
+	r.ResetHints.TransportsForReset = make([]string, len(info.TransportsForReset))
+	for i, value := range info.TransportsForReset {
+		r.ResetHints.TransportsForReset[i] = string(value)
+	}
 	r.Bio.UVBioEnroll = factCapability(assessment, appinspect.FactIDUvBioEnroll, false)
 	r.AuthenticatorConfig = buildAuthenticatorConfigStatus(factCapability(assessment, appinspect.FactIDAuthenticatorConfig, false))
 	r.AuthenticatorConfig.UVAcfg = factCapability(assessment, appinspect.FactIDUvAuthenticatorConfig, false)
@@ -59,9 +58,10 @@ func BuildStatusReport(device report.DeviceReport, info protocol.AuthenticatorGe
 	longTouchForReset := factCapability(assessment, appinspect.FactIDLongTouchForReset, false)
 	r.AuthenticatorConfig.LongTouchForReset = longTouchForReset
 	r.AuthenticatorConfig.VendorPrototype = vendorPrototypeCapability(info)
-	r.AuthenticatorConfig.VendorPrototypeConfigCommands = lo.Map(info.VendorPrototypeConfigCommands, func(value protocol.VendorCommandID, _ int) string {
-		return strconv.FormatUint(uint64(value), 10)
-	})
+	r.AuthenticatorConfig.VendorPrototypeConfigCommands = make([]string, len(info.VendorPrototypeConfigCommands))
+	for i, value := range info.VendorPrototypeConfigCommands {
+		r.AuthenticatorConfig.VendorPrototypeConfigCommands[i] = strconv.FormatUint(uint64(value), 10)
+	}
 	r.ResetHints.LongTouchForReset = longTouchForReset.State
 	r.Limits = buildLimitsStatus(info, assessment)
 

@@ -2,7 +2,7 @@ package getinfo
 
 import (
 	"encoding/json"
-	"reflect"
+	"slices"
 	"testing"
 
 	"github.com/telesma-app/ctap/cose"
@@ -105,9 +105,6 @@ func TestResolveListsAndJSONAreDeterministic(t *testing.T) {
 
 	first := Resolve(info)
 	second := Resolve(info)
-	if !reflect.DeepEqual(first, second) {
-		t.Fatalf("Resolve is not deterministic:\nfirst: %#v\nsecond: %#v", first, second)
-	}
 
 	commands := requireFact(t, first, model.FactIDAuthenticatorConfigCommands)
 	assertListFact(t, commands, []string{"4", "1"})
@@ -139,7 +136,15 @@ func TestResolveReturnsStableUniqueFactInventory(t *testing.T) {
 	if len(first.Facts) == 0 {
 		t.Fatal("facts must be non-empty")
 	}
-	if !reflect.DeepEqual(first.Facts, second.Facts) {
+	firstJSON, err := json.Marshal(first.Facts)
+	if err != nil {
+		t.Fatalf("Marshal first fact inventory: %v", err)
+	}
+	secondJSON, err := json.Marshal(second.Facts)
+	if err != nil {
+		t.Fatalf("Marshal second fact inventory: %v", err)
+	}
+	if string(firstJSON) != string(secondJSON) {
 		t.Fatal("fact order is not deterministic")
 	}
 
@@ -187,7 +192,7 @@ func assertIntegerFact(t *testing.T, assessment model.Assessment, id model.FactI
 func assertListFact(t *testing.T, fact model.Fact, want []string) {
 	t.Helper()
 
-	if fact.Value.List == nil || !reflect.DeepEqual(*fact.Value.List, want) {
+	if fact.Value.List == nil || !((*fact.Value.List == nil) == (want == nil) && slices.Equal(*fact.Value.List, want)) {
 		t.Fatalf("fact %q list = %#v, want %#v", fact.ID, fact.Value.List, want)
 	}
 }

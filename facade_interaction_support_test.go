@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/telesma-app/kit/model"
-	"github.com/samber/lo"
 )
 
 type interactionHandlerFunc func(model.InteractionRequest) (model.InteractionResponse, error)
@@ -47,7 +46,10 @@ func (s *recordingEventSink) Events() []model.OperationEvent {
 }
 
 func eventStages(events []model.OperationEvent) []model.OperationStage {
-	return lo.Map(events, func(event model.OperationEvent, _ int) model.OperationStage {
-		return event.Stage
-	})
+	stages := make([]model.OperationStage, len(events))
+	for i, event := range events {
+		stages[i] = event.Stage
+	}
+
+	return stages
 }

@@ -3,7 +3,6 @@ package webauthn
 import (
 	"strings"
 
-	"github.com/samber/lo"
 	"github.com/telesma-app/ctap/attestation"
 	"github.com/telesma-app/ctap/credential"
 	"github.com/telesma-app/ctap/protocol"
@@ -81,26 +80,21 @@ func NormalizeMakeCredentialInput(
 	}
 
 	seenParameters := make(map[credential.PublicKeyCredentialParameters]struct{}, len(input.PubKeyCredParams))
-	pubKeyCredParams, err := lo.MapErr(
-		input.PubKeyCredParams,
-		func(param credential.PublicKeyCredentialParameters, _ int) (credential.PublicKeyCredentialParameters, error) {
-			param.Type = credentialTypeOrDefault(param.Type)
-			if param.Algorithm == 0 {
-				return credential.PublicKeyCredentialParameters{}, validationFailure(
-					failure.CodePublicKeyCredentialAlgorithmRequired,
-				)
-			}
+	pubKeyCredParams := make([]credential.PublicKeyCredentialParameters, len(input.PubKeyCredParams))
+	for i, param := range input.PubKeyCredParams {
+		param.Type = credentialTypeOrDefault(param.Type)
+		if param.Algorithm == 0 {
+			return appwebauthn.MakeCredentialInput{}, validationFailure(
+				failure.CodePublicKeyCredentialAlgorithmRequired,
+			)
+		}
 
-			if _, duplicate := seenParameters[param]; duplicate {
-				return credential.PublicKeyCredentialParameters{}, validationFailure(failure.CodeCTAPParameterInvalid)
-			}
-			seenParameters[param] = struct{}{}
+		if _, duplicate := seenParameters[param]; duplicate {
+			return appwebauthn.MakeCredentialInput{}, validationFailure(failure.CodeCTAPParameterInvalid)
+		}
+		seenParameters[param] = struct{}{}
 
-			return param, nil
-		},
-	)
-	if err != nil {
-		return appwebauthn.MakeCredentialInput{}, err
+		pubKeyCredParams[i] = param
 	}
 
 	input.PubKeyCredParams = pubKeyCredParams
@@ -153,17 +147,17 @@ func NormalizeGetAssertionInput(
 func normalizeDescriptors(
 	in []credential.PublicKeyCredentialDescriptor,
 ) ([]credential.PublicKeyCredentialDescriptor, error) {
-	return lo.MapErr(
-		in,
-		func(descriptor credential.PublicKeyCredentialDescriptor, _ int) (credential.PublicKeyCredentialDescriptor, error) {
-			descriptor.Type = credentialTypeOrDefault(descriptor.Type)
-			if len(descriptor.ID) == 0 {
-				return credential.PublicKeyCredentialDescriptor{}, validationFailure(failure.CodeCredentialIDRequired)
-			}
+	descriptors := make([]credential.PublicKeyCredentialDescriptor, len(in))
+	for i, descriptor := range in {
+		descriptor.Type = credentialTypeOrDefault(descriptor.Type)
+		if len(descriptor.ID) == 0 {
+			return nil, validationFailure(failure.CodeCredentialIDRequired)
+		}
 
-			return descriptor, nil
-		},
-	)
+		descriptors[i] = descriptor
+	}
+
+	return descriptors, nil
 }
 
 func credentialTypeOrDefault(value credential.PublicKeyCredentialType) credential.PublicKeyCredentialType {

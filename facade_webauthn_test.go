@@ -9,9 +9,8 @@ import (
 	"maps"
 	"slices"
 	"testing"
+	"uuid"
 
-	"github.com/google/uuid"
-	"github.com/samber/lo"
 	"github.com/telesma-app/ctap/attestation"
 	ctapdevice "github.com/telesma-app/ctap/authenticator"
 	"github.com/telesma-app/ctap/cose"
@@ -769,7 +768,7 @@ func (a *webauthnTestAuthenticator) MakeCredential(
 	a.makeCredentialExcludeList = excludeList
 	a.makeCredentialExtensions = extensions
 	if options != nil {
-		a.makeCredentialOptions = lo.Assign(options)
+		a.makeCredentialOptions = maps.Clone(options)
 	}
 
 	a.makeCredentialEnterpriseAttestation = enterpriseAttestation
@@ -894,7 +893,7 @@ func sampleMakeCredentialResponse() protocol.AuthenticatorMakeCredentialResponse
 			Flags:     protocol.AuthDataFlagUserPresent | protocol.AuthDataFlagUserVerified,
 			SignCount: 7,
 			AttestedCredentialData: &protocol.AttestedCredentialData{
-				AAGUID:       uuid.Must(uuid.Parse("00112233-4455-6677-8899-aabbccddeeff")),
+				AAGUID:       uuid.MustParse("00112233-4455-6677-8899-aabbccddeeff"),
 				CredentialID: []byte{0xc0, 0x5e},
 				CredentialPublicKey: cose.Key{
 					cose.KeyParameterKty:    cose.KeyTypeEC2,

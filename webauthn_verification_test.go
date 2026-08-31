@@ -12,6 +12,7 @@ import (
 	"math/big"
 	"testing"
 	"time"
+	"uuid"
 
 	"github.com/fxamacker/cbor/v2"
 	"github.com/telesma-app/ctap/attestation"
@@ -19,7 +20,6 @@ import (
 	"github.com/telesma-app/ctap/credential"
 	"github.com/telesma-app/ctap/protocol"
 	appwebauthn "github.com/telesma-app/kit/model/webauthn"
-	"github.com/google/uuid"
 )
 
 func TestVerifyMakeCredentialAttestationFormats(t *testing.T) {
@@ -259,7 +259,7 @@ func makeCredentialVector(
 		PublicKeyCOSEHex:         hex.EncodeToString(coseRaw),
 		AuthenticatorDataHex:     hex.EncodeToString(authData),
 		AttestationObjectCBORHex: hex.EncodeToString(objectRaw),
-		AAGUID:                   uuid.Nil.String(),
+		AAGUID:                   uuid.Nil().String(),
 		UserPresent:              true,
 	}
 	return input, result

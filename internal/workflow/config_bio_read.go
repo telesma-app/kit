@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/hex"
 
-	"github.com/samber/lo"
 	"github.com/telesma-app/ctap/protocol"
 	rtconfig "github.com/telesma-app/kit/internal/config"
 	"github.com/telesma-app/kit/internal/errornorm"
@@ -141,16 +140,19 @@ func (r Runner) bioListReport(
 		))
 	}
 
+	enrollments := make([]appconfig.BioEnrollmentRecord, len(resp.TemplateInfos))
+	for i, info := range resp.TemplateInfos {
+		enrollments[i] = appconfig.BioEnrollmentRecord{
+			TemplateIDHex: hex.EncodeToString(info.TemplateID),
+			FriendlyName:  info.TemplateFriendlyName,
+		}
+	}
+
 	return appconfig.BioListReport{
 		Device:      status.Device,
 		Supported:   true,
 		PreviewOnly: status.Bio.PreviewOnly,
-		Enrollments: lo.Map(resp.TemplateInfos, func(info protocol.TemplateInfo, _ int) appconfig.BioEnrollmentRecord {
-			return appconfig.BioEnrollmentRecord{
-				TemplateIDHex: hex.EncodeToString(info.TemplateID),
-				FriendlyName:  info.TemplateFriendlyName,
-			}
-		}),
+		Enrollments: enrollments,
 	}, nil
 }
 

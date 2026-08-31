@@ -1,7 +1,6 @@
 package ctapkit
 
 import (
-	"reflect"
 	"testing"
 
 	"github.com/telesma-app/kit/model/failure"
@@ -13,7 +12,7 @@ func TestDecodeLargeBlobReturnsZeroResultOnError(t *testing.T) {
 	if !failure.IsCode(err, failure.CodeLargeBlobJSONInvalid) {
 		t.Fatalf("DecodeLargeBlob error = %v, want %s", err, failure.CodeLargeBlobJSONInvalid)
 	}
-	if !reflect.DeepEqual(result, largeblobs.DecodeResult{}) {
+	if result.Mode != "" || result.Text != "" || result.Value != nil {
 		t.Fatalf("DecodeLargeBlob result = %#v, want zero", result)
 	}
 }

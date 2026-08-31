@@ -9,7 +9,6 @@ import (
 	"github.com/fxamacker/cbor/v2"
 	"github.com/telesma-app/kit/model/failure"
 	applargeblobs "github.com/telesma-app/kit/model/largeblobs"
-	"github.com/samber/lo"
 )
 
 func Decode(
@@ -68,13 +67,19 @@ func Decode(
 func jsonFriendlyDecodedValue(value any) any {
 	switch typed := value.(type) {
 	case map[any]any:
-		return lo.MapEntries(typed, func(key any, value any) (string, any) {
-			return fmt.Sprint(key), jsonFriendlyDecodedValue(value)
-		})
+		mapped := make(map[string]any, len(typed))
+		for key, value := range typed {
+			mapped[fmt.Sprint(key)] = jsonFriendlyDecodedValue(value)
+		}
+
+		return mapped
 	case []any:
-		return lo.Map(typed, func(value any, _ int) any {
-			return jsonFriendlyDecodedValue(value)
-		})
+		mapped := make([]any, len(typed))
+		for i, value := range typed {
+			mapped[i] = jsonFriendlyDecodedValue(value)
+		}
+
+		return mapped
 	default:
 		return typed
 	}

@@ -2,7 +2,6 @@ package workflow
 
 import (
 	"context"
-	"reflect"
 	"testing"
 
 	"github.com/telesma-app/ctap/protocol"
@@ -77,7 +76,7 @@ func TestConfigStatusRetryFailureReturnsZeroReport(t *testing.T) {
 			if err == nil {
 				t.Fatal("ConfigStatus error = nil")
 			}
-			if !reflect.DeepEqual(report, appconfig.StatusReport{}) {
+			if !jsonValuesEqual(t, report, appconfig.StatusReport{}) {
 				t.Fatalf("ConfigStatus report = %#v, want zero", report)
 			}
 

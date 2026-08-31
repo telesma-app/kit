@@ -2,7 +2,7 @@ package config
 
 import (
 	"encoding/json"
-	"reflect"
+	"slices"
 	"strings"
 	"testing"
 
@@ -76,7 +76,7 @@ func TestBuildStatusReportMatchesCtaphidOptionSemantics(t *testing.T) {
 	}
 
 	if !r.AuthenticatorConfig.VendorPrototype.Supported ||
-		!reflect.DeepEqual(r.AuthenticatorConfig.VendorPrototypeConfigCommands, []string{"7", "4294967296"}) {
+		!slices.Equal(r.AuthenticatorConfig.VendorPrototypeConfigCommands, []string{"7", "4294967296"}) {
 		t.Fatalf("vendor prototype inventory = %#v", r.AuthenticatorConfig)
 	}
 
@@ -304,7 +304,7 @@ func assertCapabilityMatchesFact(t *testing.T, state StateValue, supported bool,
 	}
 	wantSupported := wantState == StateSupported || wantState == StateConfigured || wantState == StateNotConfigured
 
-	if state != wantState || supported != wantSupported || !reflect.DeepEqual(configured, wantConfigured) {
+	if state != wantState || supported != wantSupported || !(configured == wantConfigured || configured != nil && wantConfigured != nil && *configured == *wantConfigured) {
 		t.Fatalf("status for %q = state %s supported %t configured %#v; fact = %#v", id, state, supported, configured, fact)
 	}
 }

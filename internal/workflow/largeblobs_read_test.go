@@ -1,11 +1,11 @@
 package workflow
 
 import (
+	"bytes"
 	"context"
 	"crypto/aes"
 	"crypto/cipher"
 	"encoding/binary"
-	"reflect"
 	"testing"
 
 	"github.com/telesma-app/ctap/crypto"
@@ -87,7 +87,7 @@ func TestReadLargeBlobFollowsPerCredentialReadAlgorithm(t *testing.T) {
 				if !failure.IsCode(err, tt.wantFailure) {
 					t.Fatalf("error = %v, want code %q", err, tt.wantFailure)
 				}
-				if !reflect.DeepEqual(report, applargeblobs.ReadReport{}) {
+				if !jsonValuesEqual(t, report, applargeblobs.ReadReport{}) {
 					t.Fatalf("report = %#v, want zero value", report)
 				}
 
@@ -99,7 +99,7 @@ func TestReadLargeBlobFollowsPerCredentialReadAlgorithm(t *testing.T) {
 			if report.State != tt.wantState {
 				t.Fatalf("state = %q, want %q", report.State, tt.wantState)
 			}
-			if !reflect.DeepEqual(report.RawBytes, tt.wantPayload) {
+			if !((report.RawBytes == nil) == (tt.wantPayload == nil) && bytes.Equal(report.RawBytes, tt.wantPayload)) {
 				t.Fatalf("raw bytes = %x, want %x", report.RawBytes, tt.wantPayload)
 			}
 		})

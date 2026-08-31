@@ -11,7 +11,6 @@ import (
 	"github.com/telesma-app/kit/internal/secret"
 	"github.com/telesma-app/kit/model"
 	"github.com/telesma-app/kit/model/failure"
-	"github.com/samber/lo"
 )
 
 func TestTokenServiceCachesByPermissionAndRPID(t *testing.T) {
@@ -702,7 +701,10 @@ func (d *recordingTokenDevice) GetPINRetries(context.Context) (uint, *bool, erro
 }
 
 func interactionKinds(requests []model.InteractionRequest) []model.InteractionKind {
-	return lo.Map(requests, func(req model.InteractionRequest, _ int) model.InteractionKind {
-		return req.Kind
-	})
+	kinds := make([]model.InteractionKind, len(requests))
+	for i, request := range requests {
+		kinds[i] = request.Kind
+	}
+
+	return kinds
 }

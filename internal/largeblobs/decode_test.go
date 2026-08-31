@@ -1,7 +1,8 @@
 package largeblobs
 
 import (
-	"reflect"
+	"bytes"
+	"encoding/json"
 	"testing"
 
 	"github.com/fxamacker/cbor/v2"
@@ -41,7 +42,7 @@ func TestDecodeLargeBlob(t *testing.T) {
 				if !failure.IsCode(err, tt.wantFailure) {
 					t.Fatalf("Decode error = %v, want %s", err, tt.wantFailure)
 				}
-				if !reflect.DeepEqual(result, DecodeResult{}) {
+				if result.Mode != "" || result.Text != "" || result.Value != nil {
 					t.Fatalf("Decode result = %#v, want zero", result)
 				}
 
@@ -62,9 +63,24 @@ func TestDecodeLargeBlob(t *testing.T) {
 			if result.Text != tt.wantText {
 				t.Fatalf("Text = %q, want %q", result.Text, tt.wantText)
 			}
-			if !reflect.DeepEqual(result.Value, tt.wantValue) {
+			if !jsonValuesEqual(t, result.Value, tt.wantValue) {
 				t.Fatalf("Value = %#v, want %#v", result.Value, tt.wantValue)
 			}
 		})
 	}
+}
+
+func jsonValuesEqual(t testing.TB, got, want any) bool {
+	t.Helper()
+
+	gotJSON, err := json.Marshal(got)
+	if err != nil {
+		t.Fatalf("encode actual JSON value: %v", err)
+	}
+	wantJSON, err := json.Marshal(want)
+	if err != nil {
+		t.Fatalf("encode expected JSON value: %v", err)
+	}
+
+	return bytes.Equal(gotJSON, wantJSON)
 }

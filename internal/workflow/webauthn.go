@@ -6,7 +6,6 @@ import (
 	"slices"
 
 	"github.com/fxamacker/cbor/v2"
-	"github.com/samber/lo"
 	"github.com/telesma-app/ctap/extension"
 	"github.com/telesma-app/ctap/protocol"
 	ctapwebauthn "github.com/telesma-app/ctap/webauthn"
@@ -289,15 +288,15 @@ func assertionResult(
 func ctapAuthenticatorOptions(options appwebauthn.AuthenticatorOptions, withToken bool) map[protocol.Option]bool {
 	out := make(map[protocol.Option]bool)
 	if options.ResidentKey != nil {
-		out[protocol.OptionResidentKeys] = lo.FromPtr(options.ResidentKey)
+		out[protocol.OptionResidentKeys] = *options.ResidentKey
 	}
 
 	if options.UserPresence != nil {
-		out[protocol.OptionUserPresence] = lo.FromPtr(options.UserPresence)
+		out[protocol.OptionUserPresence] = *options.UserPresence
 	}
 
 	if options.UserVerification != nil && !withToken {
-		out[protocol.OptionUserVerification] = lo.FromPtr(options.UserVerification)
+		out[protocol.OptionUserVerification] = *options.UserVerification
 	}
 
 	if len(out) == 0 {
