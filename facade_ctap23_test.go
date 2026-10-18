@@ -1,6 +1,7 @@
 package ctapkit
 
 import (
+	"bytes"
 	"context"
 	"crypto/aes"
 	"crypto/cipher"
@@ -199,7 +200,7 @@ type storeStateAuthenticator struct {
 }
 
 func newStoreStateAuthenticator() *storeStateAuthenticator {
-	token := []byte{byte(protocol.PermissionPersistentCredentialManagementReadOnly)}
+	token := bytes.Repeat([]byte{byte(protocol.PermissionPersistentCredentialManagementReadOnly)}, sha256.Size)
 	identifier := make([]byte, aes.BlockSize)
 	state := make([]byte, aes.BlockSize)
 	for index := range identifier {
@@ -248,7 +249,7 @@ func (a *storeStateAuthenticator) GetPinUvAuthTokenUsingUV(
 ) ([]byte, error) {
 	a.permissions = append(a.permissions, permission)
 
-	token := []byte{byte(permission)}
+	token := bytes.Repeat([]byte{byte(permission)}, sha256.Size)
 	a.stateTokenPermission = permission
 
 	return token, nil
