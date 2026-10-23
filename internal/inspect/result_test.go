@@ -5,24 +5,24 @@ import (
 
 	"github.com/telesma-app/ctap/protocol"
 	model "github.com/telesma-app/kit/model/inspect"
-	"github.com/telesma-app/kit/model/report"
 )
 
 func TestBuildResultIncludesGetInfoAssessment(t *testing.T) {
-	result := BuildResult(report.DeviceReport{}, protocol.AuthenticatorGetInfoResponse{
+	result := BuildInfo(protocol.AuthenticatorGetInfoResponse{
 		Options: map[protocol.Option]bool{
 			protocol.OptionClientPIN: false,
 		},
 	})
 
-	if len(result.Info.Assessment.Facts) == 0 {
+	if len(result.Assessment.Facts) == 0 {
 		t.Fatal("assessment facts are empty")
 	}
 
-	for _, fact := range result.Info.Assessment.Facts {
+	for _, fact := range result.Assessment.Facts {
 		if fact.ID != model.FactIDClientPIN {
 			continue
 		}
+
 		if fact.State != model.FactStateNotConfigured || fact.Value.Boolean == nil || *fact.Value.Boolean {
 			t.Fatalf("client PIN fact = %#v, want reported not configured", fact)
 		}

@@ -275,6 +275,7 @@ func TestPreviewSignExtensionResultsUseHexArtifacts(t *testing.T) {
 
 func TestWebAuthnLargeBlobOutputsPreserveOptionalPresence(t *testing.T) {
 	unsupported := false
+
 	makeResult := makeCredentialExtensionResults(nil, protocol.AuthenticatorMakeCredentialResponse{
 		ExtensionOutputs: &ctapwebauthn.CreateAuthenticationExtensionsClientOutputs{
 			LargeBlobOutputs: &ctapwebauthn.LargeBlobOutputs{LargeBlob: ctapwebauthn.AuthenticationExtensionsLargeBlobOutputs{
@@ -288,6 +289,7 @@ func TestWebAuthnLargeBlobOutputsPreserveOptionalPresence(t *testing.T) {
 	}
 
 	written := false
+
 	getResult := getAssertionExtensionResults(nil, protocol.AuthenticatorGetAssertionResponse{
 		ExtensionOutputs: &ctapwebauthn.GetAuthenticationExtensionsClientOutputs{
 			LargeBlobOutputs: &ctapwebauthn.LargeBlobOutputs{LargeBlob: ctapwebauthn.AuthenticationExtensionsLargeBlobOutputs{

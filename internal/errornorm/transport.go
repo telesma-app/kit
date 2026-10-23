@@ -10,6 +10,7 @@ import (
 	ctaptoken2 "github.com/telesma-app/ctap/transport/token2"
 	baseiso7816 "github.com/telesma-app/iso7816"
 	"github.com/telesma-app/kit/model/failure"
+	"github.com/telesma-app/pcsc"
 )
 
 func transportCode(err error) (failure.Code, bool) {
@@ -18,6 +19,10 @@ func transportCode(err error) (failure.Code, bool) {
 	}
 
 	if _, ok := errors.AsType[*ctaptransport.IOError](err); ok {
+		return failure.CodeTransportFailure, true
+	}
+
+	if _, ok := errors.AsType[*pcsc.Error](err); ok {
 		return failure.CodeTransportFailure, true
 	}
 

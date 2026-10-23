@@ -40,6 +40,7 @@ func canonicalCTAP(detail *CTAPDetail) *CTAPDetail {
 
 func canonicalSubCommand(command protocol.Command, value uint64) (string, string) {
 	var family, name string
+
 	switch command {
 	case protocol.AuthenticatorClientPIN:
 		family = "clientPIN"

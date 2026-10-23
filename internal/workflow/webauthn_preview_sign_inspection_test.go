@@ -41,6 +41,7 @@ func TestInspectPreviewSignGeneratedKeyDescribesARKGAndAttestation(t *testing.T)
 	if err != nil {
 		t.Fatalf("inspect previewSign generated key: %v", err)
 	}
+
 	if inspection.Key.Kind != appwebauthn.PreviewSignKeyMaterialARKGPublicSeed ||
 		inspection.Key.KeyType != cose.KeyTypeARKGPublicSeedPlaceholder ||
 		inspection.Key.Algorithm == nil ||
@@ -49,12 +50,14 @@ func TestInspectPreviewSignGeneratedKeyDescribesARKGAndAttestation(t *testing.T)
 		*inspection.Key.DerivedAlgorithm != cose.AlgorithmESP256 {
 		t.Fatalf("ARKG key inspection = %#v", inspection.Key)
 	}
+
 	if inspection.Key.BlindingKey == nil || inspection.Key.BlindingKey.Curve == nil ||
 		*inspection.Key.BlindingKey.Curve != cose.EllipticCurveP256 ||
 		inspection.Key.KEMKey == nil || inspection.Key.KEMKey.Algorithm == nil ||
 		*inspection.Key.KEMKey.Algorithm != cose.AlgorithmECDHESHKDF256 {
 		t.Fatalf("ARKG nested key inspection = %#v", inspection.Key)
 	}
+
 	if inspection.Attestation.Format != attestation.AttestationStatementFormatIdentifierNone ||
 		inspection.Attestation.Type != attestation.TypeNone ||
 		inspection.Attestation.AAGUID != aaguid.String() ||
@@ -79,6 +82,7 @@ func TestInspectPreviewSignCOSEKeyExportsStandardPublicKeyPEM(t *testing.T) {
 	if err != nil {
 		t.Fatalf("inspect standard previewSign public key: %v", err)
 	}
+
 	if inspection.Kind != appwebauthn.PreviewSignKeyMaterialPublicKey ||
 		!strings.HasPrefix(inspection.PublicKeyPEM, "-----BEGIN PUBLIC KEY-----") {
 		t.Fatalf("standard public key inspection = %#v", inspection)
@@ -124,6 +128,7 @@ func TestInspectPreviewSignSignatureDecodesECDSAScalars(t *testing.T) {
 
 func previewSignARKGPublicSeed(t *testing.T) cose.Key {
 	t.Helper()
+
 	curve := elliptic.P256()
 	x := curve.Params().Gx.FillBytes(make([]byte, 32))
 	y := curve.Params().Gy.FillBytes(make([]byte, 32))
@@ -156,6 +161,7 @@ func previewSignInspectionAuthData(
 	policy protocol.AuthDataFlag,
 ) []byte {
 	t.Helper()
+
 	flags := protocol.AuthDataFlagUserPresent |
 		protocol.AuthDataFlagUserVerified |
 		protocol.AuthDataFlagAttestedCredentialDataIncluded |
@@ -197,6 +203,7 @@ func previewSignSignatureResponse(
 
 func previewSignMarshalCBOR(t *testing.T, value any) []byte {
 	t.Helper()
+
 	encoded, err := cbor.Marshal(value)
 	if err != nil {
 		t.Fatalf("marshal previewSign CBOR: %v", err)
@@ -207,6 +214,7 @@ func previewSignMarshalCBOR(t *testing.T, value any) []byte {
 
 func previewSignMarshalASN1(t *testing.T, r, s *big.Int) []byte {
 	t.Helper()
+
 	encoded, err := asn1.Marshal(struct {
 		R *big.Int
 		S *big.Int

@@ -27,7 +27,7 @@ Main features include:
 - resident credential listing, update, and deletion;
 - large-blob reading, writing, deletion, and garbage collection;
 - WebAuthn credential creation and assertion;
-- progressive vendor device identity resolution;
+- independent USB, CTAPHID INIT, GetInfo, and vendor command reports;
 - FIDO Metadata Service (MDS3) lookup and verification;
 - operation progress events and interaction callbacks;
 - bounded and redacted CTAP diagnostic logs.
@@ -41,7 +41,7 @@ JSON rendering, or product-specific workflows. Applications must provide those p
 |------------------------------|-----------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `transport.ModeAuto`         | Linux, macOS, Windows | Discovers PC/SC smart cards together with the platform HID policy. On Windows, HID uses direct access when elevated and the Windows proxy otherwise.     |
 | `transport.ModeHID`          | Linux, macOS, Windows | Opens the authenticator through direct USB HID access.                                                                                                  |
-| `transport.ModeSmartCard`    | Linux, macOS, Windows | Discovers present PC/SC cards exposing the standard FIDO ISO 7816 applet and opens them exclusively for CTAP commands.                                  |
+| `transport.ModeSmartCard`    | Linux, macOS, Windows | Discovers inserted PC/SC cards and reports FIDO availability separately; vendor sources remain readable when FIDO is absent.                                  |
 | `transport.ModeWindowsProxy` | Windows               | Connects to a running [`telesma-app/windows-proxy`](https://github.com/telesma-app/windows-proxy).                                                              |
 
 BLE and hybrid transports are not part of this runtime.
@@ -85,20 +85,21 @@ func main() {
 		log.Fatal("no FIDO2 authenticator found")
 	}
 
-	inspection, err := authenticator.Inspect(ctx)
+	info, err := authenticator.GetInfo(ctx)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	fmt.Printf("attachment: %s\n", inspection.Device.Attachment.ID)
-	fmt.Printf("versions: %v\n", inspection.Info.Versions)
-	fmt.Printf("AAGUID: %s\n", inspection.Info.AAGUID)
+	fmt.Printf("attachment: %s\n", authenticator.Endpoint().Attachment.ID)
+	fmt.Printf("versions: %v\n", info.Versions)
+	fmt.Printf("AAGUID: %s\n", info.AAGUID)
 }
 ```
 
-`DeviceManager` watches FIDO HID attachments and inserted PC/SC cards. It keeps
-the current selection open, selects the first available attachment when the
-selection is empty, and publishes complete snapshots through `Updates`.
+`GetInfo` reads CTAP capabilities. For vendor details, call
+`DeviceManager.RefreshSources(ctx, deviceID)`; call `RefreshMetadata` separately
+for an MDS lookup. The device report keeps each source's data and errors separate,
+including usable partial results.
 
 ## Runtime lifecycle
 
@@ -106,9 +107,56 @@ A normal application follows this lifecycle:
 
 1. Create one `ctapkit.DeviceManager` for a fixed transport mode.
 2. Read `State` and use the automatically selected authenticator.
-3. Call `Select` when the user chooses another attachment.
+3. Call `Select` with a physical `DeviceID` when the user chooses another token.
 4. Run typed operations on `State().Selected`.
 5. Close the manager when the application exits.
+
+`DeviceManager` owns physical devices and their endpoint membership. Snapshots
+store `Devices` (identity and endpoint IDs) and `Endpoints` (transport observations
+and source results) separately. `Selected` is a physical `DeviceID`;
+`SelectedEndpoint` identifies the active or viewed transport endpoint.
+`DeviceUpdate.Selected` is non-nil only while that endpoint has a usable runtime.
+`Authenticator.Endpoint()` returns the selected endpoint's observations.
+
+Discovery reads vendor observations once per endpoint and uses those same saved
+results to establish a Yubico or Token2 identity. Matching full vendor serials
+pair HID and PC/SC endpoints; unknown or ambiguous identities remain separate.
+Failed refreshes retain established identity for that attachment lifetime.
+Membership is rebuilt after applying each source result, before selection or
+snapshot publication. Endpoint preference and aggregate startup errors use the
+same fixed transport/path order, independent of enumeration and map order.
+`RefreshSources` refreshes all endpoints of a device. `ReadEndpointSources` and
+`SelectEndpoint` are explicit endpoint-level operations. Management reads on a
+sibling interface share the selected authenticator's operation gate.
+
+Changing the selected endpoint cancels the current local source read and waits
+for its owned resources to be released before opening the replacement. Selecting
+the current open endpoint leaves that read and runtime intact. Removing the
+selected endpoint uses the same cleanup boundary before fallback.
+
+Hotplug publishes the endpoint before inspecting it. Until its identity is known,
+inspection waits for the selected authenticator's operation gate; topology and
+metadata updates remain available while it waits. PC/SC FIDO availability comes
+from that opening exchange, without a separate watcher probe.
+If an existing HID enumeration later reports changed descriptors, the snapshot
+receives those observations without reopening its runtime or starting another
+vendor read. A subsequent explicit source refresh uses the updated descriptors.
+
+`Snapshot.DiscoveryErrors` retains startup or terminal watcher failures by
+transport, including when another discovery source remains usable. Terminal
+failures also appear in `DeviceUpdate.Error`. Applications can recreate the
+manager to restart failed discovery; the runtime does not reconnect automatically.
+
+An auxiliary interface appearing or disappearing does not replace the selected
+runtime. If the selected endpoint disappears, the manager prefers another usable
+endpoint of that physical token. A remaining management-only endpoint keeps the
+physical selection, without fabricating an operational authenticator. Only the
+last endpoint disappearing removes the physical token.
+
+Token2 source data uses `report.Token2Report`. Each independent reading carries
+its optional value and diagnostic error; a partial read can retain both. A valid
+ATR without vendor identity succeeds with `ATR.Identity == nil`. Independent
+read failures retain successful values and produce a partial source result.
 
 The manager owns the selected `Authenticator`; callers must not close it.
 Selection changes and manager shutdown close it automatically. An
@@ -123,9 +171,6 @@ operation reloads it. Dry runs leave it unchanged, and an explicit
 `ListLargeBlobs` always refreshes it. The state never crosses the authenticator boundary, and its credential keys are
 cleared on invalidation, refresh, and close.
 
-`Authenticator.Close` is safe to call more than once or while another goroutine is using the authenticator. It cancels
-the active operation, clears owned secret state, and closes the transport.
-
 ## Operations
 
 The root `ctapkit` package is the public runtime facade. Operation inputs and results are typed DTOs from the `model`
@@ -133,14 +178,14 @@ packages.
 
 | Area            | Main methods                                                                                                       |
 |-----------------|--------------------------------------------------------------------------------------------------------------------|
-| Inspection      | `Inspect`                                                                                                          |
+| GetInfo         | `GetInfo`                                                                                                          |
 | Configuration   | `ConfigStatus`, `SetPIN`, `ChangePIN`, `SetAlwaysUV`, `SetMinPINLength`, `EnableLongTouchForReset`, `ResetFactory` |
 | Biometrics      | `BioSensorInfo`, `BioList`, `BioEnroll`, `BioRename`, `BioRemove`                                                  |
 | Credentials     | `ListCredentials`, `CredentialStoreState`, `DeleteCredential`, `UpdateCredentialUser`                              |
 | Large blobs     | `ReadLargeBlob`, `ListLargeBlobs`, `WriteLargeBlob`, `DeleteLargeBlob`, `GarbageCollectLargeBlobs`, `DecodeLargeBlob` |
 | WebAuthn        | `MakeCredential`, `GetAssertion`, `VerifyMakeCredential`, `VerifyGetAssertion`                                     |
 
-Operation methods return concrete result values. When an operation returns an error, its result is always the zero
+Authenticator operation methods return concrete result values. When an operation returns an error, its result is always the zero
 value, regardless of whether the workflow had already started. A populated result is returned only for a successful
 workflow, including preview-only dry runs; outputs may leave a nested mutation result nil for previews.
 
@@ -265,7 +310,7 @@ sensitive data.
 | `model`                                                                             | Shared event, interaction, and log DTOs                                                   |
 | `model/config`                                                                      | Configuration and biometric operation DTOs                                                |
 | `model/credentials`                                                                 | Credential inventory and mutation DTOs                                                    |
-| `model/inspect`                                                                     | Authenticator inspection DTOs                                                             |
+| `model/inspect`                                                                     | GetInfo responses and capability assessments                                                             |
 | `model/largeblobs`                                                                  | Large-blob operation DTOs                                                                 |
 | `model/webauthn`                                                                    | WebAuthn operation DTOs                                                                   |
 | `model/failure`                                                                     | Stable public error codes and snapshots                                                   |
@@ -276,7 +321,6 @@ Packages under `internal` contain runtime implementation details and are not a p
 
 ## Safety and usage notes
 
-- Always close `Authenticator` when it is no longer needed.
 - Treat authenticator state as changeable between commands.
 - Do not log or store PINs, PIN/UV tokens, credential secrets, or large-blob payloads.
 - PIN fields in public configuration operation DTOs are omitted during JSON encoding.
@@ -297,6 +341,12 @@ Run the default checks with:
 ```sh
 go test ./... -count=1
 go vet ./...
+```
+
+Run the standard linters and `wsl_v5` with [golangci-lint v2](https://golangci-lint.run/docs/welcome/install/):
+
+```sh
+golangci-lint run ./...
 ```
 
 For authenticator lifecycle, interaction, token, or synchronization changes, also run:

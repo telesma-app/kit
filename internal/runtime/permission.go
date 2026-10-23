@@ -28,6 +28,7 @@ func permissionLabel(permission protocol.Permission) string {
 	}
 
 	parts := make([]string, 0, len(namedPermissions)+1)
+
 	known := protocol.PermissionNone
 	for _, named := range namedPermissions {
 		known |= named.value

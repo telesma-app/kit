@@ -6,6 +6,7 @@ import (
 
 	"github.com/telesma-app/ctap/crypto"
 	"github.com/telesma-app/ctap/protocol"
+	"github.com/telesma-app/kit/internal/authenticator"
 	rtcredentials "github.com/telesma-app/kit/internal/credentials"
 	"github.com/telesma-app/kit/internal/secret"
 	"github.com/telesma-app/kit/model/failure"
@@ -14,7 +15,7 @@ import (
 
 func (r Runner) ReadLargeBlob(
 	ctx context.Context,
-	device LargeBlobDevice,
+	device authenticator.LargeBlobDevice,
 	largeBlobState *LargeBlobState,
 	req applargeblobs.ReadOperation,
 ) (applargeblobs.ReadReport, error) {
@@ -32,6 +33,7 @@ func (r Runner) ReadLargeBlob(
 	if err != nil {
 		return applargeblobs.ReadReport{}, err
 	}
+
 	if !inventory.support.LargeBlobs || !inventory.support.LargeBlobKeyExtension {
 		return applargeblobs.ReadReport{}, failure.New(failure.CodeLargeBlobUnsupported,
 			failure.WithPhase(failure.PhaseDiscovery),
@@ -51,9 +53,12 @@ func (r Runner) readLargeBlobFromInventory(
 	if err != nil {
 		return applargeblobs.ReadReport{}, err
 	}
+
 	largeBlobKey := inventory.keys.get(target.RP.IDHashHex, target.Record.CredentialIDHex)
 	state := applargeblobs.ReadStateMissing
+
 	var raw []byte
+
 	if largeBlobKey != nil {
 		inventory, err = r.loadLargeBlobArrayIntoInventory(ctx, device, inventory)
 		if err != nil {
@@ -72,6 +77,7 @@ func (r Runner) readLargeBlobFromInventory(
 
 			decrypted, err := crypto.DecompressLargeBlobData(compressed, candidate.OrigSize)
 			secret.Zero(compressed)
+
 			if err != nil {
 				return applargeblobs.ReadReport{}, failure.Wrap(
 					failure.CodeLargeBlobIntegrityFailure,
@@ -88,7 +94,7 @@ func (r Runner) readLargeBlobFromInventory(
 	}
 
 	return applargeblobs.ReadReport{
-		Device: r.env.Selected,
+		Device: r.Selected,
 		Target: applargeblobs.BlobTarget{
 			CredentialIDHex: target.Record.CredentialIDHex,
 			RP:              target.RP,

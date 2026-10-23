@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 
 	"github.com/telesma-app/ctap/protocol"
+	"github.com/telesma-app/kit/internal/authenticator"
 	rtconfig "github.com/telesma-app/kit/internal/config"
 	"github.com/telesma-app/kit/internal/errornorm"
 	rtruntime "github.com/telesma-app/kit/internal/runtime"
@@ -12,14 +13,15 @@ import (
 	"github.com/telesma-app/kit/model/failure"
 )
 
-func (r Runner) BioList(ctx context.Context, device BioDevice) (appconfig.BioListReport, error) {
+func (r Runner) BioList(ctx context.Context, device authenticator.BioDevice) (appconfig.BioListReport, error) {
 	status, err := r.ConfigStatus(ctx, device)
 	if err != nil {
 		return appconfig.BioListReport{}, err
 	}
 
 	var report appconfig.BioListReport
-	err = r.env.Tokens.Use(ctx, rtruntime.TokenUse{
+
+	err = r.Tokens.Use(ctx, rtruntime.TokenUse{
 		Permission: protocol.PermissionBioEnrollment,
 		ReplaySafe: true,
 	}, func(token []byte) error {
@@ -39,7 +41,7 @@ func (r Runner) BioList(ctx context.Context, device BioDevice) (appconfig.BioLis
 	return report, nil
 }
 
-func (r Runner) BioSensorInfo(ctx context.Context, device BioDevice) (appconfig.BioSensorReport, error) {
+func (r Runner) BioSensorInfo(ctx context.Context, device authenticator.BioDevice) (appconfig.BioSensorReport, error) {
 	if err := ctx.Err(); err != nil {
 		return appconfig.BioSensorReport{}, errornorm.Annotate(err, errornorm.WithPhase(failure.PhaseDiscovery))
 	}
@@ -48,7 +50,8 @@ func (r Runner) BioSensorInfo(ctx context.Context, device BioDevice) (appconfig.
 	if err != nil {
 		return appconfig.BioSensorReport{}, err
 	}
-	status := rtconfig.BuildStatusReport(r.env.Selected, info)
+
+	status := rtconfig.BuildStatusReport(r.Selected, info)
 	if !status.Bio.Supported {
 		return appconfig.BioSensorReport{}, failure.New(failure.CodeBioUnsupported,
 			failure.WithPhase(failure.PhaseDiscovery),
@@ -73,19 +76,13 @@ func (r Runner) BioSensorInfo(ctx context.Context, device BioDevice) (appconfig.
 	}
 
 	report := appconfig.BioSensorReport{
-		Device:      status.Device,
-		Supported:   true,
-		PreviewOnly: status.Bio.PreviewOnly,
-	}
-	report.Modality = bioModality(modality.Modality)
-	report.FingerprintKind = fingerprintKind(sensor.FingerprintKind)
-
-	if sensor.MaxCaptureSamplesRequiredForEnroll != nil {
-		report.MaxCaptureSamplesRequiredForEnroll = sensor.MaxCaptureSamplesRequiredForEnroll
-	}
-
-	if sensor.MaxTemplateFriendlyName != nil {
-		report.MaxTemplateFriendlyName = sensor.MaxTemplateFriendlyName
+		Device:                             status.Device,
+		Supported:                          true,
+		PreviewOnly:                        status.Bio.PreviewOnly,
+		Modality:                           bioModality(modality.Modality),
+		FingerprintKind:                    fingerprintKind(sensor.FingerprintKind),
+		MaxCaptureSamplesRequiredForEnroll: sensor.MaxCaptureSamplesRequiredForEnroll,
+		MaxTemplateFriendlyName:            sensor.MaxTemplateFriendlyName,
 	}
 
 	return report, nil
@@ -113,7 +110,7 @@ func fingerprintKind(value uint) appconfig.FingerprintKind {
 
 func (r Runner) bioListReport(
 	ctx context.Context,
-	device BioDevice,
+	device authenticator.BioDevice,
 	status appconfig.StatusReport,
 	token []byte,
 ) (appconfig.BioListReport, error) {

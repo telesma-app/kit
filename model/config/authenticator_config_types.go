@@ -23,7 +23,7 @@ const (
 
 type AuthenticatorConfigPreview struct {
 	Operation                      AuthenticatorConfigOperation `json:"operation"`
-	Device                         report.DeviceReport          `json:"device"`
+	Device                         report.EndpointReport        `json:"device"`
 	Authenticator                  AuthenticatorConfigStatus    `json:"authenticatorConfig"`
 	CurrentEnterpriseAttestation   *bool                        `json:"currentEnterpriseAttestation,omitempty"`
 	RequestedEnterpriseAttestation bool                         `json:"requestedEnterpriseAttestation,omitempty"`

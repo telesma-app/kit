@@ -14,7 +14,7 @@ func (a *Authenticator) MakeCredential(
 	opts ...OperationOption,
 ) (webauthn.MakeCredentialOutput, error) {
 	return executeOperation(a, ctx, appoperation.MakeCredential, func(runner workflow.Runner, ctx context.Context) (webauthn.MakeCredentialOutput, error) {
-		return runner.MakeCredential(ctx, a.webAuthn, operation)
+		return runner.MakeCredential(ctx, a.opened.WebAuthn, operation)
 	}, opts...)
 }
 
@@ -24,6 +24,6 @@ func (a *Authenticator) GetAssertion(
 	opts ...OperationOption,
 ) (webauthn.GetAssertionOutput, error) {
 	return executeOperation(a, ctx, appoperation.GetAssertion, func(runner workflow.Runner, ctx context.Context) (webauthn.GetAssertionOutput, error) {
-		return runner.GetAssertion(ctx, a.webAuthn, operation)
+		return runner.GetAssertion(ctx, a.opened.WebAuthn, operation)
 	}, opts...)
 }

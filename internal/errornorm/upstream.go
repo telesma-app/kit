@@ -6,6 +6,7 @@ import (
 	ctapdevice "github.com/telesma-app/ctap/authenticator"
 	"github.com/telesma-app/ctap/protocol"
 	"github.com/telesma-app/kit/model/failure"
+	"github.com/telesma-app/mds"
 )
 
 func upstreamCode(err error, annotation Annotation) (failure.Code, bool) {
@@ -58,5 +59,18 @@ func unsupportedCode(annotation Annotation) failure.Code {
 		return failure.CodeAuthenticatorConfigUnsupported
 	default:
 		return failure.CodeOperationUnsupported
+	}
+}
+
+func metadataCode(err error) (failure.Code, bool) {
+	switch {
+	case errors.Is(err, mds.ErrInvalidAAGUID):
+		return failure.CodeMDSAAGUIDInvalid, true
+	case errors.Is(err, mds.ErrVerify):
+		return failure.CodeMDSVerificationFailed, true
+	case errors.Is(err, mds.ErrFetch):
+		return failure.CodeMDSFetchFailed, true
+	default:
+		return "", false
 	}
 }

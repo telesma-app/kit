@@ -77,71 +77,28 @@ func WithVerificationFlow(flow VerificationFlow) OperationOption {
 // Authenticator is one opened authenticator channel. It owns transport
 // lifecycle, operation serialization, and runtime token state until Close.
 type Authenticator struct {
-	selected            report.DeviceReport
-	lifecycle           authenticator.Lifecycle
-	vendor              authenticator.VendorProvider
-	info                authenticator.InfoProvider
-	tokenProvider       authenticator.TokenProvider
-	credentialInventory authenticator.CredentialInventoryReader
-	credentials         authenticator.CredentialManager
-	webAuthn            authenticator.WebAuthnManager
-	largeBlobs          authenticator.LargeBlobDevice
-	configStatus        authenticator.ConfigStatusDevice
-	config              authenticator.ConfigDevice
-	bio                 authenticator.BioDevice
-	tokens              *rtruntime.TokenStore
-	largeBlobState      *workflow.LargeBlobState
+	selected       report.EndpointReport
+	opened         *authenticator.Opened
+	tokens         rtruntime.TokenStore
+	largeBlobState workflow.LargeBlobState
 
-	runMu   sync.Mutex
+	runGate chan struct{}
 	stateMu sync.Mutex
 	closed  bool
 	cancel  context.CancelFunc
 
+	done      chan struct{}
 	closeOnce sync.Once
 	closeErr  error
 }
 
-func openAuthenticatorHandle(
-	ctx context.Context,
-	device attachment,
-	open authenticatorOpenFunc,
-	opts ...AuthenticatorOption,
-) (*Authenticator, error) {
-	var config authenticatorConfig
-	for _, opt := range opts {
-		opt(&config)
-	}
-
-	var recorder logging.Recorder
-	if config.journal != nil {
-		recorder = config.journal.journal
-	}
-	selected := device.report
-	opened, err := open(
-		logging.WithRecorder(ctx, recorder),
-		device.mode,
-		device.path,
-	)
-	if err != nil {
-		return nil, err
-	}
-
+func newAuthenticatorHandle(selected report.EndpointReport, opened *authenticator.Opened) *Authenticator {
 	return &Authenticator{
-		selected:            selected,
-		lifecycle:           opened.Lifecycle,
-		vendor:              opened.Vendor,
-		info:                opened.Info,
-		tokenProvider:       opened.Tokens,
-		credentialInventory: opened.CredentialInventory,
-		credentials:         opened.Credentials,
-		webAuthn:            opened.WebAuthn,
-		largeBlobs:          opened.LargeBlobs,
-		configStatus:        opened.ConfigStatus,
-		config:              opened.Config,
-		bio:                 opened.Bio,
-		tokens:              &rtruntime.TokenStore{},
-		largeBlobState:      &workflow.LargeBlobState{},
-	}, nil
+		selected: selected,
+		opened:   opened,
+		runGate:  make(chan struct{}, 1),
+		done:     make(chan struct{}),
+	}
 }
 
 func (a *Authenticator) Close() error {
@@ -154,13 +111,12 @@ func (a *Authenticator) Close() error {
 	a.stateMu.Unlock()
 
 	a.closeOnce.Do(func() {
-		// Close the transport before waiting for the active operation. Context
-		// cancellation normally releases an in-flight command, but a blocked
-		// device read may require closing the transport to unblock it.
-		a.closeErr = a.lifecycle.Close()
+		defer close(a.done)
+		// Close first: a blocked device read may ignore context cancellation.
+		a.closeErr = a.opened.Lifecycle.Close()
 
-		a.runMu.Lock()
-		defer a.runMu.Unlock()
+		a.runGate <- struct{}{}
+		defer func() { <-a.runGate }()
 
 		a.tokens.InvalidateToken()
 		a.largeBlobState.Clear()
@@ -173,7 +129,10 @@ func (a *Authenticator) Close() error {
 	return nil
 }
 
-func (a *Authenticator) Device() report.DeviceReport {
+func (a *Authenticator) Endpoint() report.EndpointReport {
+	a.stateMu.Lock()
+	defer a.stateMu.Unlock()
+
 	return a.selected
 }
 
@@ -219,4 +178,24 @@ func newOperationConfig(opts ...OperationOption) (operationConfig, error) {
 			failure.WithPhase(failure.PhaseValidation),
 		)
 	}
+}
+
+func (a *Authenticator) setEndpoint(device report.EndpointReport) {
+	a.stateMu.Lock()
+	a.selected = device
+	a.stateMu.Unlock()
+}
+
+func openDevice(ctx context.Context, target attachment, open authenticatorOpenFunc, opts ...AuthenticatorOption) (*authenticator.Opened, error) {
+	var config authenticatorConfig
+	for _, opt := range opts {
+		opt(&config)
+	}
+
+	var recorder logging.Recorder
+	if config.journal != nil {
+		recorder = config.journal.journal
+	}
+
+	return open(logging.WithRecorder(ctx, recorder), target.mode, target.path)
 }

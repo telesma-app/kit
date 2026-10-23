@@ -26,10 +26,12 @@ func TestFindByCanonicalID(t *testing.T) {
 
 func TestBuildDeletePreview(t *testing.T) {
 	inventory := sampleInventoryReport()
+
 	target, err := FindByCanonicalID(inventory, "deadbeef")
 	if err != nil {
 		t.Fatalf("FindByCanonicalID: %v", err)
 	}
+
 	preview := BuildDeletePreview(target)
 
 	if preview.CredentialIDHex != "deadbeef" {
@@ -58,6 +60,7 @@ func TestParseCredentialIDValidatesAndCanonicalizes(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ParseCredentialID: %v", err)
 	}
+
 	if string(id) != "\xde\xad\xbe\xef" || canonical != "deadbeef" {
 		t.Fatalf("parsed ID = %x/%q, want deadbeef", id, canonical)
 	}
@@ -88,10 +91,12 @@ func TestPrepareUpdateUserKeepsUserID(t *testing.T) {
 	if err != nil {
 		t.Fatalf("PrepareUpdateUser: %v", err)
 	}
+
 	preview := plan.Preview
 	if preview.Proposed.UserIDHex != "0102" {
 		t.Fatalf("Proposed.UserIDHex = %q, want unchanged user ID", preview.Proposed.UserIDHex)
 	}
+
 	if got := preview.Warnings[0]; got.Severity != safety.SeverityDestructive ||
 		got.Code != "credential.update_user.mutation" {
 		t.Fatalf("first warning = %#v, want destructive update warning", got)
@@ -123,7 +128,7 @@ func sampleCredentialTarget(t *testing.T) CredentialTarget {
 
 func sampleInventoryReport() InventoryReport {
 	return InventoryReport{
-		Device: report.DeviceReport{Attachment: report.AttachmentReport{ID: "cred01"}},
+		Device: report.EndpointReport{Attachment: report.AttachmentReport{ID: "cred01"}},
 		Support: SupportReport{
 			CredentialManagement: true,
 		},

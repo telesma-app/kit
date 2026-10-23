@@ -2,12 +2,14 @@ package ctapkit
 
 import (
 	"encoding/json"
+	"errors"
 	"strings"
 	"testing"
 
 	"github.com/telesma-app/ctap/attestation"
 	"github.com/telesma-app/ctap/credential"
 	"github.com/telesma-app/ctap/protocol"
+	"github.com/telesma-app/hid"
 	rtinspect "github.com/telesma-app/kit/internal/inspect"
 	"github.com/telesma-app/kit/model"
 	"github.com/telesma-app/kit/model/config"
@@ -108,7 +110,7 @@ func TestPublicDTOJSONContractsUseCTAP23Spellings(t *testing.T) {
 	}{
 		{
 			name: "inspect mirrors authenticator get info",
-			value: rtinspect.BuildResult(report.DeviceReport{}, protocol.AuthenticatorGetInfoResponse{
+			value: rtinspect.BuildInfo(protocol.AuthenticatorGetInfoResponse{
 				ForcePINChange:                true,
 				MinPINLength:                  4,
 				MaxCredentialIdLength:         32,
@@ -508,7 +510,6 @@ func TestPublicDTOJSONContractsUseCTAP23Spellings(t *testing.T) {
 					t.Fatalf("JSON missing %s: %s", want, text)
 				}
 			}
-
 		})
 	}
 }
@@ -531,54 +532,17 @@ func TestPreviewSignResultJSONUsesArtifactSpellings(t *testing.T) {
 }
 
 func TestDeviceReportSmartCardInterfaceJSON(t *testing.T) {
-	value := report.DeviceReport{
-		Attachment: report.AttachmentReport{
-			ID:        "attachment-1",
-			Transport: transport.ModeSmartCard,
-			SmartCard: &report.SmartCardReport{
-				Reader:    "reader-one",
-				ATR:       "3b80800101",
-				Interface: transport.SmartCardInterfaceContactless,
-			},
+	value := report.AttachmentReport{
+		ID:        "attachment-1",
+		Transport: transport.ModeSmartCard,
+		SmartCard: &report.SmartCardReport{
+			Reader:    "reader-one",
+			ATR:       "3b80800101",
+			Interface: transport.SmartCardInterfaceContactless,
 		},
 	}
 
-	assertJSON(t, value, `{"attachment":{"id":"attachment-1","transport":"smart-card","smartCard":{"reader":"reader-one","atr":"3b80800101","interface":"contactless"}}}`)
-}
-
-func TestDeviceReportIdentityJSON(t *testing.T) {
-	value := report.DeviceReport{
-		Attachment: report.AttachmentReport{
-			ID:        "hid:one",
-			Transport: transport.ModeHID,
-		},
-		Identity: &report.DeviceIdentityReport{
-			Vendor:       report.DeviceVendorToken2,
-			Name:         "Token2 USB-C NFC",
-			SerialNumber: "86104012345678",
-		},
-	}
-
-	assertJSON(t, value, `{"attachment":{"id":"hid:one","transport":"hid"},"identity":{"vendor":"token2","name":"Token2 USB-C NFC","serialNumber":"86104012345678"}}`)
-}
-
-func TestDeviceReportUsesToken2ProviderTypesJSON(t *testing.T) {
-	value := report.DeviceReport{
-		Attachment: report.AttachmentReport{
-			ID:        "hid:token2",
-			Transport: transport.ModeHID,
-		},
-		VendorMetadata: &report.DeviceVendorMetadata{
-			Token2: &token2.DeviceInfo{
-				SerialNumber: "72103654095303",
-				Release:      "R3.2",
-				FormFactor:   "Bio3 Dual A+C PIN+",
-				Branding:     "Token2",
-			},
-		},
-	}
-
-	assertJSON(t, value, `{"attachment":{"id":"hid:token2","transport":"hid"},"vendorMetadata":{"token2":{"serialNumber":"72103654095303","release":"R3.2","formFactor":"Bio3 Dual A+C PIN+","branding":"Token2","interfaceStateKnown":false,"fidoEnabled":false,"hotpKeystrokeEnabled":false,"ccidEnabled":false,"capabilitiesKnown":false,"fidoPINSet":false,"fidoPINLocked":false,"supportsHOTP":false,"supportsTOTP":false,"supportsNFC":false,"supportsCCID":false,"supportsFIDO21":false,"hasFingerprintSensor":false,"supportsFingerprintRegistration":false,"supportsMandatoryFingerprint":false,"otpRequiresFingerprint":false,"supportsButtonHOTP":false,"buttonHOTPConfigured":false,"buttonHOTPSendsEnter":false,"buttonHOTPRequiresLongPress":false,"buttonHOTPUsesNumericKeypad":false}}}`)
+	assertJSON(t, value, `{"id":"attachment-1","transport":"smart-card","smartCard":{"reader":"reader-one","atr":"3b80800101","interface":"contactless","fidoApplication":{"state":""}}}`)
 }
 
 func TestCTAP23JSONPresenceContracts(t *testing.T) {
@@ -619,4 +583,63 @@ func assertJSON(t *testing.T, value any, want string) {
 	if string(raw) != want {
 		t.Fatalf("json.Marshal(%T) = %s, want %s", value, raw, want)
 	}
+}
+
+func TestAttachmentSourceStatesJSON(t *testing.T) {
+	assertJSON(t, initialSources(transport.ModeHID), `{"hidInit":{"state":"not-requested"},"getInfo":{"state":"not-requested"},"mds":{"state":"not-requested"},"yubico":{"state":"not-requested"},"token2":{"state":"not-requested"}}`)
+}
+
+func TestDeviceReportKeepsDescriptorAndCommandSerialSeparate(t *testing.T) {
+	candidate := hidCandidate("one")
+	candidate.HID.VendorID = hid.Descriptor[uint16]{Value: new(token2VendorID)}
+	candidate.HID.SerialNbr = hid.Descriptor[string]{Value: new("USB serial")}
+	device := newAttachment(candidate).report
+	device.Sources.Token2 = token2Source(token2.DeviceInfo{SerialNumber: token2.Descriptor[string]{Value: new("management serial")}}, nil)
+
+	raw, err := json.Marshal(device)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for _, field := range []string{`"reportedSerial":{"value":"USB serial","state":"read"}`, `"serialNumber":{"value":"management serial"}`} {
+		if !strings.Contains(string(raw), field) {
+			t.Fatalf("report is missing %s: %s", field, raw)
+		}
+	}
+
+	for _, obsolete := range []string{`"identity"`, `"vendorMetadata"`, `"modelName"`, `"Err"`} {
+		if strings.Contains(string(raw), obsolete) {
+			t.Fatalf("report contains obsolete or non-wire field %s: %s", obsolete, raw)
+		}
+	}
+}
+
+func TestToken2ReportJSONRetainsIndependentReadErrors(t *testing.T) {
+	serialErr := errors.New("serial failed")
+	atrErr := errors.New("ATR cleanup failed")
+	configErr := errors.New("configuration failed")
+	info := token2.DeviceInfo{
+		SerialNumber: token2.Descriptor[string]{Value: new(""), Err: serialErr},
+		ATR: token2.Descriptor[token2.ATR]{
+			Value: &token2.ATR{Raw: []byte{0x3b, 0x00}},
+			Err:   atrErr,
+		},
+		Configuration: token2.Descriptor[token2.Configuration]{Err: configErr},
+	}
+
+	source := token2Source(info, errors.Join(serialErr, atrErr, configErr))
+
+	if source.State != report.SourcePartial {
+		t.Fatalf("source state = %q, want partial", source.State)
+	}
+
+	assertJSON(t, source.Data, `{"serialNumber":{"value":"","error":{"message":"serial failed"}},"atr":{"value":{"raw":"OwA="},"error":{"message":"ATR cleanup failed"}},"configuration":{"value":null,"error":{"message":"configuration failed"}}}`)
+	assertJSON(t, report.SourceReading[string]{}, `{"value":null}`)
+	assertJSON(t, token2Reading(token2.Descriptor[string]{Value: new("")}), `{"value":""}`)
+}
+
+func TestDescriptorJSONDistinguishesUnknownEmptyAndFailed(t *testing.T) {
+	assertJSON(t, reportDescriptor(hid.Descriptor[string]{}), `{"value":"","state":""}`)
+	assertJSON(t, reportDescriptor(hid.Descriptor[string]{Value: new(string)}), `{"value":"","state":"read"}`)
+	assertJSON(t, reportDescriptor(hid.Descriptor[string]{Err: errors.New("unavailable")}), `{"value":"","state":"error","error":{"message":"unavailable"}}`)
 }

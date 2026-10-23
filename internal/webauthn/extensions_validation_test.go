@@ -74,13 +74,14 @@ func TestWebAuthnPreviewSignWarningsFollowAdvertisedSupport(t *testing.T) {
 	if warnings := makeCredentialExtensionWarnings(supported, makeInput); len(warnings) != 0 {
 		t.Fatalf("supported MakeCredential previewSign warnings = %#v", warnings)
 	}
+
 	if warnings := getAssertionExtensionWarnings(supported, getInput); len(warnings) != 0 {
 		t.Fatalf("supported GetAssertion previewSign warnings = %#v", warnings)
 	}
 }
 
 func TestBuildWebAuthnPreviewsKeepRawWarningsAndPRFSemantics(t *testing.T) {
-	device := report.DeviceReport{Attachment: report.AttachmentReport{ID: "device-1"}}
+	device := report.EndpointReport{Attachment: report.AttachmentReport{ID: "device-1"}}
 	info := protocol.AuthenticatorGetInfoResponse{}
 	makeExtensions := createPRFExtensions(ctapwebauthn.AuthenticationExtensionsPRFInputs{
 		Eval: ctapwebauthn.AuthenticationExtensionsPRFValues{First: []byte{}},
@@ -94,10 +95,12 @@ func TestBuildWebAuthnPreviewsKeepRawWarningsAndPRFSemantics(t *testing.T) {
 	if len(makePreview.Warnings) != 4 || makePreview.Warnings[3].Code != "webauthn.extension.prf.not_advertised" {
 		t.Fatalf("Make warnings = %#v, want mutation plus raw and PRF warnings", makePreview.Warnings)
 	}
+
 	if got := makePreview.Warnings[3].Message; !strings.Contains(got, "does not advertise hmac-secret") ||
 		!strings.Contains(got, "ignore unsupported extension inputs") {
 		t.Fatalf("PRF warning = %q", got)
 	}
+
 	supportedPreview := BuildMakeCredentialPreview(device, protocol.AuthenticatorGetInfoResponse{
 		Extensions: []extension.ExtensionIdentifier{extension.ExtensionIdentifierHMACSecret},
 	}, validMakeCredentialInput(makeExtensions))
@@ -123,13 +126,14 @@ func TestBuildMakeCredentialPreviewWarnsAboutDiscoverableOverwrite(t *testing.T)
 	input.Options.ResidentKey = new(true)
 
 	preview := BuildMakeCredentialPreview(
-		report.DeviceReport{},
+		report.EndpointReport{},
 		protocol.AuthenticatorGetInfoResponse{},
 		input,
 	)
 	if len(preview.Warnings) != 2 {
 		t.Fatalf("Warnings = %#v, want mutation and overwrite warnings", preview.Warnings)
 	}
+
 	if got := preview.Warnings[1]; got.Code != "webauthn.make_credential.discoverable_overwrite" ||
 		got.Severity != "destructive" || !strings.Contains(got.Message, "old credential ID stops resolving") {
 		t.Fatalf("overwrite warning = %#v", got)
@@ -138,7 +142,7 @@ func TestBuildMakeCredentialPreviewWarnsAboutDiscoverableOverwrite(t *testing.T)
 
 func TestBuildMakeCredentialPreviewDefersCredentialBlobLimitToCTAP(t *testing.T) {
 	preview := BuildMakeCredentialPreview(
-		report.DeviceReport{},
+		report.EndpointReport{},
 		protocol.AuthenticatorGetInfoResponse{MaxCredBlobLength: 3},
 		validMakeCredentialInput(&ctapwebauthn.CreateAuthenticationExtensionsClientInputs{
 			CreateCredentialBlobInputs: &ctapwebauthn.CreateCredentialBlobInputs{CredBlob: []byte("four")},

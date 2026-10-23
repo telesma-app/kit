@@ -13,6 +13,8 @@ import (
 	"github.com/telesma-app/ctap/transport/ctaphid"
 	ctaptoken2 "github.com/telesma-app/ctap/transport/token2"
 	"github.com/telesma-app/kit/model/failure"
+	"github.com/telesma-app/mds"
+	"github.com/telesma-app/pcsc"
 )
 
 func TestDefaultCode(t *testing.T) {
@@ -87,8 +89,9 @@ func TestNormalizeCTAPProvenance(t *testing.T) {
 		Command:    protocol.Command(0x7e),
 		StatusCode: ctaptransport.CTAP2_ERR_PIN_INVALID,
 	}
-	err := Normalize(raw, "inspect")
-	assertFailure(t, err, failure.CodePINInvalid, "inspect", failure.PhaseAuthenticatorCommand)
+	err := Normalize(raw, "getInfo")
+	assertFailure(t, err, failure.CodePINInvalid, "getInfo", failure.PhaseAuthenticatorCommand)
+
 	detail := err.CTAP
 	if detail == nil {
 		t.Fatal("CTAP detail = nil")
@@ -120,6 +123,7 @@ func TestNormalizeCTAPHIDErrorResponse(t *testing.T) {
 		"webauthn.getAssertion",
 		failure.PhaseAuthenticatorCommand,
 	)
+
 	if err.CTAP != nil {
 		t.Fatalf("CTAPHID error acquired CBOR CTAP detail: %#v", err.CTAP)
 	}
@@ -145,6 +149,7 @@ func TestNormalizeTransportIOError(t *testing.T) {
 		"webauthn.getAssertion",
 		failure.PhaseAuthenticatorCommand,
 	)
+
 	if err.CTAP != nil {
 		t.Fatalf("device I/O error acquired CTAP detail: %#v", err.CTAP)
 	}
@@ -156,6 +161,57 @@ func TestNormalizeTransportIOError(t *testing.T) {
 
 	if !errors.Is(err, rawCause) {
 		t.Fatal("device I/O cause not preserved")
+	}
+}
+
+func TestNormalizePCSCTransportErrors(t *testing.T) {
+	for _, operation := range []string{"SCardBeginTransaction", "SCardEndTransaction", "SCardStatus"} {
+		t.Run(operation, func(t *testing.T) {
+			raw := &pcsc.Error{Operation: operation, Code: 0x80100069}
+			invalidated := &ctaptransport.DeviceInvalidatedError{Err: raw}
+
+			for _, cause := range []error{raw, invalidated} {
+				err := Normalize(Annotate(cause, WithPhase(failure.PhaseAuthenticatorCommand)), "getInfo")
+				assertFailure(t, err, failure.CodeTransportFailure, "getInfo", failure.PhaseAuthenticatorCommand)
+
+				if err.Category != failure.CategoryTransportFailure || err.CTAP != nil {
+					t.Fatalf("PC/SC failure = %#v", err.Failure)
+				}
+
+				if !errors.Is(err, cause) || !errors.Is(err, pcsc.ErrCardRemoved) {
+					t.Fatalf("PC/SC causes lost: %v", err)
+				}
+
+				if got, ok := errors.AsType[*pcsc.Error](err); !ok || got != raw {
+					t.Fatalf("PC/SC error = %v, want %v", got, raw)
+				}
+			}
+		})
+	}
+}
+
+func TestNormalizePCSCErrorPreservesSpecificClassification(t *testing.T) {
+	raw := &pcsc.Error{Operation: "SCardBeginTransaction", Code: 0x80100069}
+	for _, test := range []struct {
+		name  string
+		cause error
+		code  failure.Code
+	}{
+		{"canceled", errors.Join(raw, context.Canceled), failure.CodeOperationCanceled},
+		{"timeout", errors.Join(raw, context.DeadlineExceeded), failure.CodeOperationTimeout},
+		{"coded", failure.Wrap(failure.CodeTransportPermissionDenied, raw), failure.CodeTransportPermissionDenied},
+		{"CTAP", errors.Join(raw, &ctaptransport.CTAPError{
+			Command:    protocol.AuthenticatorClientPIN,
+			StatusCode: ctaptransport.CTAP2_ERR_PIN_INVALID,
+		}), failure.CodePINInvalid},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			invalidated := &ctaptransport.DeviceInvalidatedError{Err: test.cause}
+			err := Normalize(invalidated, "getInfo")
+			if err.Code != test.code || !errors.Is(err, invalidated) || !errors.Is(err, raw) {
+				t.Fatalf("normalized PC/SC error = %#v", err.Failure)
+			}
+		})
 	}
 }
 
@@ -173,6 +229,7 @@ func TestNormalizeToken2TransportErrors(t *testing.T) {
 			"webauthn.getAssertion",
 			failure.PhaseAuthenticatorCommand,
 		)
+
 		if err.CTAP != nil {
 			t.Fatalf("APDU error acquired CTAP detail: %#v", err.CTAP)
 		}
@@ -187,8 +244,9 @@ func TestNormalizeToken2TransportErrors(t *testing.T) {
 		ctaptoken2.ErrInvalidResponse,
 		ctaptoken2.ErrCommandTooLarge,
 	} {
-		err := Normalize(sentinel, "inspect")
-		assertFailure(t, err, failure.CodeTransportFailure, "inspect", "")
+		err := Normalize(sentinel, "getInfo")
+		assertFailure(t, err, failure.CodeTransportFailure, "getInfo", "")
+
 		if !errors.Is(err, sentinel) {
 			t.Fatalf("transport sentinel %v not preserved", sentinel)
 		}
@@ -265,8 +323,9 @@ func TestNormalizeCommandOverrideProvenance(t *testing.T) {
 func TestNormalizeGeneralErrors(t *testing.T) {
 	t.Run("canceled", func(t *testing.T) {
 		wrapped := fmt.Errorf("upstream canceled: %w", context.Canceled)
-		err := Normalize(wrapped, "inspect")
-		assertFailure(t, err, failure.CodeOperationCanceled, "inspect", "")
+		err := Normalize(wrapped, "getInfo")
+		assertFailure(t, err, failure.CodeOperationCanceled, "getInfo", "")
+
 		if !errors.Is(err, context.Canceled) {
 			t.Fatal("context.Canceled not preserved")
 		}
@@ -274,8 +333,9 @@ func TestNormalizeGeneralErrors(t *testing.T) {
 
 	t.Run("deadline", func(t *testing.T) {
 		wrapped := fmt.Errorf("upstream deadline: %w", context.DeadlineExceeded)
-		err := Normalize(wrapped, "inspect")
-		assertFailure(t, err, failure.CodeOperationTimeout, "inspect", "")
+		err := Normalize(wrapped, "getInfo")
+		assertFailure(t, err, failure.CodeOperationTimeout, "getInfo", "")
+
 		if !errors.Is(err, context.DeadlineExceeded) {
 			t.Fatal("context.DeadlineExceeded not preserved")
 		}
@@ -294,6 +354,7 @@ func TestNormalizeGeneralErrors(t *testing.T) {
 			"webauthn.getAssertion",
 			failure.PhaseAuthenticatorCommand,
 		)
+
 		if err.CTAP != nil {
 			t.Fatalf("plain command error acquired CTAP detail: %#v", err.CTAP)
 		}
@@ -315,6 +376,7 @@ func TestNormalizeGeneralErrors(t *testing.T) {
 			"webauthn.getAssertion",
 			failure.PhaseAuthenticatorCommand,
 		)
+
 		if !errors.Is(err, ctaphid.ErrInvalidResponseMessage) {
 			t.Fatal("CTAPHID framing sentinel not preserved")
 		}
@@ -322,8 +384,9 @@ func TestNormalizeGeneralErrors(t *testing.T) {
 
 	t.Run("unannotated internal error", func(t *testing.T) {
 		raw := errors.New("opaque")
-		err := Normalize(raw, "inspect")
-		assertFailure(t, err, failure.CodeInternalError, "inspect", "")
+		err := Normalize(raw, "getInfo")
+		assertFailure(t, err, failure.CodeInternalError, "getInfo", "")
+
 		if !errors.Is(err, raw) {
 			t.Fatal("opaque cause not preserved")
 		}
@@ -338,6 +401,7 @@ func TestNormalizeGeneralErrors(t *testing.T) {
 		)
 		err := Normalize(typed, "credentials.delete")
 		assertFailure(t, err, failure.CodeBioTemplateIDInvalid, "credentials.delete", failure.PhaseValidation)
+
 		if !errors.Is(err, raw) {
 			t.Fatal("typed failure cause not preserved")
 		}
@@ -359,6 +423,7 @@ func TestNormalizeGeneralErrors(t *testing.T) {
 			"credentials.delete",
 			failure.PhaseValidation,
 		)
+
 		if !errors.Is(got, context.Canceled) {
 			t.Fatal("typed failure cause not preserved")
 		}
@@ -437,6 +502,7 @@ func TestNormalizeUpstreamSentinel(t *testing.T) {
 		"webauthn.makeCredential",
 		failure.PhaseAuthenticatorCommand,
 	)
+
 	if !errors.Is(err, ctapdevice.ErrPinUvAuthTokenRequired) {
 		t.Fatal("upstream sentinel not preserved")
 	}
@@ -494,5 +560,104 @@ func assertFailure(
 
 	if typed.Phase != phase {
 		t.Fatalf("phase = %q, want %q", typed.Phase, phase)
+	}
+}
+
+func TestMetadataErrorsPreserveClassificationAndCause(t *testing.T) {
+	for _, test := range []struct {
+		cause error
+		code  failure.Code
+	}{
+		{mds.ErrInvalidAAGUID, failure.CodeMDSAAGUIDInvalid},
+		{mds.ErrVerify, failure.CodeMDSVerificationFailed},
+		{fmt.Errorf("%w: %w", mds.ErrFetch, context.DeadlineExceeded), failure.CodeMDSFetchFailed},
+		{&mds.HTTPStatusError{StatusCode: 503}, failure.CodeMDSFetchFailed},
+	} {
+		result := Normalize(Annotate(fmt.Errorf("lookup: %w", test.cause), WithPhase(failure.PhaseMetadata)), "")
+		if result.Code != test.code || result.Phase != failure.PhaseMetadata || !errors.Is(result, test.cause) {
+			t.Fatalf("normalized error = %#v", result)
+		}
+
+		if _, ok := test.cause.(*mds.HTTPStatusError); ok && result.Params["httpStatus"] != "503" {
+			t.Fatalf("HTTP status lost: %#v", result.Params)
+		}
+	}
+}
+
+func TestNormalizeRetainsJoinedCausesAndCodedCommandMetadata(t *testing.T) {
+	commandErr := &ctaptransport.CTAPError{
+		Command:    protocol.AuthenticatorClientPIN,
+		StatusCode: ctaptransport.CTAP2_ERR_PIN_INVALID,
+	}
+	primary := Normalize(Annotate(commandErr, WithClientPINSubCommand(
+		failure.PhaseTokenAcquisition,
+		protocol.ClientPINSubCommandGetPINRetries,
+	)), "credentials.list")
+	cleanupErr := errors.New("transaction cleanup failed")
+	invalidated := &ctaptransport.DeviceInvalidatedError{Err: cleanupErr}
+	outer := fmt.Errorf("workflow: %w", errors.Join(primary, invalidated))
+
+	got := Normalize(Annotate(outer, WithPhase(failure.PhaseAuthenticator)), "credentials.delete")
+	assertFailure(t, got, failure.CodePINInvalid, "credentials.delete", failure.PhaseTokenAcquisition)
+
+	for _, cause := range []error{outer, primary, commandErr, cleanupErr} {
+		if !errors.Is(got, cause) {
+			t.Fatalf("normalization lost cause %v", cause)
+		}
+	}
+
+	if retained, ok := errors.AsType[*ctaptransport.DeviceInvalidatedError](got); !ok || retained != invalidated {
+		t.Fatalf("invalidation = %v, want %v", retained, invalidated)
+	}
+
+	detail := got.CTAP
+	if detail == nil || detail.CommandCode != uint8(protocol.AuthenticatorClientPIN) ||
+		detail.StatusCode != uint8(ctaptransport.CTAP2_ERR_PIN_INVALID) || detail.SubCommandCode == nil ||
+		*detail.SubCommandCode != uint64(protocol.ClientPINSubCommandGetPINRetries) {
+		t.Fatalf("command provenance = %#v", detail)
+	}
+
+	if primary.Operation != "credentials.list" || primary.Phase != failure.PhaseTokenAcquisition {
+		t.Fatalf("source failure metadata changed: %#v", primary.Failure)
+	}
+}
+
+func TestNormalizeEnrichesCodedErrorWithoutMutatingSource(t *testing.T) {
+	cause := errors.New("HTTP request failed")
+	primary := failure.Wrap(failure.CodeMDSFetchFailed, cause,
+		failure.WithOperation("getInfo"),
+		failure.WithParams(map[string]string{"httpStatus": "503"}),
+	)
+	outer := fmt.Errorf("lookup: %w", primary)
+
+	got := Normalize(Annotate(outer, WithPhase(failure.PhaseMetadata)), "")
+	assertFailure(t, got, failure.CodeMDSFetchFailed, "getInfo", failure.PhaseMetadata)
+
+	if got.Params["httpStatus"] != "503" || !errors.Is(got, outer) || !errors.Is(got, cause) {
+		t.Fatalf("normalization lost metadata or causes: %#v", got.Failure)
+	}
+
+	if primary.Phase != "" || primary.Operation != "getInfo" {
+		t.Fatalf("source failure metadata changed: %#v", primary.Failure)
+	}
+}
+
+func TestNormalizeSharedCodedError(t *testing.T) {
+	primary := Normalize(&ctaptransport.CTAPError{
+		Command:    protocol.AuthenticatorGetInfo,
+		StatusCode: ctaptransport.CTAP2_ERR_PIN_INVALID,
+	}, "getInfo")
+
+	for _, operation := range []string{"credentials.list", "credentials.delete"} {
+		t.Run(operation, func(t *testing.T) {
+			t.Parallel()
+
+			got := Normalize(primary, operation)
+			assertFailure(t, got, failure.CodePINInvalid, operation, failure.PhaseAuthenticatorCommand)
+
+			if primary.Operation != "getInfo" || primary.CTAP.CommandCode != uint8(protocol.AuthenticatorGetInfo) {
+				t.Fatalf("shared failure metadata changed: %#v", primary.Failure)
+			}
+		})
 	}
 }

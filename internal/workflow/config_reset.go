@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/telesma-app/ctap/protocol"
+	"github.com/telesma-app/kit/internal/authenticator"
 	rtconfig "github.com/telesma-app/kit/internal/config"
 	"github.com/telesma-app/kit/internal/errornorm"
 	rtruntime "github.com/telesma-app/kit/internal/runtime"
@@ -15,14 +16,15 @@ import (
 
 func (r Runner) ResetFactory(
 	ctx context.Context,
-	device ConfigDevice,
+	device authenticator.ConfigDevice,
 	req appconfig.ResetFactoryOperation,
 ) (appconfig.ResetFactoryOutput, error) {
 	info, err := r.getAuthenticatorInfo(ctx, device)
 	if err != nil {
 		return appconfig.ResetFactoryOutput{}, err
 	}
-	preview := rtconfig.BuildResetFactoryPreview(rtconfig.BuildStatusReport(r.env.Selected, info))
+
+	preview := rtconfig.BuildResetFactoryPreview(rtconfig.BuildStatusReport(r.Selected, info))
 
 	if req.DryRun {
 		preview.Mode = safety.PreviewModeDryRun
@@ -30,19 +32,20 @@ func (r Runner) ResetFactory(
 		return appconfig.ResetFactoryOutput{Preview: preview}, nil
 	}
 
-	if _, err := r.env.Interactions.RequestInteraction(ctx, model.InteractionRequest{
+	if _, err := r.Interactions.RequestInteraction(ctx, model.InteractionRequest{
 		Kind:        model.InteractionKindTouch,
-		Message:     "Touch authenticator " + string(r.env.Selected.Attachment.ID) + " to factory reset.",
+		Message:     "Touch authenticator " + string(r.Selected.Attachment.ID) + " to factory reset.",
 		Destructive: true,
 		Preview:     preview,
 	}); err != nil {
 		return appconfig.ResetFactoryOutput{}, err
 	}
 
-	r.env.Effects.Record(rtruntime.StateEffectAuthenticatorReset)
+	r.Effects.Record(rtruntime.StateEffectAuthenticatorReset)
 
 	err = device.Reset(ctx)
-	r.env.Tokens.Invalidate()
+
+	r.Tokens.Invalidate()
 
 	if err != nil {
 		return appconfig.ResetFactoryOutput{}, errornorm.Annotate(err, errornorm.WithCommand(
@@ -50,10 +53,11 @@ func (r Runner) ResetFactory(
 			protocol.AuthenticatorReset,
 		))
 	}
+
 	return appconfig.ResetFactoryOutput{
 		Preview: preview,
 		Result: &appconfig.ResetResult{
-			AttachmentID: r.env.Selected.Attachment.ID,
+			AttachmentID: r.Selected.Attachment.ID,
 			Reset:        true,
 		},
 	}, nil

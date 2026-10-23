@@ -26,11 +26,11 @@ type PINStatus struct {
 }
 
 type PINMutationPreview struct {
-	Operation PINMutationOperation `json:"operation"`
-	Device    report.DeviceReport  `json:"device"`
-	PIN       PINStatus            `json:"pin"`
-	Mode      safety.PreviewMode   `json:"mode"`
-	Warnings  []safety.Warning     `json:"warnings,omitempty"`
+	Operation PINMutationOperation  `json:"operation"`
+	Device    report.EndpointReport `json:"device"`
+	PIN       PINStatus             `json:"pin"`
+	Mode      safety.PreviewMode    `json:"mode"`
+	Warnings  []safety.Warning      `json:"warnings,omitempty"`
 }
 
 type PINMutationResult struct {

@@ -10,13 +10,13 @@ import (
 
 func (a *Authenticator) ListCredentials(ctx context.Context, opts ...OperationOption) (credentials.InventoryReport, error) {
 	return executeOperation(a, ctx, appoperation.ListCredentials, func(runner workflow.Runner, ctx context.Context) (credentials.InventoryReport, error) {
-		return runner.ListCredentials(ctx, a.credentialInventory)
+		return runner.ListCredentials(ctx, a.opened.CredentialInventory)
 	}, opts...)
 }
 
 func (a *Authenticator) CredentialStoreState(ctx context.Context, opts ...OperationOption) (credentials.StoreStateResult, error) {
 	return executeOperation(a, ctx, appoperation.CredentialStoreState, func(runner workflow.Runner, ctx context.Context) (credentials.StoreStateResult, error) {
-		return runner.CredentialStoreState(ctx, a.info)
+		return runner.CredentialStoreState(ctx, a.opened.Info)
 	}, opts...)
 }
 
@@ -26,7 +26,7 @@ func (a *Authenticator) DeleteCredential(
 	opts ...OperationOption,
 ) (credentials.DeleteOutput, error) {
 	return executeOperation(a, ctx, appoperation.DeleteCredential, func(runner workflow.Runner, ctx context.Context) (credentials.DeleteOutput, error) {
-		return runner.DeleteCredential(ctx, a.credentials, operation)
+		return runner.DeleteCredential(ctx, a.opened.Credentials, operation)
 	}, opts...)
 }
 
@@ -36,6 +36,6 @@ func (a *Authenticator) UpdateCredentialUser(
 	opts ...OperationOption,
 ) (credentials.UpdateUserOutput, error) {
 	return executeOperation(a, ctx, appoperation.UpdateCredentialUser, func(runner workflow.Runner, ctx context.Context) (credentials.UpdateUserOutput, error) {
-		return runner.UpdateCredentialUser(ctx, a.credentials, operation)
+		return runner.UpdateCredentialUser(ctx, a.opened.Credentials, operation)
 	}, opts...)
 }

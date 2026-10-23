@@ -14,6 +14,7 @@ func makeCredentialExtensionResults(
 	response protocol.AuthenticatorMakeCredentialResponse,
 ) *appwebauthn.MakeCredentialExtensionResults {
 	output := response.ExtensionOutputs
+
 	var authenticatorOutput *protocol.CreateExtensionOutputs
 	if response.AuthData != nil {
 		authenticatorOutput = response.AuthData.Extensions
@@ -25,6 +26,7 @@ func makeCredentialExtensionResults(
 	rawHMACMCRequested := input != nil && input.CreateHMACSecretMCInputs != nil
 	hasClientResult := false
 	hasAuthenticatorOutput := false
+
 	if output != nil && output.CreateCredentialPropertiesOutputs != nil {
 		hasClientResult = true
 		client.CredentialProperties = &output.CredentialProperties
@@ -33,6 +35,7 @@ func makeCredentialExtensionResults(
 	if authenticatorOutput != nil && authenticatorOutput.CredProtect != 0 {
 		hasAuthenticatorOutput = true
 		policy := extension.CredentialProtectionPolicy("")
+
 		switch authenticatorOutput.CredProtect {
 		case 0x01:
 			policy = extension.CredentialProtectionPolicyUserVerificationOptional
@@ -41,6 +44,7 @@ func makeCredentialExtensionResults(
 		case 0x03:
 			policy = extension.CredentialProtectionPolicyUserVerificationRequired
 		}
+
 		authenticator.CredentialProtection = &appwebauthn.CredentialProtectionOutput{Policy: policy}
 	}
 
@@ -61,7 +65,7 @@ func makeCredentialExtensionResults(
 
 	if output != nil && output.CreateHMACSecretMCOutputs != nil {
 		hasClientResult = true
-		client.HMACSecretMC = hmacSecretOutput(output.CreateHMACSecretMCOutputs.HMACGetSecret)
+		client.HMACSecretMC = hmacSecretOutput(output.HMACGetSecret)
 	} else if rawHMACMCRequested && output != nil && output.CreatePRFOutputs != nil {
 		hasClientResult = true
 		client.HMACSecretMC = &appwebauthn.HMACSecretOutput{
@@ -80,7 +84,7 @@ func makeCredentialExtensionResults(
 	if authenticatorOutput != nil && authenticatorOutput.CreatePinComplexityPolicyOutput != nil {
 		hasAuthenticatorOutput = true
 		authenticator.PINComplexityPolicy = &appwebauthn.PINComplexityPolicyOutput{
-			Enabled: authenticatorOutput.CreatePinComplexityPolicyOutput.PinComplexityPolicy,
+			Enabled: authenticatorOutput.PinComplexityPolicy,
 		}
 	}
 
@@ -94,6 +98,7 @@ func makeCredentialExtensionResults(
 
 	if output != nil && output.PreviewSignOutputs != nil {
 		hasClientResult = true
+
 		client.PreviewSign = &appwebauthn.MakeCredentialPreviewSignOutput{}
 		if output.PreviewSign.GeneratedKey != nil {
 			client.PreviewSign.GeneratedKey = &appwebauthn.PreviewSignGeneratedKey{
@@ -126,6 +131,7 @@ func getAssertionExtensionResults(
 ) *appwebauthn.GetAssertionExtensionResults {
 	output := response.ExtensionOutputs
 	client := new(appwebauthn.GetAssertionClientExtensionResults)
+
 	hasClientResult := false
 	if output != nil && output.GetCredentialBlobOutputs != nil {
 		hasClientResult = true
@@ -136,7 +142,7 @@ func getAssertionExtensionResults(
 
 	if output != nil && output.GetHMACSecretOutputs != nil {
 		hasClientResult = true
-		client.HMACSecret = hmacSecretOutput(output.GetHMACSecretOutputs.HMACGetSecret)
+		client.HMACSecret = hmacSecretOutput(output.HMACGetSecret)
 	}
 
 	if output != nil && output.GetPRFOutputs != nil {
@@ -155,6 +161,7 @@ func getAssertionExtensionResults(
 		if output.LargeBlob.Blob != nil {
 			largeBlob.BlobHex = new(hex.EncodeToString(output.LargeBlob.Blob))
 		}
+
 		client.LargeBlob = largeBlob
 	}
 
@@ -167,11 +174,12 @@ func getAssertionExtensionResults(
 	}
 
 	authenticator := new(appwebauthn.GetAssertionAuthenticatorExtensionOutputs)
+
 	hasAuthenticatorResult := false
 	if response.AuthData != nil && response.AuthData.Extensions != nil &&
 		response.AuthData.Extensions.GetThirdPartyPaymentOutput != nil {
 		hasAuthenticatorResult = true
-		authenticator.ThirdPartyPayment = &response.AuthData.Extensions.GetThirdPartyPaymentOutput.ThirdPartyPayment
+		authenticator.ThirdPartyPayment = &response.AuthData.Extensions.ThirdPartyPayment
 	}
 
 	if !hasClientResult && !hasAuthenticatorResult {

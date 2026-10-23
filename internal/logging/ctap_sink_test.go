@@ -30,21 +30,26 @@ func TestCTAPSinkAppendsOperationExchange(t *testing.T) {
 	if len(recorder.entries) != 1 {
 		t.Fatalf("entries = %d, want 1", len(recorder.entries))
 	}
+
 	entry := recorder.entries[0]
 	if entry.OperationKind != operation.ListCredentials {
 		t.Fatalf("operation kind = %q", entry.OperationKind)
 	}
+
 	if entry.CommandCode != uint8(protocol.AuthenticatorClientPIN) ||
 		entry.SubCommandCode == nil || *entry.SubCommandCode != uint64(protocol.ClientPINSubCommandGetPINRetries) {
 		t.Fatalf("command = %#v", entry)
 	}
+
 	if entry.Request == nil || entry.Request.CBORDiagnostic != `{1: 1, 2: 1, 4: '[REDACTED]'}` ||
 		entry.Request.OriginalBytes != 4 || entry.Response == nil || entry.Response.CBORDiagnostic != `{3: 8}` {
 		t.Fatalf("payloads = request %#v, response %#v", entry.Request, entry.Response)
 	}
+
 	if len(entry.RedactedFields) != 1 || entry.RedactedFields[0] != "request.PinUvAuthParam" {
 		t.Fatalf("redacted fields = %v", entry.RedactedFields)
 	}
+
 	if entry.Outcome != model.LogOutcomeSucceeded || entry.DurationMilliseconds != 10 {
 		t.Fatalf("completion = %#v", entry)
 	}

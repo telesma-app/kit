@@ -53,6 +53,7 @@ func BuildBioMutationPreview(
 	}
 
 	var warning safety.Warning
+
 	switch operation {
 	case appconfig.BioMutationRename:
 		warning = safety.Warning{

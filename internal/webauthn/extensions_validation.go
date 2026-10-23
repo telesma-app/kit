@@ -42,6 +42,7 @@ func makeCredentialExtensionWarnings(
 		"webauthn.extension.third_party_payment.not_advertised", "thirdPartyPayment")
 	appendMissing(input.PreviewSignInputs != nil, extension.ExtensionIdentifierPreviewSign,
 		"webauthn.extension.preview_sign.not_advertised", "previewSign")
+
 	if input.PRFInputs != nil {
 		appendMissing(true, extension.ExtensionIdentifierHMACSecret,
 			"webauthn.extension.prf.not_advertised", "prf")
@@ -70,7 +71,7 @@ func getAssertionExtensionWarnings(
 	}
 
 	if input.PRFInputs != nil &&
-		(!input.PRFInputs.PRF.Eval.IsZero() || len(input.PRFInputs.PRF.EvalByCredential) > 0) &&
+		(!input.PRF.Eval.IsZero() || len(input.PRF.EvalByCredential) > 0) &&
 		!slices.Contains(info.Extensions, extension.ExtensionIdentifierHMACSecret) {
 		warnings = append(warnings, unsupportedExtensionWarning(
 			"webauthn.extension.prf.not_advertised", "prf", "hmac-secret"))

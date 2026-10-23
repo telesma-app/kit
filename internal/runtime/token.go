@@ -57,36 +57,18 @@ type TokenUse struct {
 }
 
 func (s *TokenService) Invalidate() {
-	s.cache.InvalidateToken()
+	s.Cache.InvalidateToken()
 }
 
 func (s *TokenService) InvalidateUnlessPermission(permission protocol.Permission) {
-	s.cache.InvalidateTokenUnlessPermission(permission)
+	s.Cache.InvalidateTokenUnlessPermission(permission)
 }
 
 type TokenService struct {
-	authenticator    authenticator.TokenProvider
-	cache            TokenCache
-	verificationFlow VerificationFlow
-	interactions     interface {
-		RequestInteraction(context.Context, model.InteractionRequest) (model.InteractionResponse, error)
-	}
-}
-
-func NewTokenService(
-	cache TokenCache,
-	authenticator authenticator.TokenProvider,
-	interactions interface {
-		RequestInteraction(context.Context, model.InteractionRequest) (model.InteractionResponse, error)
-	},
-	verificationFlow VerificationFlow,
-) *TokenService {
-	return &TokenService{
-		authenticator:    authenticator,
-		cache:            cache,
-		verificationFlow: verificationFlow,
-		interactions:     interactions,
-	}
+	Authenticator    authenticator.TokenProvider
+	Cache            TokenCache
+	VerificationFlow VerificationFlow
+	Interactions     InteractionHandler
 }
 
 // Use runs a token consumer while owning token acquisition, caller-copy
@@ -109,6 +91,7 @@ func (s *TokenService) Use(
 	}
 
 	retriedRejectedToken := false
+
 	for {
 		token, err := s.acquire(ctx, request.Permission, request.RPID)
 		if err != nil {
@@ -128,7 +111,7 @@ func (s *TokenService) Use(
 			return err
 		}
 
-		s.cache.InvalidateToken()
+		s.Cache.InvalidateToken()
 
 		if !request.ReplaySafe || retriedRejectedToken {
 			return err
@@ -148,7 +131,7 @@ func (s *TokenService) acquire(
 		RPID:       rpID,
 	}
 
-	if token, ok := s.cache.GetToken(key); ok {
+	if token, ok := s.Cache.GetToken(key); ok {
 		return token, nil
 	}
 
@@ -157,16 +140,17 @@ func (s *TokenService) acquire(
 		err   error
 	)
 
-	info, err := authenticator.ResolveInfo(ctx, s.authenticator)
+	info, err := authenticator.ResolveInfo(ctx, s.Authenticator)
 	if err != nil {
 		return nil, errornorm.Annotate(err, errornorm.WithCommand(
 			failure.PhaseTokenAcquisition,
 			protocol.AuthenticatorGetInfo,
 		))
 	}
-	if s.verificationFlow != VerificationFlowPIN &&
+
+	if s.VerificationFlow != VerificationFlowPIN &&
 		supportsUserVerificationTokenFlow(info, permission) {
-		_, err = s.interactions.RequestInteraction(ctx, model.InteractionRequest{
+		_, err = s.Interactions.RequestInteraction(ctx, model.InteractionRequest{
 			Kind:       model.InteractionKindUserVerification,
 			Permission: permissionLabel(permission),
 			UVModality: info.UvModality,
@@ -175,7 +159,7 @@ func (s *TokenService) acquire(
 			return nil, err
 		}
 
-		token, err = s.authenticator.GetPinUvAuthTokenUsingUV(ctx, permission, key.RPID)
+		token, err = s.Authenticator.GetPinUvAuthTokenUsingUV(ctx, permission, key.RPID)
 		if err == nil {
 			return s.storeToken(key, token), nil
 		}
@@ -195,6 +179,7 @@ func (s *TokenService) acquire(
 			failure.WithPhase(failure.PhaseTokenAcquisition),
 		)
 	}
+
 	if !clientPIN {
 		return nil, failure.New(
 			failure.CodePINNotConfigured,
@@ -203,11 +188,13 @@ func (s *TokenService) acquire(
 	}
 
 	previousAttemptInvalid := false
+
 	for {
 		pinInteraction, err := s.readPINInteractionState(ctx)
 		if err != nil {
 			return nil, err
 		}
+
 		pinInteraction.PreviousAttemptInvalid = previousAttemptInvalid
 
 		token, err = s.acquireUsingPIN(ctx, permission, key.RPID, pinInteraction)
@@ -230,7 +217,7 @@ func tokenRequired(err error) bool {
 }
 
 func (s *TokenService) readPINInteractionState(ctx context.Context) (*model.PINInteractionState, error) {
-	retries, powerCycleState, err := s.authenticator.GetPINRetries(ctx)
+	retries, powerCycleState, err := s.Authenticator.GetPINRetries(ctx)
 	if err != nil {
 		return nil, errornorm.Normalize(errornorm.Annotate(
 			err,
@@ -252,7 +239,7 @@ func (s *TokenService) acquireUsingPIN(
 	rpID string,
 	pinInteraction *model.PINInteractionState,
 ) ([]byte, error) {
-	response, err := s.interactions.RequestInteraction(ctx, model.InteractionRequest{
+	response, err := s.Interactions.RequestInteraction(ctx, model.InteractionRequest{
 		Kind:       model.InteractionKindPIN,
 		Permission: permissionLabel(permission),
 		PINState:   pinInteraction,
@@ -262,7 +249,7 @@ func (s *TokenService) acquireUsingPIN(
 	}
 	defer secret.Zero(response.PIN)
 
-	token, err := s.authenticator.GetPinUvAuthTokenUsingPIN(ctx, string(response.PIN), permission, rpID)
+	token, err := s.Authenticator.GetPinUvAuthTokenUsingPIN(ctx, string(response.PIN), permission, rpID)
 	if err != nil {
 		return nil, errornorm.Annotate(err, errornorm.WithCommand(
 			failure.PhaseTokenAcquisition,
@@ -275,7 +262,7 @@ func (s *TokenService) acquireUsingPIN(
 
 func (s *TokenService) storeToken(key TokenKey, token []byte) []byte {
 	out := slices.Clone(token)
-	s.cache.SetToken(key, secret.New(token))
+	s.Cache.SetToken(key, secret.New(token))
 
 	return out
 }
@@ -315,5 +302,6 @@ func fallbackToPIN(err error) bool {
 	}
 
 	ctapErr, ok := errors.AsType[*ctaptransport.CTAPError](err)
+
 	return ok && ctapErr.StatusCode == ctaptransport.CTAP2_ERR_UNAUTHORIZED_PERMISSION
 }

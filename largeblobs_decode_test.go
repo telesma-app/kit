@@ -12,6 +12,7 @@ func TestDecodeLargeBlobReturnsZeroResultOnError(t *testing.T) {
 	if !failure.IsCode(err, failure.CodeLargeBlobJSONInvalid) {
 		t.Fatalf("DecodeLargeBlob error = %v, want %s", err, failure.CodeLargeBlobJSONInvalid)
 	}
+
 	if result.Mode != "" || result.Text != "" || result.Value != nil {
 		t.Fatalf("DecodeLargeBlob result = %#v, want zero", result)
 	}

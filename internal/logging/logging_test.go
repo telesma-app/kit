@@ -24,6 +24,7 @@ func TestFinishElapsedAddsBoundedTransportErrorMessage(t *testing.T) {
 	}
 
 	longErr := failure.Wrap(failure.CodeTransportFailure, errors.New(strings.Repeat("x", previewBytes+100)))
+
 	entry = FinishElapsed(model.LogEntry{}, time.Second, longErr)
 	if len(entry.ErrorMessage) != previewBytes {
 		t.Fatalf("error message bytes = %d, want %d", len(entry.ErrorMessage), previewBytes)

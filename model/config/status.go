@@ -60,7 +60,7 @@ type LimitsStatus struct {
 }
 
 type StatusReport struct {
-	Device              report.DeviceReport       `json:"device"`
+	Device              report.EndpointReport     `json:"device"`
 	PIN                 PINStatus                 `json:"pin"`
 	UV                  UVStatus                  `json:"uv"`
 	Bio                 BioStatus                 `json:"bio"`

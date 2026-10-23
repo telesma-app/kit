@@ -53,6 +53,7 @@ func derivePreviewSignARKGP256(
 
 	inputKeyMaterial := make([]byte, previewSignARKGP256InputKeyMaterialLength)
 	defer clear(inputKeyMaterial)
+
 	if _, err := io.ReadFull(random, inputKeyMaterial); err != nil {
 		return appwebauthn.PreviewSignARKGP256Derivation{}, fmt.Errorf(
 			"ctapkit: derive previewSign ARKG-P256: generate input key material: %w",

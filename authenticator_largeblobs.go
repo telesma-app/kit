@@ -14,13 +14,13 @@ func (a *Authenticator) ReadLargeBlob(
 	opts ...OperationOption,
 ) (largeblobs.ReadReport, error) {
 	return executeOperation(a, ctx, appoperation.ReadLargeBlob, func(runner workflow.Runner, ctx context.Context) (largeblobs.ReadReport, error) {
-		return runner.ReadLargeBlob(ctx, a.largeBlobs, a.largeBlobState, operation)
+		return runner.ReadLargeBlob(ctx, a.opened.LargeBlobs, &a.largeBlobState, operation)
 	}, opts...)
 }
 
 func (a *Authenticator) ListLargeBlobs(ctx context.Context, opts ...OperationOption) (largeblobs.ListReport, error) {
 	return executeOperation(a, ctx, appoperation.ListLargeBlobs, func(runner workflow.Runner, ctx context.Context) (largeblobs.ListReport, error) {
-		return runner.ListLargeBlobs(ctx, a.largeBlobs, a.largeBlobState)
+		return runner.ListLargeBlobs(ctx, a.opened.LargeBlobs, &a.largeBlobState)
 	}, opts...)
 }
 
@@ -30,7 +30,7 @@ func (a *Authenticator) WriteLargeBlob(
 	opts ...OperationOption,
 ) (largeblobs.MutationOutput, error) {
 	return executeOperation(a, ctx, appoperation.WriteLargeBlob, func(runner workflow.Runner, ctx context.Context) (largeblobs.MutationOutput, error) {
-		return runner.WriteLargeBlob(ctx, a.largeBlobs, a.largeBlobState, operation)
+		return runner.WriteLargeBlob(ctx, a.opened.LargeBlobs, &a.largeBlobState, operation)
 	}, opts...)
 }
 
@@ -40,7 +40,7 @@ func (a *Authenticator) DeleteLargeBlob(
 	opts ...OperationOption,
 ) (largeblobs.MutationOutput, error) {
 	return executeOperation(a, ctx, appoperation.DeleteLargeBlob, func(runner workflow.Runner, ctx context.Context) (largeblobs.MutationOutput, error) {
-		return runner.DeleteLargeBlob(ctx, a.largeBlobs, a.largeBlobState, operation)
+		return runner.DeleteLargeBlob(ctx, a.opened.LargeBlobs, &a.largeBlobState, operation)
 	}, opts...)
 }
 
@@ -50,6 +50,6 @@ func (a *Authenticator) GarbageCollectLargeBlobs(
 	opts ...OperationOption,
 ) (largeblobs.MutationOutput, error) {
 	return executeOperation(a, ctx, appoperation.GarbageCollectLargeBlobs, func(runner workflow.Runner, ctx context.Context) (largeblobs.MutationOutput, error) {
-		return runner.GarbageCollectLargeBlobs(ctx, a.largeBlobs, a.largeBlobState, operation)
+		return runner.GarbageCollectLargeBlobs(ctx, a.opened.LargeBlobs, &a.largeBlobState, operation)
 	}, opts...)
 }

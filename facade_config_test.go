@@ -12,6 +12,8 @@ import (
 	ctapdevice "github.com/telesma-app/ctap/authenticator"
 	"github.com/telesma-app/ctap/protocol"
 	ctaptransport "github.com/telesma-app/ctap/transport"
+	rtruntime "github.com/telesma-app/kit/internal/runtime"
+	"github.com/telesma-app/kit/internal/secret"
 	"github.com/telesma-app/kit/model"
 	appconfig "github.com/telesma-app/kit/model/config"
 	"github.com/telesma-app/kit/model/failure"
@@ -35,6 +37,7 @@ func TestConfigMutationCallerInputIsValidatedBeforeDeviceState(t *testing.T) {
 
 func TestBioRenameUsesCanonicalTemplateIDAcrossPreviewCommandAndResult(t *testing.T) {
 	a := &bioMutationAuthenticator{}
+
 	session := openContractAuthenticator(t, nil, a)
 	defer func() { _ = session.Close() }()
 
@@ -45,12 +48,15 @@ func TestBioRenameUsesCanonicalTemplateIDAcrossPreviewCommandAndResult(t *testin
 	if err != nil {
 		t.Fatalf("BioRename: %v", err)
 	}
+
 	if output.Result == nil {
 		t.Fatal("result = nil")
 	}
+
 	if output.Preview.TemplateIDHex != "0a0b" || output.Result.TemplateIDHex != "0a0b" {
 		t.Fatalf("template IDs = %q/%q, want canonical 0a0b", output.Preview.TemplateIDHex, output.Result.TemplateIDHex)
 	}
+
 	if !bytes.Equal(a.templateID, []byte{0x0a, 0x0b}) {
 		t.Fatalf("command template ID = %x, want 0a0b", a.templateID)
 	}
@@ -80,6 +86,7 @@ func TestBioSensorInfoReportsSpecNamedEnums(t *testing.T) {
 				modality:        protocol.BioModalityFingerprint,
 				fingerprintKind: tt.kind,
 			}
+
 			session := openContractAuthenticator(t, nil, a)
 			defer func() { _ = session.Close() }()
 
@@ -135,6 +142,7 @@ func TestBioSensorInfoOmitsUnknownSpecValues(t *testing.T) {
 				modality:        tt.modality,
 				fingerprintKind: tt.fingerprintKind,
 			}
+
 			session := openContractAuthenticator(t, nil, a)
 			defer func() { _ = session.Close() }()
 
@@ -167,6 +175,7 @@ func TestBioSensorInfoOmitsUnknownSpecValues(t *testing.T) {
 func TestResetRequestsTouchInteractionBeforeReset(t *testing.T) {
 	events := &recordingEventSink{}
 	a := &resetCountingAuthenticator{events: events}
+
 	session := openContractAuthenticator(t, events, a)
 	defer func() { _ = session.Close() }()
 
@@ -249,10 +258,12 @@ func TestRunContextReachesTokenAndAuthenticatorCommand(t *testing.T) {
 	type contextKey struct{}
 
 	a := &contextRecordingConfigAuthenticator{}
+
 	session := openContractAuthenticator(t, nil, a)
 	defer func() { _ = session.Close() }()
 
 	marker := new(int)
+
 	ctx := context.WithValue(context.Background(), contextKey{}, marker)
 	if _, err := session.SetAlwaysUV(
 		ctx,
@@ -282,6 +293,7 @@ func TestBioEnrollmentCleanupUsesBoundedIndependentContext(t *testing.T) {
 		captureErr:      operationErr,
 		cleanupErr:      cleanupErr,
 	}
+
 	session := openContractAuthenticator(t, nil, a)
 	defer func() { _ = session.Close() }()
 
@@ -292,6 +304,10 @@ func TestBioEnrollmentCleanupUsesBoundedIndependentContext(t *testing.T) {
 	)
 	if !errors.Is(err, operationErr) {
 		t.Fatalf("Run error = %v, want original capture error", err)
+	}
+
+	if !errors.Is(err, cleanupErr) {
+		t.Errorf("Run error = %v, want cleanup error", err)
 	}
 
 	requireZero(t, result)
@@ -319,11 +335,55 @@ func TestBioEnrollmentCleanupUsesBoundedIndependentContext(t *testing.T) {
 	}
 }
 
+func TestBioEnrollmentCleanupInvalidationClosesAuthenticator(t *testing.T) {
+	captureErr := &ctaptransport.CTAPError{
+		Command:    protocol.AuthenticatorBioEnrollment,
+		StatusCode: ctaptransport.CTAP2_ERR_USER_ACTION_TIMEOUT,
+	}
+	cleanupErr := &ctaptransport.DeviceInvalidatedError{Err: &ctaptransport.IOError{
+		Operation: ctaptransport.IORead,
+		Err:       errors.New("connection lost during enrollment cleanup"),
+	}}
+	a := &bioCleanupAuthenticator{captureErr: captureErr, cleanupErr: cleanupErr}
+	session := openContractAuthenticator(t, nil, a)
+	t.Cleanup(func() { _ = session.Close() })
+
+	token := secret.New([]byte("cached-token"))
+	key := rtruntime.TokenKey{Permission: protocol.PermissionBioEnrollment}
+	session.tokens.SetToken(key, token)
+
+	result, err := session.BioEnroll(t.Context(), appconfig.BioEnrollOperation{})
+	requireFailureCode(t, err, failure.CodeBioInteractionTimeout)
+	requireZero(t, result)
+
+	for _, cause := range []error{captureErr, cleanupErr} {
+		if !errors.Is(err, cause) {
+			t.Errorf("BioEnroll error = %v, want cause %v", err, cause)
+		}
+	}
+
+	if !session.Closed() {
+		t.Error("authenticator remained open after enrollment cleanup invalidated the device")
+	}
+
+	if _, err := token.Bytes(); !errors.Is(err, secret.ErrInvalidated) {
+		t.Errorf("cached token error = %v, want invalidated", err)
+	}
+
+	if _, ok := session.tokens.GetToken(key); ok {
+		t.Error("authenticator retained its cached token after cleanup invalidation")
+	}
+
+	_, err = session.GetInfo(t.Context())
+	requireFailureCode(t, err, failure.CodeAuthenticatorClosed)
+}
+
 func runConfirmedResetWithError(t *testing.T, resetErr error) error {
 	t.Helper()
 
 	events := &recordingEventSink{}
 	a := &resetCountingAuthenticator{events: events, resetErr: resetErr}
+
 	session := openContractAuthenticator(t, events, a)
 	defer func() { _ = session.Close() }()
 
@@ -503,16 +563,20 @@ func TestPINMutationsRejectEmptyPINAtSessionRun(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			a := &pinMutationCountingAuthenticator{configured: tt.change != nil}
+
 			session := openContractAuthenticator(t, nil, a)
 			defer func() { _ = session.Close() }()
 
-			var result appconfig.PINOutput
-			var err error
+			var (
+				result appconfig.PINOutput
+				err    error
+			)
 			if tt.set != nil {
 				result, err = session.SetPIN(context.Background(), *tt.set, session.operationOptions()...)
 			} else {
 				result, err = session.ChangePIN(context.Background(), *tt.change, session.operationOptions()...)
 			}
+
 			requireZero(t, result)
 
 			requireFailureCode(t, err, failure.CodePINRequired)
@@ -531,6 +595,7 @@ func TestPINMutationsRejectEmptyPINAtSessionRun(t *testing.T) {
 func TestUVTokenAcquisitionRequestsUserVerificationInteraction(t *testing.T) {
 	events := &recordingEventSink{}
 	a := &uvTokenAuthenticator{events: events}
+
 	session := openContractAuthenticator(t, events, a)
 	defer func() { _ = session.Close() }()
 

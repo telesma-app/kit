@@ -15,15 +15,16 @@ import (
 
 func TestTokenServiceUseTryWithoutTokenAcquiresOnlyWhenRequired(t *testing.T) {
 	var requests []model.InteractionRequest
+
 	authenticator := &recordingTokenDevice{info: uvTokenInfo()}
-	tokens := NewTokenService(
-		&testTokenCache{},
-		authenticator,
-		recordingInteractionHandler(&requests, model.InteractionResponse{}),
-		VerificationFlowDefault,
-	)
+	tokens := &TokenService{
+		Cache:         &testTokenCache{},
+		Authenticator: authenticator,
+		Interactions:  recordingInteractionHandler(&requests, model.InteractionResponse{}),
+	}
 
 	var usedTokens [][]byte
+
 	err := tokens.Use(
 		context.Background(),
 		TokenUse{
@@ -69,10 +70,15 @@ func TestTokenServiceUseTryWithoutTokenBeforeCachedToken(t *testing.T) {
 	cache := &testTokenCache{}
 	key := TokenKey{Permission: protocol.PermissionMakeCredential, RPID: "example.com"}
 	cache.SetToken(key, secret.New([]byte("cached-token")))
+
 	authenticator := &recordingTokenDevice{info: uvTokenInfo()}
-	tokens := NewTokenService(cache, authenticator, nil, VerificationFlowDefault)
+	tokens := &TokenService{
+		Cache:         cache,
+		Authenticator: authenticator,
+	}
 
 	uses := 0
+
 	err := tokens.Use(
 		context.Background(),
 		TokenUse{
@@ -82,6 +88,7 @@ func TestTokenServiceUseTryWithoutTokenBeforeCachedToken(t *testing.T) {
 		},
 		func(token []byte) error {
 			uses++
+
 			if token != nil {
 				t.Fatalf("token = %q, want nil", token)
 			}
@@ -110,14 +117,19 @@ func TestTokenServiceUseTryWithoutTokenDoesNotReplayRejectedToken(t *testing.T) 
 	cache := &testTokenCache{}
 	key := TokenKey{Permission: protocol.PermissionMakeCredential, RPID: "example.com"}
 	cache.SetToken(key, secret.New([]byte("cached-token")))
+
 	authenticator := &recordingTokenDevice{info: uvTokenInfo()}
-	tokens := NewTokenService(cache, authenticator, nil, VerificationFlowDefault)
+	tokens := &TokenService{
+		Cache:         cache,
+		Authenticator: authenticator,
+	}
 	consumerErr := &ctaptransport.CTAPError{
 		Command:    protocol.AuthenticatorMakeCredential,
 		StatusCode: ctaptransport.CTAP2_ERR_PIN_AUTH_INVALID,
 	}
 
 	uses := 0
+
 	err := tokens.Use(
 		context.Background(),
 		TokenUse{
@@ -127,6 +139,7 @@ func TestTokenServiceUseTryWithoutTokenDoesNotReplayRejectedToken(t *testing.T) 
 		},
 		func(token []byte) error {
 			uses++
+
 			if token == nil {
 				return ctapdevice.ErrPinUvAuthTokenRequired
 			}

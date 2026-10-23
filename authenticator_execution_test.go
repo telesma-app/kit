@@ -9,7 +9,7 @@ import (
 	appoperation "github.com/telesma-app/kit/model/operation"
 )
 
-func TestExecuteSerializedOperationEnforcesZeroResultOnWorkflowFailure(t *testing.T) {
+func TestExecuteOperationEnforcesZeroResultOnWorkflowFailure(t *testing.T) {
 	session := openContractAuthenticator(t, nil, nil)
 	defer func() { _ = session.Close() }()
 
@@ -18,17 +18,18 @@ func TestExecuteSerializedOperationEnforcesZeroResultOnWorkflowFailure(t *testin
 	}
 
 	cause := errors.New("workflow failed after producing a result")
-	got, err := executeSerializedOperation(
+
+	got, err := executeOperation(
 		session.Authenticator,
 		context.Background(),
 		appoperation.ConfigStatus,
-		operationConfig{},
 		func(workflow.Runner, context.Context) (result, error) {
 			return result{Value: "partial"}, cause
 		},
 	)
 	if !errors.Is(err, cause) {
-		t.Fatalf("executeSerializedOperation error = %v, want %v", err, cause)
+		t.Fatalf("executeOperation error = %v, want %v", err, cause)
 	}
+
 	requireZero(t, got)
 }

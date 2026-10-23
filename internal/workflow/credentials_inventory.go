@@ -52,7 +52,8 @@ func (r Runner) credentialInventory(
 	keys largeBlobKeyStore,
 ) (appcredentials.InventoryReport, error) {
 	var snapshot credentialInventorySnapshot
-	err := r.env.Tokens.Use(ctx, rtruntime.TokenUse{
+
+	err := r.Tokens.Use(ctx, rtruntime.TokenUse{
 		Permission: access.grantPermission,
 		ReplaySafe: true,
 	}, func(token []byte) error {
@@ -117,6 +118,7 @@ func (r Runner) readCredentialInventorySnapshot(
 	}
 
 	snapshot := credentialInventorySnapshot{metadata: metadata}
+
 	complete := false
 	defer func() {
 		if !complete {
@@ -156,7 +158,7 @@ func (r Runner) readCredentialInventorySnapshot(
 
 		snapshot.groups = append(snapshot.groups, credentialInventoryGroupSnapshot{rp: rpResponse})
 
-		r.env.Events.Emit(ctx, model.OperationEvent{
+		r.Events.Emit(ctx, model.OperationEvent{
 			Stage:     model.OperationStageEnumeratingRPs,
 			Completed: new(uint64(len(snapshot.groups))),
 			Total:     &rpTotal,
@@ -164,11 +166,14 @@ func (r Runner) readCredentialInventorySnapshot(
 	}
 
 	credentialsTotal := uint64(*metadata.ExistingResidentCredentialsCount)
+
 	var credentialsCompleted uint64
+
 	seenLargeBlobKeys := make(map[largeBlobKeyID]struct{})
 
 	for groupIndex := range snapshot.groups {
 		group := &snapshot.groups[groupIndex]
+
 		if err := ctx.Err(); err != nil {
 			return credentialInventorySnapshot{}, errornorm.Annotate(err, errornorm.WithCredentialManagementSubCommand(
 				failure.PhaseDiscovery,
@@ -219,13 +224,14 @@ func (r Runner) readCredentialInventorySnapshot(
 						failure.WithPhase(failure.PhaseDiscovery),
 					)
 				}
+
 				seenLargeBlobKeys[keyID] = struct{}{}
 			}
 
 			group.credentials = append(group.credentials, credentialResponse)
 			credentialsCompleted++
 
-			r.env.Events.Emit(ctx, model.OperationEvent{
+			r.Events.Emit(ctx, model.OperationEvent{
 				Stage:     model.OperationStageEnumeratingCredentials,
 				Completed: new(credentialsCompleted),
 				Total:     &credentialsTotal,
@@ -244,7 +250,7 @@ func (r Runner) buildCredentialInventoryReport(
 	keys largeBlobKeyStore,
 ) appcredentials.InventoryReport {
 	report := appcredentials.InventoryReport{
-		Device: r.env.Selected,
+		Device: r.Selected,
 		Support: appcredentials.SupportReport{
 			CredentialManagement: true,
 			PreviewOnly:          access.info.Versions.IsPreviewOnly(),
@@ -267,10 +273,12 @@ func (r Runner) buildCredentialInventoryReport(
 
 		for _, response := range rawGroup.credentials {
 			credentialIDHex := hex.EncodeToString(response.CredentialID.ID)
+
 			var transports []string
 			for _, transport := range response.CredentialID.Transports {
 				transports = append(transports, string(transport))
 			}
+
 			record := appcredentials.CredentialRecord{
 				CredentialIDHex:      credentialIDHex,
 				CredentialType:       string(response.CredentialID.Type),
@@ -285,6 +293,7 @@ func (r Runner) buildCredentialInventoryReport(
 
 			if len(response.LargeBlobKey) > 0 {
 				record.LargeBlobKeyState = "available"
+
 				if keys == nil {
 					secret.Zero(response.LargeBlobKey)
 				} else {
@@ -310,6 +319,7 @@ func inventoryPermission(info protocol.AuthenticatorGetInfoResponse) (protocol.P
 	if info.Versions.IsPreviewOnly() {
 		option = protocol.OptionCredentialManagementPreview
 	}
+
 	enabled, ok := info.Options[option]
 	if !ok || !enabled {
 		return 0, failure.New(failure.CodeCredentialManagementUnsupported,

@@ -84,8 +84,8 @@ func (e *annotatedError) Unwrap() error {
 // Annotate records safe normalization metadata without changing the error identity.
 // The annotation closest to the source wins over broader boundary metadata.
 func Annotate(err error, annotation Annotation) error {
-	if annotated, ok := errors.AsType[*annotatedError](err); ok {
-		return annotated
+	if _, ok := errors.AsType[*annotatedError](err); ok {
+		return err
 	}
 
 	return &annotatedError{err: err, annotation: annotation}

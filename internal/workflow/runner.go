@@ -1,18 +1,36 @@
 package workflow
 
 import (
-	"github.com/telesma-app/kit/internal/authenticator"
+	"context"
+
+	"github.com/telesma-app/ctap/protocol"
+	rtruntime "github.com/telesma-app/kit/internal/runtime"
+	"github.com/telesma-app/kit/model"
+	"github.com/telesma-app/kit/model/report"
 )
 
 type Runner struct {
-	env Environment
+	Selected     report.EndpointReport
+	Events       EventEmitter
+	Interactions InteractionRequester
+	Tokens       TokenService
+	Effects      *rtruntime.StateEffects
 }
 
-func NewRunner(env Environment) Runner {
-	return Runner{env: env}
+type EventEmitter interface {
+	Emit(context.Context, model.OperationEvent)
 }
 
-type LargeBlobDevice = authenticator.LargeBlobDevice
-type ConfigStatusDevice = authenticator.ConfigStatusDevice
-type ConfigDevice = authenticator.ConfigDevice
-type BioDevice = authenticator.BioDevice
+type InteractionRequester interface {
+	RequestInteraction(context.Context, model.InteractionRequest) (model.InteractionResponse, error)
+}
+
+type TokenService interface {
+	Use(
+		context.Context,
+		rtruntime.TokenUse,
+		func([]byte) error,
+	) error
+	Invalidate()
+	InvalidateUnlessPermission(protocol.Permission)
+}

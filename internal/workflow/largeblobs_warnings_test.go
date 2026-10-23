@@ -27,6 +27,7 @@ func TestLargeBlobMutationWarningsDescribeFirstMatchingEntry(t *testing.T) {
 				byteCount: test.byteCount,
 				sizeAfter: test.arraySize,
 			})
+
 			got := preview.Warnings[1].Message
 			if !strings.Contains(got, "first large-blob entry") ||
 				!strings.Contains(got, "additional matching entries remain unchanged") {

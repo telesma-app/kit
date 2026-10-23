@@ -127,10 +127,11 @@ type BioDevice interface {
 	BioEnrollmentManager
 }
 
-// Opened is the private capability bundle returned by the authenticator
-// opener. The concrete upstream device is adapted once at the transport
-// boundary; facade code retains only the capability needed by each domain.
+// Opened holds the device capabilities. A GetInfo error may accompany a partial
+// bundle; the caller owns Lifecycle whenever Opened is non-nil.
 type Opened struct {
+	HIDInit             *ctaphid.InitResponse
+	Card                *SmartCard
 	Lifecycle           Lifecycle
 	Info                InfoProvider
 	Vendor              VendorProvider

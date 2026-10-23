@@ -17,12 +17,13 @@ func (r Runner) CredentialStoreState(
 	ctx context.Context,
 	device authenticator.InfoProvider,
 ) (appcredentials.StoreStateResult, error) {
-	r.env.Tokens.InvalidateUnlessPermission(protocol.PermissionPersistentCredentialManagementReadOnly)
+	r.Tokens.InvalidateUnlessPermission(protocol.PermissionPersistentCredentialManagementReadOnly)
 
 	info, err := r.getAuthenticatorInfo(ctx, device)
 	if err != nil {
 		return appcredentials.StoreStateResult{}, err
 	}
+
 	if !info.Options[protocol.OptionPersistentCredentialManagementReadOnly] {
 		return appcredentials.StoreStateResult{}, failure.New(
 			failure.CodeCredentialManagementUnsupported,
@@ -31,7 +32,8 @@ func (r Runner) CredentialStoreState(
 	}
 
 	var identifier, state [16]byte
-	err = r.env.Tokens.Use(
+
+	err = r.Tokens.Use(
 		ctx,
 		rtruntime.TokenUse{
 			Permission: protocol.PermissionPersistentCredentialManagementReadOnly,
@@ -42,12 +44,14 @@ func (r Runner) CredentialStoreState(
 			if err != nil {
 				return err
 			}
+
 			if len(info.EncIdentifier) == 0 || len(info.EncCredStoreState) == 0 {
 				return failure.New(
 					failure.CodeGetInfoUnsupported,
 					failure.WithPhase(failure.PhaseAuthenticatorCommand),
 				)
 			}
+
 			if len(info.EncIdentifier) != 32 || len(info.EncCredStoreState) != 32 {
 				return failure.New(
 					failure.CodeCTAPSpecViolation,
@@ -59,6 +63,7 @@ func (r Runner) CredentialStoreState(
 			if err != nil {
 				return err
 			}
+
 			state, err = ctapcrypto.DecryptCredentialStoreState(token, info.EncCredStoreState)
 
 			return err

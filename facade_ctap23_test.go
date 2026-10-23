@@ -21,6 +21,7 @@ import (
 
 func TestCredentialStoreStateUsesStandalonePCMRToken(t *testing.T) {
 	a := newStoreStateAuthenticator()
+
 	session := openContractAuthenticator(t, nil, a)
 	defer func() { _ = session.Close() }()
 
@@ -30,6 +31,7 @@ func TestCredentialStoreStateUsesStandalonePCMRToken(t *testing.T) {
 	); err != nil {
 		t.Fatalf("ListCredentials: %v", err)
 	}
+
 	a.readOnly.Store(true)
 
 	result, err := session.CredentialStoreState(
@@ -44,6 +46,7 @@ func TestCredentialStoreStateUsesStandalonePCMRToken(t *testing.T) {
 		result.CredentialStoreStateHex != "101112131415161718191a1b1c1d1e1f" {
 		t.Fatalf("store state = %#v", result)
 	}
+
 	wantPermissions := []protocol.Permission{
 		protocol.PermissionCredentialManagement,
 		protocol.PermissionPersistentCredentialManagementReadOnly,
@@ -56,6 +59,7 @@ func TestCredentialStoreStateUsesStandalonePCMRToken(t *testing.T) {
 	if a.stateTokenPermission != protocol.PermissionPersistentCredentialManagementReadOnly {
 		t.Fatalf("state token permission = %s, want standalone pcmr", a.stateTokenPermission)
 	}
+
 	if a.freshInfoCalls.Load() != 1 {
 		t.Fatalf("fresh GetInfo calls = %d, want 1", a.freshInfoCalls.Load())
 	}
@@ -63,6 +67,7 @@ func TestCredentialStoreStateUsesStandalonePCMRToken(t *testing.T) {
 
 func TestCredentialInventoryRejectsMissingMandatoryMetadataTotals(t *testing.T) {
 	a := &missingTotalsAuthenticator{stage: "metadata"}
+
 	session := openContractAuthenticator(t, nil, a)
 	defer func() { _ = session.Close() }()
 
@@ -78,12 +83,14 @@ func TestCredentialInventoryRejectsMissingMandatoryMetadataTotals(t *testing.T) 
 func TestEnableLongTouchForResetDryRunAndRefreshFailureCacheEffects(t *testing.T) {
 	refreshErr := errors.New("refresh failed after config command")
 	a := &longTouchAuthenticator{enableErr: refreshErr}
+
 	session := openContractAuthenticator(t, nil, a)
 	defer func() { _ = session.Close() }()
 
 	if _, err := session.ConfigStatus(context.Background(), session.operationOptions()...); err != nil {
 		t.Fatalf("prime ConfigStatus: %v", err)
 	}
+
 	dryRun, err := session.EnableLongTouchForReset(
 		context.Background(),
 		appconfig.EnableLongTouchForResetOperation{DryRun: true},
@@ -107,6 +114,7 @@ func TestEnableLongTouchForResetDryRunAndRefreshFailureCacheEffects(t *testing.T
 	}
 
 	requireZero(t, result)
+
 	if a.enableCalls.Load() != 1 {
 		t.Fatalf("execute result/calls = %#v/%d", result, a.enableCalls.Load())
 	}
@@ -127,6 +135,7 @@ func TestEnableLongTouchForResetDryRunAndRefreshFailureCacheEffects(t *testing.T
 
 func TestEnableLongTouchForResetSuccess(t *testing.T) {
 	a := &longTouchAuthenticator{}
+
 	session := openContractAuthenticator(t, nil, a)
 	defer func() { _ = session.Close() }()
 
@@ -146,6 +155,7 @@ func TestEnableLongTouchForResetSuccess(t *testing.T) {
 
 func TestEnableEnterpriseAttestationSuccess(t *testing.T) {
 	a := &enterpriseAttestationAuthenticator{}
+
 	session := openContractAuthenticator(t, nil, a)
 	defer func() { _ = session.Close() }()
 
@@ -165,6 +175,7 @@ func TestEnableEnterpriseAttestationSuccess(t *testing.T) {
 
 func TestSetMinPINLengthPassesParametersWithoutDefaults(t *testing.T) {
 	a := &setMinPINLengthAuthenticator{}
+
 	session := openContractAuthenticator(t, nil, a)
 	defer func() { _ = session.Close() }()
 
@@ -203,6 +214,7 @@ func newStoreStateAuthenticator() *storeStateAuthenticator {
 	token := bytes.Repeat([]byte{byte(protocol.PermissionPersistentCredentialManagementReadOnly)}, sha256.Size)
 	identifier := make([]byte, aes.BlockSize)
 	state := make([]byte, aes.BlockSize)
+
 	for index := range identifier {
 		identifier[index] = byte(index)
 		state[index] = byte(index + aes.BlockSize)
@@ -274,6 +286,7 @@ func encryptGetInfoMember(token, plaintext []byte, label string) []byte {
 	if err != nil {
 		panic(err)
 	}
+
 	iv := make([]byte, aes.BlockSize)
 	ciphertext := make([]byte, aes.BlockSize)
 	cipher.NewCBCEncrypter(block, iv).CryptBlocks(ciphertext, plaintext)

@@ -5,19 +5,19 @@ import (
 )
 
 type ReadReport struct {
-	Device       report.DeviceReport `json:"device"`
-	Target       BlobTarget          `json:"target"`
-	State        ReadState           `json:"state"`
-	RawHex       string              `json:"rawHex,omitempty"`
-	RawByteCount int                 `json:"rawByteCount"`
-	RawBytes     []byte              `json:"-"`
+	Device       report.EndpointReport `json:"device"`
+	Target       BlobTarget            `json:"target"`
+	State        ReadState             `json:"state"`
+	RawHex       string                `json:"rawHex,omitempty"`
+	RawByteCount int                   `json:"rawByteCount"`
+	RawBytes     []byte                `json:"-"`
 }
 
 type ListReport struct {
-	Device  report.DeviceReport `json:"device"`
-	Support SupportReport       `json:"support"`
-	Array   ListArraySummary    `json:"array"`
-	Entries []ArrayEntry        `json:"entries,omitempty"`
+	Device  report.EndpointReport `json:"device"`
+	Support SupportReport         `json:"support"`
+	Array   ListArraySummary      `json:"array"`
+	Entries []ArrayEntry          `json:"entries,omitempty"`
 }
 
 type ListArraySummary struct {

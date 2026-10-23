@@ -42,6 +42,7 @@ func credentialAccessFor(
 	if info.Versions.IsPreviewOnly() {
 		command = protocol.PrototypeAuthenticatorCredentialManagement
 	}
+
 	access := credentialAccess{
 		info:                info,
 		command:             command,

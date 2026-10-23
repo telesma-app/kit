@@ -15,14 +15,14 @@ import (
 
 func TestTokenServiceCachesByPermissionAndRPID(t *testing.T) {
 	var requests []model.InteractionRequest
+
 	authenticator := &recordingTokenDevice{info: uvTokenInfo()}
 	cache := &testTokenCache{}
-	tokens := NewTokenService(
-		cache,
-		authenticator,
-		recordingInteractionHandler(&requests, model.InteractionResponse{}),
-		VerificationFlowDefault,
-	)
+	tokens := &TokenService{
+		Cache:         cache,
+		Authenticator: authenticator,
+		Interactions:  recordingInteractionHandler(&requests, model.InteractionResponse{}),
+	}
 
 	acquireTokenForTest(t, tokens, protocol.PermissionCredentialManagement, "")
 	acquireTokenForTest(t, tokens, protocol.PermissionCredentialManagement, "")
@@ -41,13 +41,13 @@ func TestTokenServiceCachesByPermissionAndRPID(t *testing.T) {
 
 func TestTokenServiceCompositeGrantCoversPermissionSubsets(t *testing.T) {
 	var requests []model.InteractionRequest
+
 	authenticator := &recordingTokenDevice{info: uvTokenInfo()}
-	tokens := NewTokenService(
-		&testTokenCache{},
-		authenticator,
-		recordingInteractionHandler(&requests, model.InteractionResponse{}),
-		VerificationFlowDefault,
-	)
+	tokens := &TokenService{
+		Cache:         &testTokenCache{},
+		Authenticator: authenticator,
+		Interactions:  recordingInteractionHandler(&requests, model.InteractionResponse{}),
+	}
 	permissions := protocol.PermissionCredentialManagement |
 		protocol.PermissionLargeBlobWrite
 
@@ -93,16 +93,16 @@ func TestPermissionLabelFormatsMasksDeterministically(t *testing.T) {
 
 func TestTokenServiceDefaultFlowRequestsUVInteractionBeforeUVCommand(t *testing.T) {
 	var requests []model.InteractionRequest
+
 	authenticator := &recordingTokenDevice{
 		info: uvTokenInfo(),
 	}
 	cache := &testTokenCache{}
-	tokens := NewTokenService(
-		cache,
-		authenticator,
-		recordingInteractionHandlerWithEvents(&requests, authenticator, model.InteractionResponse{}),
-		VerificationFlowDefault,
-	)
+	tokens := &TokenService{
+		Cache:         cache,
+		Authenticator: authenticator,
+		Interactions:  recordingInteractionHandlerWithEvents(&requests, authenticator, model.InteractionResponse{}),
+	}
 
 	acquireTokenForTest(t, tokens, protocol.PermissionCredentialManagement, "")
 
@@ -127,14 +127,16 @@ func TestTokenServiceDefaultFlowRequestsUVInteractionBeforeUVCommand(t *testing.
 func TestTokenServiceDefaultFlowCanceledUVInteractionSkipsUVCommand(t *testing.T) {
 	authenticator := &recordingTokenDevice{info: uvTokenInfo()}
 	cache := &testTokenCache{}
-	tokens := NewTokenService(
-		cache,
-		authenticator,
-		NewInteractionBroker(noopEventSink{}, interactionHandlerFunc(func(model.InteractionRequest) (model.InteractionResponse, error) {
-			return model.InteractionResponse{Canceled: true}, nil
-		})),
-		VerificationFlowDefault,
-	)
+	tokens := &TokenService{
+		Cache:         cache,
+		Authenticator: authenticator,
+		Interactions: &InteractionBroker{
+			Events: EventDispatcher{},
+			Handler: interactionHandlerFunc(func(model.InteractionRequest) (model.InteractionResponse, error) {
+				return model.InteractionResponse{Canceled: true}, nil
+			}),
+		},
+	}
 
 	token, err := tokens.acquire(
 		context.Background(),
@@ -157,17 +159,17 @@ func TestTokenServiceDefaultFlowCanceledUVInteractionSkipsUVCommand(t *testing.T
 
 func TestTokenServiceDefaultFlowFallsBackToPINAfterUVFallbackError(t *testing.T) {
 	var requests []model.InteractionRequest
+
 	authenticator := &recordingTokenDevice{
 		info:  uvTokenInfo(),
 		uvErr: ctapdevice.ErrUvNotConfigured,
 	}
 	cache := &testTokenCache{}
-	tokens := NewTokenService(
-		cache,
-		authenticator,
-		recordingInteractionHandler(&requests, model.InteractionResponse{PIN: []byte("1234")}),
-		VerificationFlowDefault,
-	)
+	tokens := &TokenService{
+		Cache:         cache,
+		Authenticator: authenticator,
+		Interactions:  recordingInteractionHandler(&requests, model.InteractionResponse{PIN: []byte("1234")}),
+	}
 
 	acquireTokenForTest(t, tokens, protocol.PermissionCredentialManagement, "")
 
@@ -191,6 +193,7 @@ func TestTokenServiceDefaultFlowFallsBackToPINAfterUVFallbackError(t *testing.T)
 
 func TestTokenServiceRejectsAuthenticatorWithoutUsableVerificationFlow(t *testing.T) {
 	var requests []model.InteractionRequest
+
 	authenticator := &recordingTokenDevice{
 		info: protocol.AuthenticatorGetInfoResponse{
 			Versions: protocol.Versions{
@@ -212,12 +215,11 @@ func TestTokenServiceRejectsAuthenticatorWithoutUsableVerificationFlow(t *testin
 			},
 		},
 	}
-	tokens := NewTokenService(
-		&testTokenCache{},
-		authenticator,
-		recordingInteractionHandler(&requests, model.InteractionResponse{}),
-		VerificationFlowDefault,
-	)
+	tokens := &TokenService{
+		Cache:         &testTokenCache{},
+		Authenticator: authenticator,
+		Interactions:  recordingInteractionHandler(&requests, model.InteractionResponse{}),
+	}
 
 	token, err := tokens.acquire(
 		context.Background(),
@@ -251,6 +253,7 @@ func TestTokenServiceRejectsAuthenticatorWithoutUsableVerificationFlow(t *testin
 
 func TestTokenServiceUsesStandardPreviewUVTokenFlow(t *testing.T) {
 	var requests []model.InteractionRequest
+
 	authenticator := &recordingTokenDevice{
 		info: protocol.AuthenticatorGetInfoResponse{
 			Versions: protocol.Versions{
@@ -266,12 +269,11 @@ func TestTokenServiceUsesStandardPreviewUVTokenFlow(t *testing.T) {
 			},
 		},
 	}
-	tokens := NewTokenService(
-		&testTokenCache{},
-		authenticator,
-		recordingInteractionHandlerWithEvents(&requests, authenticator, model.InteractionResponse{}),
-		VerificationFlowDefault,
-	)
+	tokens := &TokenService{
+		Cache:         &testTokenCache{},
+		Authenticator: authenticator,
+		Interactions:  recordingInteractionHandlerWithEvents(&requests, authenticator, model.InteractionResponse{}),
+	}
 
 	token, err := tokens.acquire(
 		context.Background(),
@@ -316,6 +318,7 @@ func TestTokenServiceSkipsUVPromptWhenPermissionCapabilityIsUnsupported(t *testi
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var requests []model.InteractionRequest
+
 			authenticator := &recordingTokenDevice{
 				info: protocol.AuthenticatorGetInfoResponse{
 					Options: map[protocol.Option]bool{
@@ -326,14 +329,13 @@ func TestTokenServiceSkipsUVPromptWhenPermissionCapabilityIsUnsupported(t *testi
 					},
 				},
 			}
-			tokens := NewTokenService(
-				&testTokenCache{},
-				authenticator,
-				recordingInteractionHandler(&requests, model.InteractionResponse{
+			tokens := &TokenService{
+				Cache:         &testTokenCache{},
+				Authenticator: authenticator,
+				Interactions: recordingInteractionHandler(&requests, model.InteractionResponse{
 					PIN: []byte("1234"),
 				}),
-				VerificationFlowDefault,
-			)
+			}
 
 			token, err := tokens.acquire(context.Background(), tt.permission, "")
 			if err != nil {
@@ -344,6 +346,7 @@ func TestTokenServiceSkipsUVPromptWhenPermissionCapabilityIsUnsupported(t *testi
 			if want := []model.InteractionKind{model.InteractionKindPIN}; !slices.Equal(interactionKinds(requests), want) {
 				t.Fatalf("interaction kinds = %v, want %v", interactionKinds(requests), want)
 			}
+
 			if len(authenticator.uvRPIDs) != 0 {
 				t.Fatalf("UV token calls = %d, want 0", len(authenticator.uvRPIDs))
 			}
@@ -353,6 +356,7 @@ func TestTokenServiceSkipsUVPromptWhenPermissionCapabilityIsUnsupported(t *testi
 
 func TestTokenServiceDoesNotFallBackToUnavailablePIN(t *testing.T) {
 	var requests []model.InteractionRequest
+
 	authenticator := &recordingTokenDevice{
 		info: protocol.AuthenticatorGetInfoResponse{
 			Options: map[protocol.Option]bool{
@@ -362,12 +366,11 @@ func TestTokenServiceDoesNotFallBackToUnavailablePIN(t *testing.T) {
 		},
 		uvErr: ctapdevice.ErrUvNotConfigured,
 	}
-	tokens := NewTokenService(
-		&testTokenCache{},
-		authenticator,
-		recordingInteractionHandler(&requests, model.InteractionResponse{}),
-		VerificationFlowDefault,
-	)
+	tokens := &TokenService{
+		Cache:         &testTokenCache{},
+		Authenticator: authenticator,
+		Interactions:  recordingInteractionHandler(&requests, model.InteractionResponse{}),
+	}
 
 	token, err := tokens.acquire(
 		context.Background(),
@@ -390,6 +393,7 @@ func TestTokenServiceDoesNotFallBackToUnavailablePIN(t *testing.T) {
 	if len(authenticator.uvRPIDs) != 1 {
 		t.Fatalf("UV token calls = %d, want 1", len(authenticator.uvRPIDs))
 	}
+
 	if authenticator.pinRetriesCalls != 0 || len(authenticator.pinRPIDs) != 0 {
 		t.Fatalf(
 			"PIN calls = retries %d, token %d; want none",
@@ -407,12 +411,11 @@ func TestTokenServiceReportsUnconfiguredPINBeforeInteraction(t *testing.T) {
 			},
 		},
 	}
-	tokens := NewTokenService(
-		&testTokenCache{},
-		authenticator,
-		NewInteractionBroker(noopEventSink{}, nil),
-		VerificationFlowDefault,
-	)
+	tokens := &TokenService{
+		Cache:         &testTokenCache{},
+		Authenticator: authenticator,
+		Interactions:  &InteractionBroker{Events: EventDispatcher{}},
+	}
 
 	token, err := tokens.acquire(
 		context.Background(),
@@ -439,14 +442,15 @@ func TestTokenServiceReportsUnconfiguredPINBeforeInteraction(t *testing.T) {
 
 func TestTokenServicePINFlowSkipsUVInteractionAndCommand(t *testing.T) {
 	var requests []model.InteractionRequest
+
 	authenticator := &recordingTokenDevice{info: uvTokenInfo()}
 	cache := &testTokenCache{}
-	tokens := NewTokenService(
-		cache,
-		authenticator,
-		recordingInteractionHandler(&requests, model.InteractionResponse{PIN: []byte("1234")}),
-		VerificationFlowPIN,
-	)
+	tokens := &TokenService{
+		Cache:            cache,
+		Authenticator:    authenticator,
+		Interactions:     recordingInteractionHandler(&requests, model.InteractionResponse{PIN: []byte("1234")}),
+		VerificationFlow: VerificationFlowPIN,
+	}
 
 	acquireTokenForTest(t, tokens, protocol.PermissionCredentialManagement, "")
 
@@ -461,17 +465,18 @@ func TestTokenServicePINFlowSkipsUVInteractionAndCommand(t *testing.T) {
 
 func TestTokenServiceDelegatesPINValidationToAuthenticator(t *testing.T) {
 	var requests []model.InteractionRequest
+
 	validationErr := errors.New("pin rejected by ctap")
 	authenticator := &recordingTokenDevice{
 		info:    uvTokenInfo(),
 		pinErrs: []error{validationErr},
 	}
-	tokens := NewTokenService(
-		&testTokenCache{},
-		authenticator,
-		recordingInteractionHandler(&requests, model.InteractionResponse{PIN: []byte("123")}),
-		VerificationFlowPIN,
-	)
+	tokens := &TokenService{
+		Cache:            &testTokenCache{},
+		Authenticator:    authenticator,
+		Interactions:     recordingInteractionHandler(&requests, model.InteractionResponse{PIN: []byte("123")}),
+		VerificationFlow: VerificationFlowPIN,
+	}
 
 	token, err := tokens.acquire(context.Background(), protocol.PermissionCredentialManagement, "")
 	if token != nil {
@@ -491,12 +496,11 @@ func TestTokenServiceDelegatesPINValidationToAuthenticator(t *testing.T) {
 func TestTokenServiceMissingHandlerForUVReturnsInvalidStateBeforeUVCommand(t *testing.T) {
 	authenticator := &recordingTokenDevice{info: uvTokenInfo()}
 	cache := &testTokenCache{}
-	tokens := NewTokenService(
-		cache,
-		authenticator,
-		NewInteractionBroker(noopEventSink{}, nil),
-		VerificationFlowDefault,
-	)
+	tokens := &TokenService{
+		Cache:         cache,
+		Authenticator: authenticator,
+		Interactions:  &InteractionBroker{Events: EventDispatcher{}},
+	}
 
 	token, err := tokens.acquire(
 		context.Background(),
@@ -521,18 +525,21 @@ func recordingInteractionHandler(
 	requests *[]model.InteractionRequest,
 	response model.InteractionResponse,
 ) *InteractionBroker {
-	return NewInteractionBroker(noopEventSink{}, interactionHandlerFunc(func(req model.InteractionRequest) (model.InteractionResponse, error) {
-		*requests = append(*requests, req)
+	return &InteractionBroker{
+		Events: EventDispatcher{},
+		Handler: interactionHandlerFunc(func(req model.InteractionRequest) (model.InteractionResponse, error) {
+			*requests = append(*requests, req)
 
-		out := response
-		if req.Kind != model.InteractionKindPIN {
-			out.PIN = nil
-		} else if len(out.PIN) != 0 {
-			out.PIN = slices.Clone(out.PIN)
-		}
+			out := response
+			if req.Kind != model.InteractionKindPIN {
+				out.PIN = nil
+			} else if len(out.PIN) != 0 {
+				out.PIN = slices.Clone(out.PIN)
+			}
 
-		return out, nil
-	}))
+			return out, nil
+		}),
+	}
 }
 
 func recordingInteractionHandlerWithEvents(
@@ -540,12 +547,15 @@ func recordingInteractionHandlerWithEvents(
 	authenticator *recordingTokenDevice,
 	response model.InteractionResponse,
 ) *InteractionBroker {
-	return NewInteractionBroker(noopEventSink{}, interactionHandlerFunc(func(req model.InteractionRequest) (model.InteractionResponse, error) {
-		*requests = append(*requests, req)
-		authenticator.events = append(authenticator.events, "interaction:"+string(req.Kind))
+	return &InteractionBroker{
+		Events: EventDispatcher{},
+		Handler: interactionHandlerFunc(func(req model.InteractionRequest) (model.InteractionResponse, error) {
+			*requests = append(*requests, req)
+			authenticator.events = append(authenticator.events, "interaction:"+string(req.Kind))
 
-		return response, nil
-	}))
+			return response, nil
+		}),
+	}
 }
 
 func acquireTokenForTest(
@@ -664,6 +674,7 @@ func (d *recordingTokenDevice) GetPinUvAuthTokenUsingPIN(
 ) ([]byte, error) {
 	d.events = append(d.events, "command:pin")
 	d.pinRPIDs = append(d.pinRPIDs, rpID)
+
 	call := len(d.pinRPIDs) - 1
 	if call < len(d.pinErrs) && d.pinErrs[call] != nil {
 		return nil, d.pinErrs[call]
@@ -687,6 +698,7 @@ func (d *recordingTokenDevice) GetPINRetries(context.Context) (uint, *bool, erro
 	d.events = append(d.events, "command:pin-retries")
 	call := d.pinRetriesCalls
 	d.pinRetriesCalls++
+
 	retries := d.pinRetries
 	if call < len(d.pinRetryCounts) {
 		retries = d.pinRetryCounts[call]

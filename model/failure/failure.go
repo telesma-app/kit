@@ -54,6 +54,7 @@ func newError(code Code, cause error, opts ...Option) *Error {
 	for _, opt := range opts {
 		opt(&snapshot)
 	}
+
 	snapshot = canonicalFailure(snapshot)
 
 	return &Error{Failure: snapshot, cause: cause}
@@ -169,6 +170,7 @@ func allowedParams(params map[string]string, allowlist map[string]paramValueRule
 	}
 
 	filtered := make(map[string]string)
+
 	for name, value := range params {
 		if rule, allowed := allowlist[name]; allowed && validParamValue(rule, value) {
 			filtered[name] = value

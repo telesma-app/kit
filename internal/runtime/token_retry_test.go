@@ -17,6 +17,7 @@ func TestTokenServicePINInvalidRequestsAnotherPINWithRetryState(t *testing.T) {
 		requests     []model.InteractionRequest
 		returnedPINs [][]byte
 	)
+
 	powerCycleState := false
 	authenticator := &recordingTokenDevice{
 		info: uvTokenInfo(),
@@ -28,17 +29,22 @@ func TestTokenServicePINInvalidRequestsAnotherPINWithRetryState(t *testing.T) {
 		pinRetries:      6,
 		powerCycleState: &powerCycleState,
 	}
-	interactions := NewInteractionBroker(
-		noopEventSink{},
-		interactionHandlerFunc(func(req model.InteractionRequest) (model.InteractionResponse, error) {
+	interactions := &InteractionBroker{
+		Events: EventDispatcher{},
+		Handler: interactionHandlerFunc(func(req model.InteractionRequest) (model.InteractionResponse, error) {
 			requests = append(requests, req)
 			pin := []byte("1234")
 			returnedPINs = append(returnedPINs, pin)
 
 			return model.InteractionResponse{PIN: pin}, nil
 		}),
-	)
-	tokens := NewTokenService(&testTokenCache{}, authenticator, interactions, VerificationFlowPIN)
+	}
+	tokens := &TokenService{
+		Cache:            &testTokenCache{},
+		Authenticator:    authenticator,
+		Interactions:     interactions,
+		VerificationFlow: VerificationFlowPIN,
+	}
 
 	acquireTokenForTest(t, tokens, protocol.PermissionCredentialManagement, "")
 
@@ -97,6 +103,7 @@ func TestTokenServicePINInvalidRequestsAnotherPINWithRetryState(t *testing.T) {
 
 func TestTokenServicePINBlockedDoesNotRequestAnotherPIN(t *testing.T) {
 	var requests []model.InteractionRequest
+
 	authenticator := &recordingTokenDevice{
 		info: uvTokenInfo(),
 		pinErrs: []error{&ctaptransport.CTAPError{
@@ -104,12 +111,12 @@ func TestTokenServicePINBlockedDoesNotRequestAnotherPIN(t *testing.T) {
 			StatusCode: ctaptransport.CTAP2_ERR_PIN_BLOCKED,
 		}},
 	}
-	tokens := NewTokenService(
-		&testTokenCache{},
-		authenticator,
-		recordingInteractionHandler(&requests, model.InteractionResponse{PIN: []byte("1234")}),
-		VerificationFlowPIN,
-	)
+	tokens := &TokenService{
+		Cache:            &testTokenCache{},
+		Authenticator:    authenticator,
+		Interactions:     recordingInteractionHandler(&requests, model.InteractionResponse{PIN: []byte("1234")}),
+		VerificationFlow: VerificationFlowPIN,
+	}
 
 	token, err := tokens.acquire(context.Background(), protocol.PermissionCredentialManagement, "")
 	if token != nil {
@@ -132,6 +139,7 @@ func TestTokenServicePINBlockedDoesNotRequestAnotherPIN(t *testing.T) {
 
 func TestTokenServicePINRetriesFailureStopsRetryFlow(t *testing.T) {
 	var requests []model.InteractionRequest
+
 	authenticator := &recordingTokenDevice{
 		info: uvTokenInfo(),
 		pinErrs: []error{&ctaptransport.CTAPError{
@@ -147,12 +155,12 @@ func TestTokenServicePINRetriesFailureStopsRetryFlow(t *testing.T) {
 			},
 		},
 	}
-	tokens := NewTokenService(
-		&testTokenCache{},
-		authenticator,
-		recordingInteractionHandler(&requests, model.InteractionResponse{PIN: []byte("1234")}),
-		VerificationFlowPIN,
-	)
+	tokens := &TokenService{
+		Cache:            &testTokenCache{},
+		Authenticator:    authenticator,
+		Interactions:     recordingInteractionHandler(&requests, model.InteractionResponse{PIN: []byte("1234")}),
+		VerificationFlow: VerificationFlowPIN,
+	}
 
 	token, err := tokens.acquire(context.Background(), protocol.PermissionCredentialManagement, "")
 	if token != nil {

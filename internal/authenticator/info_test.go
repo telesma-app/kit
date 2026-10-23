@@ -18,9 +18,11 @@ func TestResolveInfoUsesValidCachedResponse(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ResolveInfo: %v", err)
 	}
+
 	if !info.Versions.Supports(protocol.FIDO_2_1) {
 		t.Fatalf("versions = %v, want FIDO_2_1", info.Versions)
 	}
+
 	if provider.freshCalls != 0 {
 		t.Fatalf("fresh GetInfo calls = %d, want 0", provider.freshCalls)
 	}
@@ -37,10 +39,12 @@ func TestResolveInfoRefreshesInvalidCacheOnce(t *testing.T) {
 		if err != nil {
 			t.Fatalf("ResolveInfo: %v", err)
 		}
+
 		if !info.Versions.Supports(protocol.FIDO_2_3) {
 			t.Fatalf("versions = %v, want FIDO_2_3", info.Versions)
 		}
 	}
+
 	if provider.freshCalls != 1 {
 		t.Fatalf("fresh GetInfo calls = %d, want 1", provider.freshCalls)
 	}
@@ -57,6 +61,7 @@ func TestResolveInfoReturnsRefreshFailure(t *testing.T) {
 	if !errors.Is(err, want) {
 		t.Fatalf("ResolveInfo error = %v, want %v", err, want)
 	}
+
 	if len(info.Versions) != 0 {
 		t.Fatalf("ResolveInfo response = %#v, want zero value", info)
 	}

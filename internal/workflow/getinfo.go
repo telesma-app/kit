@@ -8,11 +8,11 @@ import (
 	appinspect "github.com/telesma-app/kit/model/inspect"
 )
 
-func (r Runner) Inspect(ctx context.Context, device authenticator.InfoProvider) (appinspect.Result, error) {
+func (r Runner) GetInfo(ctx context.Context, device authenticator.InfoProvider) (appinspect.Info, error) {
 	info, err := r.getAuthenticatorInfo(ctx, device)
 	if err != nil {
-		return appinspect.Result{}, err
+		return appinspect.Info{}, err
 	}
 
-	return rtinspect.BuildResult(r.env.Selected, info), nil
+	return rtinspect.BuildInfo(info), nil
 }

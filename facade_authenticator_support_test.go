@@ -28,8 +28,9 @@ func TestOpenAuthenticatorAllowsIndependentChannelsForSameDevice(t *testing.T) {
 		return contractOpened(&contractAuthenticator{}), nil
 	}
 	device := newContractDevice()
+	manager := &DeviceManager{open: open}
 
-	first, err := openAuthenticatorHandle(t.Context(), device, open)
+	first, err := manager.inspectRecord(t.Context(), &deviceRecord{attachment: device})
 	if err != nil {
 		t.Fatalf("open first opened: %v", err)
 	}
@@ -39,7 +40,7 @@ func TestOpenAuthenticatorAllowsIndependentChannelsForSameDevice(t *testing.T) {
 		}
 	}()
 
-	second, err := openAuthenticatorHandle(t.Context(), device, open)
+	second, err := manager.inspectRecord(t.Context(), &deviceRecord{attachment: device})
 	if err != nil {
 		t.Fatalf("open second opened: %v", err)
 	}
@@ -62,15 +63,13 @@ func TestOpenAuthenticatorMakesJournalAvailableWhileOpeningAuthenticator(t *test
 		return contractOpened(&contractAuthenticator{}), nil
 	}
 
-	opened, err := openAuthenticatorHandle(
-		t.Context(),
-		newContractDevice(),
-		open,
-		WithLogJournal(journal),
-	)
+	manager := &DeviceManager{open: open, options: []AuthenticatorOption{WithLogJournal(journal)}}
+
+	opened, err := manager.inspectRecord(t.Context(), &deviceRecord{attachment: newContractDevice()})
 	if err != nil {
 		t.Fatalf("OpenAuthenticator: %v", err)
 	}
+
 	if err := opened.Close(); err != nil {
 		t.Fatalf("Close: %v", err)
 	}
@@ -112,7 +111,6 @@ func openContractAuthenticator(
 	t *testing.T,
 	events EventSink,
 	implementation contractDevice,
-	opts ...AuthenticatorOption,
 ) *contractAuthenticatorHandle {
 	t.Helper()
 
@@ -120,17 +118,7 @@ func openContractAuthenticator(
 		implementation = &contractAuthenticator{}
 	}
 
-	opened, err := openAuthenticatorHandle(
-		context.Background(),
-		newContractDevice(),
-		func(context.Context, transport.Mode, string) (*authenticator.Opened, error) {
-			return contractOpened(implementation), nil
-		},
-		opts...,
-	)
-	if err != nil {
-		t.Fatalf("OpenAuthenticator: %v", err)
-	}
+	opened := newAuthenticatorHandle(newContractDevice().report, contractOpened(implementation))
 
 	return &contractAuthenticatorHandle{Authenticator: opened, events: events}
 }
@@ -155,13 +143,13 @@ func newContractDevice() attachment {
 	return attachment{
 		mode: transport.ModeHID,
 		path: "contract-path",
-		report: report.DeviceReport{
+		report: report.EndpointReport{
 			Attachment: report.AttachmentReport{
 				ID:        "hid:contract-path",
 				Transport: transport.ModeHID,
 				USB: &report.USBReport{
-					VendorID:  1,
-					ProductID: 2,
+					VendorID:  report.Descriptor[uint16]{State: report.DescriptorRead, Value: 1},
+					ProductID: report.Descriptor[uint16]{State: report.DescriptorRead, Value: 2},
 				},
 			},
 		},

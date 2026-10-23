@@ -87,12 +87,15 @@ func TestVerifyMakeCredentialAttestationFormats(t *testing.T) {
 			if verification.Status != test.wantStatus {
 				t.Fatalf("status = %q, want %q; issues = %v", verification.Status, test.wantStatus, verification.Issues)
 			}
+
 			if verification.AttestationType != test.wantType {
 				t.Fatalf("attestation type = %q, want %q", verification.AttestationType, test.wantType)
 			}
+
 			if !equalOptionalBool(verification.SignatureValid, test.wantSignature) {
 				t.Fatalf("signature valid = %v, want %v", verification.SignatureValid, test.wantSignature)
 			}
+
 			if test.wantIssue != "" && !containsIssue(verification.Issues, test.wantIssue) {
 				t.Fatalf("issues = %v, want %q", verification.Issues, test.wantIssue)
 			}
@@ -115,6 +118,7 @@ func TestVerifyMakeCredentialCorrelatesInputAndResult(t *testing.T) {
 	if verification.Status != appwebauthn.VerificationStatusFailed {
 		t.Fatalf("status = %q, want failed", verification.Status)
 	}
+
 	for _, issue := range []appwebauthn.VerificationIssueCode{
 		appwebauthn.VerificationIssueResultRPIDMismatch,
 		appwebauthn.VerificationIssueResultMismatch,
@@ -129,14 +133,17 @@ func TestVerifyMakeCredentialCorrelatesInputAndResult(t *testing.T) {
 func TestVerifyGetAssertionStatusesAndCounter(t *testing.T) {
 	previous := uint32(3)
 	input, result, material := assertionVector(t, &previous)
+
 	verified := VerifyGetAssertion(input, result, material)
 	if verified.Status != appwebauthn.VerificationStatusVerified {
 		t.Fatalf("verified status = %q, issues = %v", verified.Status, verified.Issues)
 	}
+
 	assertion := verified.Assertions[0]
 	if assertion.SignatureValid == nil || !*assertion.SignatureValid {
 		t.Fatalf("signature valid = %v, want true", assertion.SignatureValid)
 	}
+
 	if assertion.SignCount != appwebauthn.SignCountStatusAdvanced {
 		t.Fatalf("sign count = %q, want advanced", assertion.SignCount)
 	}
@@ -148,6 +155,7 @@ func TestVerifyGetAssertionStatusesAndCounter(t *testing.T) {
 	}
 
 	result.Assertions[0].SignatureHex = "00"
+
 	failed := VerifyGetAssertion(input, result, material)
 	if failed.Status != appwebauthn.VerificationStatusFailed ||
 		failed.Assertions[0].SignatureValid == nil ||
@@ -164,10 +172,12 @@ func TestVerifyGetAssertionCounterWarningDoesNotFailVerification(t *testing.T) {
 	if verification.Status != appwebauthn.VerificationStatusVerified {
 		t.Fatalf("status = %q, want verified", verification.Status)
 	}
+
 	assertion := verification.Assertions[0]
 	if assertion.SignCount != appwebauthn.SignCountStatusNotAdvanced {
 		t.Fatalf("sign count = %q, want not_advanced", assertion.SignCount)
 	}
+
 	if !containsIssue(assertion.Warnings, appwebauthn.VerificationWarningSignCountNotAdvanced) {
 		t.Fatalf("warnings = %v", assertion.Warnings)
 	}
@@ -186,6 +196,7 @@ func TestVerifyGetAssertionAggregatesFailedBeforeUnavailable(t *testing.T) {
 	if verification.Status != appwebauthn.VerificationStatusFailed {
 		t.Fatalf("status = %q, want failed; assertions = %+v", verification.Status, verification.Assertions)
 	}
+
 	if verification.Assertions[0].Status != appwebauthn.VerificationStatusFailed ||
 		verification.Assertions[1].Status != appwebauthn.VerificationStatusUnavailable {
 		t.Fatalf("assertion statuses = %q, %q", verification.Assertions[0].Status, verification.Assertions[1].Status)
@@ -201,6 +212,7 @@ func makeCredentialVector(
 	t.Helper()
 
 	const rpID = "example.com"
+
 	clientData := []byte(`{"challenge":"not interpreted"}`)
 	credentialKey, coseRaw := p256Credential(t)
 	credentialID := []byte("credential-id")
@@ -215,15 +227,18 @@ func makeCredentialVector(
 			signingKey = generateP256Key(t)
 			statement["x5c"] = [][]byte{certificateDER(t, signingKey)}
 		}
+
 		message := append(append([]byte(nil), authData...), clientDataHash[:]...)
 		statement["alg"] = int64(cose.AlgorithmES256)
 		statement["sig"] = signECDSA(t, signingKey, message, corrupt)
 	case attestation.AttestationStatementFormatIdentifierFIDOU2F:
 		attestationKey := generateP256Key(t)
+
 		encodedKey, err := credentialKey.PublicKey.Bytes()
 		if err != nil {
 			t.Fatalf("encode credential public key: %v", err)
 		}
+
 		rpIDHash := sha256.Sum256([]byte(rpID))
 		message := make([]byte, 0, 1+len(rpIDHash)+len(clientDataHash)+len(credentialID)+len(encodedKey))
 		message = append(message, 0)
@@ -262,6 +277,7 @@ func makeCredentialVector(
 		AAGUID:                   uuid.Nil().String(),
 		UserPresent:              true,
 	}
+
 	return input, result
 }
 
@@ -276,6 +292,7 @@ func assertionVector(
 	t.Helper()
 
 	const rpID = "example.com"
+
 	clientData := []byte(`{"origin":"not interpreted"}`)
 	credentialKey, coseRaw := p256Credential(t)
 	credentialID := []byte("credential-id")
@@ -315,10 +332,12 @@ func p256Credential(t *testing.T) (*ecdsa.PrivateKey, []byte) {
 	t.Helper()
 
 	key := generateP256Key(t)
+
 	encoded, err := key.PublicKey.Bytes()
 	if err != nil {
 		t.Fatalf("encode P-256 public key: %v", err)
 	}
+
 	coseKey := cose.Key{
 		cose.KeyParameterKty:    cose.KeyTypeEC2,
 		cose.KeyParameterAlg:    cose.AlgorithmES256,
@@ -326,6 +345,7 @@ func p256Credential(t *testing.T) (*ecdsa.PrivateKey, []byte) {
 		cose.EC2KeyParameterX:   append([]byte(nil), encoded[1:33]...),
 		cose.EC2KeyParameterY:   append([]byte(nil), encoded[33:]...),
 	}
+
 	raw, err := cbor.Marshal(coseKey)
 	if err != nil {
 		t.Fatalf("marshal COSE key: %v", err)
@@ -374,10 +394,12 @@ func signECDSA(t *testing.T, key *ecdsa.PrivateKey, message []byte, corrupt bool
 	t.Helper()
 
 	digest := sha256.Sum256(message)
+
 	signature, err := ecdsa.SignASN1(rand.Reader, key, digest[:])
 	if err != nil {
 		t.Fatalf("sign message: %v", err)
 	}
+
 	if corrupt {
 		signature[len(signature)-1] ^= 1
 	}
@@ -395,6 +417,7 @@ func certificateDER(t *testing.T, key *ecdsa.PrivateKey) []byte {
 		NotAfter:     time.Unix(1, 0),
 		KeyUsage:     x509.KeyUsageDigitalSignature,
 	}
+
 	der, err := x509.CreateCertificate(rand.Reader, template, template, &key.PublicKey, key)
 	if err != nil {
 		t.Fatalf("create certificate: %v", err)

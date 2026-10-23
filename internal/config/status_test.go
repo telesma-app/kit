@@ -255,6 +255,7 @@ func TestBuildStatusReportUsesResolvedGetInfoFacts(t *testing.T) {
 	assertCapabilityMatchesFact(t, status.AuthenticatorConfig.AlwaysUV.State, status.AuthenticatorConfig.AlwaysUV.Supported, status.AuthenticatorConfig.AlwaysUV.Configured, assessment, appinspect.FactIDAlwaysUV)
 	assertCapabilityMatchesFact(t, status.AuthenticatorConfig.SetMinPINLength.State, status.AuthenticatorConfig.SetMinPINLength.Supported, status.AuthenticatorConfig.SetMinPINLength.Configured, assessment, appinspect.FactIDSetMinPINLength)
 	assertCapabilityMatchesFact(t, status.AuthenticatorConfig.LongTouchForReset.State, status.AuthenticatorConfig.LongTouchForReset.Supported, status.AuthenticatorConfig.LongTouchForReset.Configured, assessment, appinspect.FactIDLongTouchForReset)
+
 	if status.ResetHints.LongTouchForReset != status.AuthenticatorConfig.LongTouchForReset.State {
 		t.Fatalf("reset hint long-touch state = %s, authenticator config state = %s", status.ResetHints.LongTouchForReset, status.AuthenticatorConfig.LongTouchForReset.State)
 	}
@@ -289,7 +290,9 @@ func assertCapabilityMatchesFact(t *testing.T, state StateValue, supported bool,
 	}
 
 	wantState := StateUnknown
+
 	var wantConfigured *bool
+
 	switch fact.State {
 	case appinspect.FactStateSupported:
 		wantState = StateSupported
@@ -302,13 +305,14 @@ func assertCapabilityMatchesFact(t *testing.T, state StateValue, supported bool,
 		wantState = StateNotConfigured
 		wantConfigured = new(false)
 	}
+
 	wantSupported := wantState == StateSupported || wantState == StateConfigured || wantState == StateNotConfigured
 
-	if state != wantState || supported != wantSupported || !(configured == wantConfigured || configured != nil && wantConfigured != nil && *configured == *wantConfigured) {
+	if state != wantState || supported != wantSupported || configured != wantConfigured && (configured == nil || wantConfigured == nil || *configured != *wantConfigured) {
 		t.Fatalf("status for %q = state %s supported %t configured %#v; fact = %#v", id, state, supported, configured, fact)
 	}
 }
 
-func nilDevice() report.DeviceReport {
-	return report.DeviceReport{}
+func nilDevice() report.EndpointReport {
+	return report.EndpointReport{}
 }

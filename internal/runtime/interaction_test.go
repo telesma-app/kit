@@ -24,17 +24,23 @@ func (f contextualInteractionHandlerFunc) RequestInteraction(
 
 func TestRequestInteractionPassesPromptAndContext(t *testing.T) {
 	events := &recordingEventSink{}
+
 	var got model.InteractionRequest
+
 	ctx := context.WithValue(context.Background(), interactionContextKey{}, "operation-1")
 
-	broker := NewInteractionBroker(events, contextualInteractionHandlerFunc(func(handlerCtx context.Context, req model.InteractionRequest) (model.InteractionResponse, error) {
-		if handlerCtx.Value(interactionContextKey{}) != "operation-1" {
-			t.Fatalf("handler context did not preserve operation value")
-		}
-		got = req
+	broker := &InteractionBroker{
+		Events: events,
+		Handler: contextualInteractionHandlerFunc(func(handlerCtx context.Context, req model.InteractionRequest) (model.InteractionResponse, error) {
+			if handlerCtx.Value(interactionContextKey{}) != "operation-1" {
+				t.Fatalf("handler context did not preserve operation value")
+			}
 
-		return model.InteractionResponse{}, nil
-	}))
+			got = req
+
+			return model.InteractionResponse{}, nil
+		}),
+	}
 
 	req := model.InteractionRequest{
 		Kind:    model.InteractionKindTouch,
@@ -53,6 +59,7 @@ func TestRequestInteractionPassesPromptAndContext(t *testing.T) {
 	if len(events.events) != 1 {
 		t.Fatalf("events = %d, want 1", len(events.events))
 	}
+
 	if events.contexts[0].Value(interactionContextKey{}) != "operation-1" {
 		t.Fatal("event context did not preserve operation value")
 	}

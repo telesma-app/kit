@@ -14,16 +14,18 @@ import (
 
 func TestTokenServiceCachedPINFlowPerformsNoInteraction(t *testing.T) {
 	var requests []model.InteractionRequest
+
 	cache := &testTokenCache{}
 	handle := secret.New([]byte("cached"))
 	cache.SetToken(TokenKey{Permission: protocol.PermissionCredentialManagement}, handle)
+
 	authenticator := &recordingTokenDevice{info: uvTokenInfo()}
-	tokens := NewTokenService(
-		cache,
-		authenticator,
-		recordingInteractionHandler(&requests, model.InteractionResponse{PIN: []byte("1234")}),
-		VerificationFlowPIN,
-	)
+	tokens := &TokenService{
+		Cache:            cache,
+		Authenticator:    authenticator,
+		Interactions:     recordingInteractionHandler(&requests, model.InteractionResponse{PIN: []byte("1234")}),
+		VerificationFlow: VerificationFlowPIN,
+	}
 
 	acquireTokenForTest(t, tokens, protocol.PermissionCredentialManagement, "")
 
@@ -38,15 +40,16 @@ func TestTokenServiceCachedPINFlowPerformsNoInteraction(t *testing.T) {
 
 func TestTokenServiceUseReacquiresRejectedTokenOnce(t *testing.T) {
 	var requests []model.InteractionRequest
+
 	authenticator := &recordingTokenDevice{info: uvTokenInfo()}
-	tokens := NewTokenService(
-		&testTokenCache{},
-		authenticator,
-		recordingInteractionHandler(&requests, model.InteractionResponse{}),
-		VerificationFlowDefault,
-	)
+	tokens := &TokenService{
+		Cache:         &testTokenCache{},
+		Authenticator: authenticator,
+		Interactions:  recordingInteractionHandler(&requests, model.InteractionResponse{}),
+	}
 
 	var usedTokens [][]byte
+
 	err := tokens.Use(
 		context.Background(),
 		TokenUse{
@@ -92,15 +95,21 @@ func TestTokenServiceUseInvalidatesRejectedTokenWithoutReplayingUnsafeConsumer(t
 	cache := &testTokenCache{}
 	key := TokenKey{Permission: protocol.PermissionCredentialManagement}
 	cache.SetToken(key, secret.New([]byte("cached-token")))
+
 	authenticator := &recordingTokenDevice{info: uvTokenInfo()}
-	tokens := NewTokenService(cache, authenticator, nil, VerificationFlowDefault)
+	tokens := &TokenService{
+		Cache:         cache,
+		Authenticator: authenticator,
+	}
 	consumerErr := &ctaptransport.CTAPError{
 		Command:    protocol.AuthenticatorCredentialManagement,
 		StatusCode: ctaptransport.CTAP2_ERR_PIN_AUTH_INVALID,
 	}
 
 	var usedToken []byte
+
 	uses := 0
+
 	err := tokens.Use(
 		context.Background(),
 		TokenUse{Permission: protocol.PermissionCredentialManagement},
@@ -156,14 +165,19 @@ func TestTokenServiceUseKeepsTokenAfterOtherConsumerFailures(t *testing.T) {
 			cache := &testTokenCache{}
 			key := TokenKey{Permission: protocol.PermissionCredentialManagement}
 			cache.SetToken(key, secret.New([]byte("cached-token")))
+
 			authenticator := &recordingTokenDevice{info: uvTokenInfo()}
-			tokens := NewTokenService(cache, authenticator, nil, VerificationFlowDefault)
+			tokens := &TokenService{
+				Cache:         cache,
+				Authenticator: authenticator,
+			}
 			consumerErr := &ctaptransport.CTAPError{
 				Command:    protocol.AuthenticatorCredentialManagement,
 				StatusCode: tt.status,
 			}
 
 			uses := 0
+
 			err := tokens.Use(
 				context.Background(),
 				TokenUse{Permission: protocol.PermissionCredentialManagement},

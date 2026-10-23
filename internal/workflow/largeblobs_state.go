@@ -6,6 +6,7 @@ import (
 
 	"github.com/telesma-app/ctap/extension"
 	"github.com/telesma-app/ctap/protocol"
+	"github.com/telesma-app/kit/internal/authenticator"
 	"github.com/telesma-app/kit/internal/errornorm"
 	"github.com/telesma-app/kit/internal/secret"
 	appcredentials "github.com/telesma-app/kit/model/credentials"
@@ -41,7 +42,7 @@ type largeBlobInventory struct {
 
 func (r Runner) loadLargeBlobInventory(
 	ctx context.Context,
-	device LargeBlobDevice,
+	device authenticator.LargeBlobDevice,
 	state *LargeBlobState,
 	requiredPermission protocol.Permission,
 ) (*largeBlobInventory, error) {
@@ -55,7 +56,7 @@ func (r Runner) loadLargeBlobInventory(
 
 func (r Runner) loadLargeBlobCredentialInventory(
 	ctx context.Context,
-	device LargeBlobDevice,
+	device authenticator.LargeBlobDevice,
 	state *LargeBlobState,
 	requiredPermission protocol.Permission,
 ) (*largeBlobInventory, error) {
@@ -63,8 +64,8 @@ func (r Runner) loadLargeBlobCredentialInventory(
 		return nil, errornorm.Annotate(err, errornorm.WithPhase(failure.PhaseDiscovery))
 	}
 
-	if inventory, ok := state.currentInventory(); ok {
-		return inventory, nil
+	if state.current != nil {
+		return state.current, nil
 	}
 
 	return r.refreshLargeBlobCredentialInventory(ctx, device, state, requiredPermission)
@@ -72,7 +73,7 @@ func (r Runner) loadLargeBlobCredentialInventory(
 
 func (r Runner) refreshLargeBlobInventory(
 	ctx context.Context,
-	device LargeBlobDevice,
+	device authenticator.LargeBlobDevice,
 	state *LargeBlobState,
 	requiredPermission protocol.Permission,
 ) (*largeBlobInventory, error) {
@@ -86,7 +87,7 @@ func (r Runner) refreshLargeBlobInventory(
 
 func (r Runner) refreshLargeBlobCredentialInventory(
 	ctx context.Context,
-	device LargeBlobDevice,
+	device authenticator.LargeBlobDevice,
 	state *LargeBlobState,
 	requiredPermission protocol.Permission,
 ) (*largeBlobInventory, error) {
@@ -96,6 +97,7 @@ func (r Runner) refreshLargeBlobCredentialInventory(
 	}
 
 	keys := make(largeBlobKeyStore)
+
 	credentials, err := r.credentialInventory(ctx, device, access, keys)
 	if err != nil {
 		return nil, err
@@ -133,17 +135,10 @@ func (r Runner) loadLargeBlobArrayIntoInventory(
 			return nil, err
 		}
 	}
+
 	inventory.blobsRead = true
 
 	return inventory, nil
-}
-
-func (state *LargeBlobState) currentInventory() (*largeBlobInventory, bool) {
-	if state.current == nil {
-		return nil, false
-	}
-
-	return state.current, true
 }
 
 func (state *LargeBlobState) replaceInventory(inventory *largeBlobInventory) {

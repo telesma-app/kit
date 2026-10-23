@@ -11,10 +11,5 @@ func DecodeLargeBlob(
 	raw []byte,
 	mode largeblobs.DecodeMode,
 ) (largeblobs.DecodeResult, error) {
-	result, err := rtlargeblobs.Decode(raw, mode)
-	if err != nil {
-		return largeblobs.DecodeResult{}, err
-	}
-
-	return result, nil
+	return rtlargeblobs.Decode(raw, mode)
 }

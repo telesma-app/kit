@@ -10,8 +10,8 @@ import (
 )
 
 type InteractionBroker struct {
-	events  EventSink
-	handler InteractionHandler
+	Events  EventSink
+	Handler InteractionHandler
 }
 
 type InteractionHandler interface {
@@ -20,30 +20,23 @@ type InteractionHandler interface {
 	RequestInteraction(context.Context, model.InteractionRequest) (model.InteractionResponse, error)
 }
 
-func NewInteractionBroker(events EventSink, handler InteractionHandler) *InteractionBroker {
-	return &InteractionBroker{
-		events:  events,
-		handler: handler,
-	}
-}
-
 func (b *InteractionBroker) RequestInteraction(
 	ctx context.Context,
 	req model.InteractionRequest,
 ) (model.InteractionResponse, error) {
-	b.events.Emit(ctx, model.OperationEvent{
+	b.Events.Emit(ctx, model.OperationEvent{
 		Stage:   model.OperationStageInteractionRequired,
 		Kind:    req.Kind,
 		Message: req.Message,
 	})
 
-	if b.handler == nil {
+	if b.Handler == nil {
 		return model.InteractionResponse{}, failure.New(failure.CodeInteractionHandlerRequired,
 			failure.WithPhase(failure.PhaseInteraction),
 		)
 	}
 
-	response, err := b.handler.RequestInteraction(ctx, req)
+	response, err := b.Handler.RequestInteraction(ctx, req)
 	if err != nil {
 		if ctxErr := ctx.Err(); ctxErr != nil {
 			err = ctxErr

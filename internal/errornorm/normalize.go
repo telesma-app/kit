@@ -3,10 +3,12 @@ package errornorm
 import (
 	"context"
 	"errors"
+	"strconv"
 
 	"github.com/telesma-app/ctap/protocol"
 	ctaptransport "github.com/telesma-app/ctap/transport"
 	"github.com/telesma-app/kit/model/failure"
+	"github.com/telesma-app/mds"
 )
 
 // Normalize converts every non-nil error into a stable failure.Error. The
@@ -15,15 +17,36 @@ import (
 func Normalize(err error, operation string) *failure.Error {
 	annotation := errorAnnotation(err)
 	if existing, ok := errors.AsType[*failure.Error](err); ok {
-		if operation != "" {
-			existing.Operation = operation
+		if operation == "" {
+			operation = existing.Operation
 		}
 
-		if existing.Phase == "" {
-			existing.Phase = annotation.phase
+		phase := existing.Phase
+		if phase == "" {
+			phase = annotation.phase
 		}
 
-		return existing
+		detail := existing.CTAP
+		if detail != nil {
+			// Error construction canonicalizes CTAP detail in place.
+			detail = new(*detail)
+		}
+
+		return failure.Wrap(existing.Code, err,
+			failure.WithOperation(operation),
+			failure.WithPhase(phase),
+			failure.WithParams(existing.Params),
+			failure.WithCTAP(detail),
+		)
+	}
+
+	if code, ok := metadataCode(err); ok {
+		opts := failureOptions(operation, annotation.phase, nil)
+		if status, ok := errors.AsType[*mds.HTTPStatusError](err); ok {
+			opts = append(opts, failure.WithParams(map[string]string{"httpStatus": strconv.Itoa(status.StatusCode)}))
+		}
+
+		return failure.Wrap(code, err, opts...)
 	}
 
 	if errors.Is(err, context.Canceled) {

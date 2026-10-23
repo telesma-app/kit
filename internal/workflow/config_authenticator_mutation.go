@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/telesma-app/ctap/protocol"
+	"github.com/telesma-app/kit/internal/authenticator"
 	rtconfig "github.com/telesma-app/kit/internal/config"
 	"github.com/telesma-app/kit/internal/errornorm"
 	rtruntime "github.com/telesma-app/kit/internal/runtime"
@@ -14,7 +15,7 @@ import (
 
 func (r Runner) SetAlwaysUV(
 	ctx context.Context,
-	device ConfigDevice,
+	device authenticator.ConfigDevice,
 	req appconfig.SetAlwaysUVOperation,
 ) (appconfig.AuthenticatorConfigOutput, error) {
 	requested, err := rtconfig.ParseAlwaysUVTarget(req.Target)
@@ -33,7 +34,7 @@ func (r Runner) SetAlwaysUV(
 	}
 
 	preview, err := rtconfig.BuildAlwaysUVPreview(
-		rtconfig.BuildStatusReport(r.env.Selected, info),
+		rtconfig.BuildStatusReport(r.Selected, info),
 		req.Target,
 		requested,
 		mode,
@@ -46,7 +47,7 @@ func (r Runner) SetAlwaysUV(
 		return appconfig.AuthenticatorConfigOutput{Preview: preview}, nil
 	}
 
-	err = r.env.Tokens.Use(ctx, rtruntime.TokenUse{
+	err = r.Tokens.Use(ctx, rtruntime.TokenUse{
 		Permission:      protocol.PermissionAuthenticatorConfiguration,
 		TryWithoutToken: true,
 	}, func(token []byte) error {
@@ -58,10 +59,11 @@ func (r Runner) SetAlwaysUV(
 			protocol.ConfigSubCommandToggleAlwaysUv,
 		))
 	}
+
 	return appconfig.AuthenticatorConfigOutput{
 		Preview: preview,
 		Result: rtconfig.AlwaysUVResult(
-			r.env.Selected.Attachment.ID,
+			r.Selected.Attachment.ID,
 			req.Target,
 			requested,
 		),
@@ -70,20 +72,21 @@ func (r Runner) SetAlwaysUV(
 
 func (r Runner) SetMinPINLength(
 	ctx context.Context,
-	device ConfigDevice,
+	device authenticator.ConfigDevice,
 	req appconfig.SetMinPINLengthOperation,
 ) (appconfig.AuthenticatorConfigOutput, error) {
 	info, err := r.getAuthenticatorInfo(ctx, device)
 	if err != nil {
 		return appconfig.AuthenticatorConfigOutput{}, err
 	}
+
 	mode := safety.PreviewModeDryRun
 	if !req.DryRun {
 		mode = safety.PreviewModeExecute
 	}
 
 	preview, err := rtconfig.BuildMinPINLengthPreview(
-		rtconfig.BuildStatusReport(r.env.Selected, info),
+		rtconfig.BuildStatusReport(r.Selected, info),
 		req,
 		mode,
 	)
@@ -95,7 +98,7 @@ func (r Runner) SetMinPINLength(
 		return appconfig.AuthenticatorConfigOutput{Preview: preview}, nil
 	}
 
-	err = r.env.Tokens.Use(ctx, rtruntime.TokenUse{
+	err = r.Tokens.Use(ctx, rtruntime.TokenUse{
 		Permission:      protocol.PermissionAuthenticatorConfiguration,
 		TryWithoutToken: true,
 	}, func(token []byte) error {
@@ -112,11 +115,12 @@ func (r Runner) SetMinPINLength(
 			protocol.ConfigSubCommandSetMinPINLength,
 		))
 	}
+
 	return appconfig.AuthenticatorConfigOutput{
 		Preview: preview,
 		Result: &appconfig.AuthenticatorConfigResult{
 			Operation:           appconfig.AuthenticatorConfigMinPINLength,
-			AttachmentID:        r.env.Selected.Attachment.ID,
+			AttachmentID:        r.Selected.Attachment.ID,
 			NewMinPINLength:     req.NewMinPINLength,
 			MinPINLengthRPIDs:   req.MinPINLengthRPIDs,
 			ForceChangePIN:      req.ForceChangePIN,

@@ -35,6 +35,7 @@ func TestPINInteractionRejectsEmptyPINAtSessionRun(t *testing.T) {
 	a := &pinOnlyLargeBlobWriteEventAuthenticator{
 		largeBlobWriteEventAuthenticator: largeBlobWriteEventAuthenticator{},
 	}
+
 	session := openContractAuthenticator(t, events, a)
 	defer func() { _ = session.Close() }()
 
@@ -58,6 +59,7 @@ func TestPINInteractionWithoutHandlerReturnsInvalidState(t *testing.T) {
 	a := &pinOnlyLargeBlobWriteEventAuthenticator{
 		largeBlobWriteEventAuthenticator: largeBlobWriteEventAuthenticator{},
 	}
+
 	session := openContractAuthenticator(t, events, a)
 	defer func() { _ = session.Close() }()
 
@@ -80,6 +82,7 @@ func TestLastInteractionHandlerOptionWins(t *testing.T) {
 	a := &pinOnlyLargeBlobWriteEventAuthenticator{
 		largeBlobWriteEventAuthenticator: largeBlobWriteEventAuthenticator{},
 	}
+
 	session := openContractAuthenticator(t, nil, a)
 	defer func() { _ = session.Close() }()
 
@@ -117,6 +120,7 @@ func TestCanceledContextDuringInteractionReturnsCanceledFailure(t *testing.T) {
 	a := &pinOnlyLargeBlobWriteEventAuthenticator{
 		largeBlobWriteEventAuthenticator: largeBlobWriteEventAuthenticator{},
 	}
+
 	session := openContractAuthenticator(t, events, a)
 	defer func() { _ = session.Close() }()
 
@@ -140,6 +144,7 @@ func TestCanceledContextDuringInteractionReturnsCanceledFailure(t *testing.T) {
 
 func TestSetPINExecutesWithoutConfirmationInteraction(t *testing.T) {
 	a := &pinMutationCountingAuthenticator{}
+
 	session := openContractAuthenticator(t, nil, a)
 	defer func() { _ = session.Close() }()
 
@@ -158,6 +163,7 @@ func TestSetPINExecutesWithoutConfirmationInteraction(t *testing.T) {
 func TestResetTouchInteractionCanceledReturnsCanceledFailure(t *testing.T) {
 	events := &recordingEventSink{}
 	a := &resetCountingAuthenticator{}
+
 	session := openContractAuthenticator(t, events, a)
 	defer func() { _ = session.Close() }()
 
@@ -183,7 +189,6 @@ func TestResetTouchInteractionCanceledReturnsCanceledFailure(t *testing.T) {
 	if got := a.resetCount.Load(); got != 0 {
 		t.Fatalf("Reset count = %d, want 0", got)
 	}
-
 }
 
 func TestPINInteractionHandlerReceivesRequestAndValidPINContinues(t *testing.T) {
@@ -191,6 +196,7 @@ func TestPINInteractionHandlerReceivesRequestAndValidPINContinues(t *testing.T) 
 	a := &pinOnlyLargeBlobWriteEventAuthenticator{
 		largeBlobWriteEventAuthenticator: largeBlobWriteEventAuthenticator{},
 	}
+
 	session := openContractAuthenticator(t, events, a)
 	defer func() { _ = session.Close() }()
 

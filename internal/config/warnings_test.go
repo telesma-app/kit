@@ -19,15 +19,18 @@ func TestPINWarningsDescribeCTAPEffects(t *testing.T) {
 	if got := preview.Warnings[1].Message; !strings.Contains(got, "does not validate either PIN value") {
 		t.Fatalf("dry-run warning = %q", got)
 	}
+
 	if got := preview.Warnings[0].Message; !strings.Contains(got, "removal requires authenticator reset") {
 		t.Fatalf("set PIN warning = %q", got)
 	}
 
 	status.PIN.Configured = new(true)
+
 	preview, err = BuildPINPreview(status, PINMutationChange, safety.PreviewModeExecute)
 	if err != nil {
 		t.Fatalf("BuildPINPreview(change): %v", err)
 	}
+
 	if got := preview.Warnings[0].Message; !strings.Contains(got, "incorrect current PIN consumes a retry") {
 		t.Fatalf("change PIN warning = %q", got)
 	}
@@ -63,6 +66,7 @@ func TestAuthenticatorConfigWarningsDescribeFieldSpecificEffects(t *testing.T) {
 	if len(preview.Warnings) != len(wantCodes) {
 		t.Fatalf("warnings = %#v, want %d", preview.Warnings, len(wantCodes))
 	}
+
 	for index, want := range wantCodes {
 		if got := preview.Warnings[index].Code; got != want {
 			t.Fatalf("warning[%d].Code = %q, want %q", index, got, want)
@@ -85,19 +89,23 @@ func TestAlwaysUVWarningCodesDistinguishTargetState(t *testing.T) {
 	if err != nil {
 		t.Fatalf("BuildAlwaysUVPreview(enable): %v", err)
 	}
+
 	if got := enable.Warnings[0].Code; got != warningAlwaysUVEnable {
 		t.Fatalf("enable warning code = %q, want %q", got, warningAlwaysUVEnable)
 	}
 
 	configured = true
 	status.AuthenticatorConfig.AlwaysUV.State = StateConfigured
+
 	disable, err := BuildAlwaysUVPreview(status, AlwaysUVTargetDisable, false, safety.PreviewModeDryRun)
 	if err != nil {
 		t.Fatalf("BuildAlwaysUVPreview(disable): %v", err)
 	}
+
 	if got := disable.Warnings[0].Code; got != warningAlwaysUVDisable {
 		t.Fatalf("disable warning code = %q, want %q", got, warningAlwaysUVDisable)
 	}
+
 	if enable.Warnings[0].Code == disable.Warnings[0].Code {
 		t.Fatalf("enable and disable warnings share localization code %q", enable.Warnings[0].Code)
 	}
@@ -118,12 +126,14 @@ func TestEnterpriseAttestationPreviewIsOneWayAndWarns(t *testing.T) {
 	if err != nil {
 		t.Fatalf("BuildEnableEnterpriseAttestationPreview: %v", err)
 	}
+
 	if preview.Operation != AuthenticatorConfigEnterprise ||
 		!preview.RequestedEnterpriseAttestation ||
 		preview.CurrentEnterpriseAttestation == nil ||
 		*preview.CurrentEnterpriseAttestation {
 		t.Fatalf("preview = %#v", preview)
 	}
+
 	if got := preview.Warnings[0]; got.Code != warningEnterpriseAttestation ||
 		!strings.Contains(got.Message, "no command to disable") {
 		t.Fatalf("warning = %#v", got)
@@ -141,10 +151,12 @@ func TestResetAndLongTouchWarningsStateNormativeTiming(t *testing.T) {
 		Supported:         true,
 		LongTouchForReset: CapabilityState{Supported: true, Configured: new(false)},
 	}}
+
 	preview, err := BuildEnableLongTouchForResetPreview(status, safety.PreviewModeDryRun)
 	if err != nil {
 		t.Fatalf("BuildEnableLongTouchForResetPreview: %v", err)
 	}
+
 	if got := preview.Warnings[0].Message; !strings.Contains(got, "at least five seconds") {
 		t.Fatalf("long-touch warning = %q", got)
 	}

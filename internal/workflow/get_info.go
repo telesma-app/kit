@@ -20,5 +20,6 @@ func (r Runner) getAuthenticatorInfo(
 			errornorm.WithCommand(failure.PhaseAuthenticatorCommand, protocol.AuthenticatorGetInfo),
 		)
 	}
+
 	return info, nil
 }

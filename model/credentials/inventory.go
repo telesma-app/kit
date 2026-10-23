@@ -4,10 +4,10 @@ import "github.com/telesma-app/kit/model/report"
 
 // InventoryReport is the project-owned resident credential DTO shared by every output mode.
 type InventoryReport struct {
-	Device  report.DeviceReport `json:"device"`
-	Support SupportReport       `json:"support"`
-	Summary InventorySummary    `json:"summary"`
-	Groups  []CredentialGroup   `json:"groups,omitempty"`
+	Device  report.EndpointReport `json:"device"`
+	Support SupportReport         `json:"support"`
+	Summary InventorySummary      `json:"summary"`
+	Groups  []CredentialGroup     `json:"groups,omitempty"`
 }
 
 type SupportReport struct {

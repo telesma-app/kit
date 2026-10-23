@@ -139,6 +139,7 @@ func TestFailureJSONWireShape(t *testing.T) {
 	if marshalErr != nil {
 		t.Fatalf("Marshal: %v", marshalErr)
 	}
+
 	want := `{"code":"PIN_INVALID","category":"invalid-state","operation":"webauthn.getAssertion","phase":"token-acquisition","ctap":{"command":"authenticatorClientPIN","commandCode":6,"subCommandFamily":"clientPIN","subCommand":"getPinUvAuthTokenUsingPinWithPermissions","subCommandCode":9,"status":"CTAP2_ERR_PIN_INVALID","statusCode":49}}`
 	if string(raw) != want {
 		t.Fatalf("Marshal = %s, want %s", raw, want)

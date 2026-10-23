@@ -24,6 +24,7 @@ func TestJournalReportsRetentionGap(t *testing.T) {
 
 	batch := journal.Read(0)
 	assertJournalBatch(t, batch, 3, true, "second", "third")
+
 	if batch.Entries[0].Sequence != 2 {
 		t.Fatalf("first retained sequence = %d, want 2", batch.Entries[0].Sequence)
 	}
@@ -71,12 +72,15 @@ func assertJournalBatch(
 	if batch.Cursor != cursor {
 		t.Fatalf("cursor = %d, want %d", batch.Cursor, cursor)
 	}
+
 	if batch.Truncated != truncated {
 		t.Fatalf("truncated = %t, want %t", batch.Truncated, truncated)
 	}
+
 	if len(batch.Entries) != len(commands) {
 		t.Fatalf("entry count = %d, want %d: %#v", len(batch.Entries), len(commands), batch)
 	}
+
 	for i, command := range commands {
 		if batch.Entries[i].Entry.Command != command {
 			t.Fatalf("entry %d command = %q, want %q", i, batch.Entries[i].Entry.Command, command)

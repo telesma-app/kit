@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/telesma-app/ctap/protocol"
+	"github.com/telesma-app/kit/internal/authenticator"
 	rtconfig "github.com/telesma-app/kit/internal/config"
 	"github.com/telesma-app/kit/internal/errornorm"
 	appconfig "github.com/telesma-app/kit/model/config"
@@ -13,7 +14,7 @@ import (
 
 func (r Runner) SetPIN(
 	ctx context.Context,
-	device ConfigDevice,
+	device authenticator.ConfigDevice,
 	req appconfig.SetPINOperation,
 ) (appconfig.PINOutput, error) {
 	info, err := r.getAuthenticatorInfo(ctx, device)
@@ -27,7 +28,7 @@ func (r Runner) SetPIN(
 	}
 
 	preview, err := rtconfig.BuildPINPreview(
-		rtconfig.BuildStatusReport(r.env.Selected, info),
+		rtconfig.BuildStatusReport(r.Selected, info),
 		appconfig.PINMutationSet,
 		mode,
 	)
@@ -40,7 +41,8 @@ func (r Runner) SetPIN(
 	}
 
 	err = device.SetPIN(ctx, req.NewPIN)
-	r.env.Tokens.Invalidate()
+
+	r.Tokens.Invalidate()
 
 	if err != nil {
 		return appconfig.PINOutput{}, errornorm.Annotate(err, errornorm.WithClientPINSubCommand(
@@ -48,11 +50,12 @@ func (r Runner) SetPIN(
 			protocol.ClientPINSubCommandSetPIN,
 		))
 	}
+
 	return appconfig.PINOutput{
 		Preview: preview,
 		Result: &appconfig.PINMutationResult{
 			Operation:    appconfig.PINMutationSet,
-			AttachmentID: r.env.Selected.Attachment.ID,
+			AttachmentID: r.Selected.Attachment.ID,
 			PINState:     appconfig.StateConfigured,
 		},
 	}, nil
@@ -60,7 +63,7 @@ func (r Runner) SetPIN(
 
 func (r Runner) ChangePIN(
 	ctx context.Context,
-	device ConfigDevice,
+	device authenticator.ConfigDevice,
 	req appconfig.ChangePINOperation,
 ) (appconfig.PINOutput, error) {
 	info, err := r.getAuthenticatorInfo(ctx, device)
@@ -74,7 +77,7 @@ func (r Runner) ChangePIN(
 	}
 
 	preview, err := rtconfig.BuildPINPreview(
-		rtconfig.BuildStatusReport(r.env.Selected, info),
+		rtconfig.BuildStatusReport(r.Selected, info),
 		appconfig.PINMutationChange,
 		mode,
 	)
@@ -87,7 +90,8 @@ func (r Runner) ChangePIN(
 	}
 
 	err = device.ChangePIN(ctx, req.CurrentPIN, req.NewPIN)
-	r.env.Tokens.Invalidate()
+
+	r.Tokens.Invalidate()
 
 	if err != nil {
 		return appconfig.PINOutput{}, errornorm.Annotate(err, errornorm.WithClientPINSubCommand(
@@ -95,11 +99,12 @@ func (r Runner) ChangePIN(
 			protocol.ClientPINSubCommandChangePIN,
 		))
 	}
+
 	return appconfig.PINOutput{
 		Preview: preview,
 		Result: &appconfig.PINMutationResult{
 			Operation:    appconfig.PINMutationChange,
-			AttachmentID: r.env.Selected.Attachment.ID,
+			AttachmentID: r.Selected.Attachment.ID,
 			PINState:     appconfig.StateConfigured,
 		},
 	}, nil

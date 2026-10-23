@@ -4,7 +4,8 @@ package operation
 type Kind string
 
 const (
-	Inspect                     Kind = "inspect"
+	ReadSources                 Kind = "sources.read"
+	GetInfo                     Kind = "getInfo"
 	ListCredentials             Kind = "credentials.list"
 	CredentialStoreState        Kind = "credentials.storeState"
 	DeleteCredential            Kind = "credentials.delete"
@@ -35,7 +36,7 @@ const (
 func Parse(value string) (Kind, bool) {
 	kind := Kind(value)
 	switch kind {
-	case Inspect,
+	case GetInfo, ReadSources,
 		ListCredentials,
 		CredentialStoreState,
 		DeleteCredential,

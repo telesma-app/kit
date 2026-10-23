@@ -10,7 +10,7 @@ import (
 
 func (a *Authenticator) ConfigStatus(ctx context.Context, opts ...OperationOption) (config.StatusReport, error) {
 	return executeOperation(a, ctx, appoperation.ConfigStatus, func(runner workflow.Runner, ctx context.Context) (config.StatusReport, error) {
-		return runner.ConfigStatus(ctx, a.configStatus)
+		return runner.ConfigStatus(ctx, a.opened.ConfigStatus)
 	}, opts...)
 }
 
@@ -24,7 +24,7 @@ func (a *Authenticator) SetPIN(
 	}
 
 	return executeOperation(a, ctx, appoperation.SetPIN, func(runner workflow.Runner, ctx context.Context) (config.PINOutput, error) {
-		return runner.SetPIN(ctx, a.config, operation)
+		return runner.SetPIN(ctx, a.opened.Config, operation)
 	}, opts...)
 }
 
@@ -42,7 +42,7 @@ func (a *Authenticator) ChangePIN(
 	}
 
 	return executeOperation(a, ctx, appoperation.ChangePIN, func(runner workflow.Runner, ctx context.Context) (config.PINOutput, error) {
-		return runner.ChangePIN(ctx, a.config, operation)
+		return runner.ChangePIN(ctx, a.opened.Config, operation)
 	}, opts...)
 }
 
@@ -52,7 +52,7 @@ func (a *Authenticator) SetAlwaysUV(
 	opts ...OperationOption,
 ) (config.AuthenticatorConfigOutput, error) {
 	return executeOperation(a, ctx, appoperation.SetAlwaysUV, func(runner workflow.Runner, ctx context.Context) (config.AuthenticatorConfigOutput, error) {
-		return runner.SetAlwaysUV(ctx, a.config, operation)
+		return runner.SetAlwaysUV(ctx, a.opened.Config, operation)
 	}, opts...)
 }
 
@@ -62,7 +62,7 @@ func (a *Authenticator) EnableEnterpriseAttestation(
 	opts ...OperationOption,
 ) (config.AuthenticatorConfigOutput, error) {
 	return executeOperation(a, ctx, appoperation.EnableEnterpriseAttestation, func(runner workflow.Runner, ctx context.Context) (config.AuthenticatorConfigOutput, error) {
-		return runner.EnableEnterpriseAttestation(ctx, a.config, operation)
+		return runner.EnableEnterpriseAttestation(ctx, a.opened.Config, operation)
 	}, opts...)
 }
 
@@ -72,7 +72,7 @@ func (a *Authenticator) SetMinPINLength(
 	opts ...OperationOption,
 ) (config.AuthenticatorConfigOutput, error) {
 	return executeOperation(a, ctx, appoperation.SetMinPINLength, func(runner workflow.Runner, ctx context.Context) (config.AuthenticatorConfigOutput, error) {
-		return runner.SetMinPINLength(ctx, a.config, operation)
+		return runner.SetMinPINLength(ctx, a.opened.Config, operation)
 	}, opts...)
 }
 
@@ -82,19 +82,19 @@ func (a *Authenticator) EnableLongTouchForReset(
 	opts ...OperationOption,
 ) (config.AuthenticatorConfigOutput, error) {
 	return executeOperation(a, ctx, appoperation.EnableLongTouchForReset, func(runner workflow.Runner, ctx context.Context) (config.AuthenticatorConfigOutput, error) {
-		return runner.EnableLongTouchForReset(ctx, a.config, operation)
+		return runner.EnableLongTouchForReset(ctx, a.opened.Config, operation)
 	}, opts...)
 }
 
 func (a *Authenticator) BioSensorInfo(ctx context.Context, opts ...OperationOption) (config.BioSensorReport, error) {
 	return executeOperation(a, ctx, appoperation.BioSensorInfo, func(runner workflow.Runner, ctx context.Context) (config.BioSensorReport, error) {
-		return runner.BioSensorInfo(ctx, a.bio)
+		return runner.BioSensorInfo(ctx, a.opened.Bio)
 	}, opts...)
 }
 
 func (a *Authenticator) BioList(ctx context.Context, opts ...OperationOption) (config.BioListReport, error) {
 	return executeOperation(a, ctx, appoperation.BioList, func(runner workflow.Runner, ctx context.Context) (config.BioListReport, error) {
-		return runner.BioList(ctx, a.bio)
+		return runner.BioList(ctx, a.opened.Bio)
 	}, opts...)
 }
 
@@ -104,7 +104,7 @@ func (a *Authenticator) BioEnroll(
 	opts ...OperationOption,
 ) (config.BioEnrollOutput, error) {
 	return executeOperation(a, ctx, appoperation.BioEnroll, func(runner workflow.Runner, ctx context.Context) (config.BioEnrollOutput, error) {
-		return runner.BioEnroll(ctx, a.bio, operation)
+		return runner.BioEnroll(ctx, a.opened.Bio, operation)
 	}, opts...)
 }
 
@@ -114,7 +114,7 @@ func (a *Authenticator) BioRename(
 	opts ...OperationOption,
 ) (config.BioMutationOutput, error) {
 	return executeOperation(a, ctx, appoperation.BioRename, func(runner workflow.Runner, ctx context.Context) (config.BioMutationOutput, error) {
-		return runner.BioRename(ctx, a.bio, operation)
+		return runner.BioRename(ctx, a.opened.Bio, operation)
 	}, opts...)
 }
 
@@ -124,7 +124,7 @@ func (a *Authenticator) BioRemove(
 	opts ...OperationOption,
 ) (config.BioMutationOutput, error) {
 	return executeOperation(a, ctx, appoperation.BioRemove, func(runner workflow.Runner, ctx context.Context) (config.BioMutationOutput, error) {
-		return runner.BioRemove(ctx, a.bio, operation)
+		return runner.BioRemove(ctx, a.opened.Bio, operation)
 	}, opts...)
 }
 
@@ -134,6 +134,6 @@ func (a *Authenticator) ResetFactory(
 	opts ...OperationOption,
 ) (config.ResetFactoryOutput, error) {
 	return executeOperation(a, ctx, appoperation.ResetFactory, func(runner workflow.Runner, ctx context.Context) (config.ResetFactoryOutput, error) {
-		return runner.ResetFactory(ctx, a.config, operation)
+		return runner.ResetFactory(ctx, a.opened.Config, operation)
 	}, opts...)
 }

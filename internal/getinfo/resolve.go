@@ -140,6 +140,7 @@ func invertedOptionFact(options map[protocol.Option]bool, id model.FactID, sourc
 	}
 
 	value := !raw
+
 	return boolFact(id, source, stateFor(value, trueState, falseState), model.FactOriginDerived, value)
 }
 
@@ -150,6 +151,7 @@ func versionFact(versions protocol.Versions, version protocol.Version, id model.
 	}
 
 	supported := slices.Contains(versions, version)
+
 	return boolFact(id, source, stateFor(supported, model.FactStateSupported, model.FactStateUnsupported), model.FactOriginDerived, supported)
 }
 
@@ -160,6 +162,7 @@ func extensionFact[T ~string](extensions []T, extension string, id model.FactID)
 	}
 
 	supported := false
+
 	for _, value := range extensions {
 		if string(value) == extension {
 			supported = true
@@ -173,7 +176,13 @@ func extensionFact[T ~string](extensions []T, extension string, id model.FactID)
 func longTouchFact(info protocol.AuthenticatorGetInfoResponse) model.Fact {
 	const source = "longTouchForReset"
 	if info.LongTouchForReset == nil {
-		return newFact(model.FactIDLongTouchForReset, source, model.FactStateUnsupported, model.FactOriginAbsent, model.FactValue{Kind: model.FactValueBoolean})
+		return model.Fact{
+			ID:     model.FactIDLongTouchForReset,
+			Source: source,
+			State:  model.FactStateUnsupported,
+			Origin: model.FactOriginAbsent,
+			Value:  model.FactValue{Kind: model.FactValueBoolean},
+		}
 	}
 
 	if !slices.Contains(info.AuthenticatorConfigCommands, protocol.ConfigSubCommandEnableLongTouchForReset) {
@@ -186,6 +195,7 @@ func longTouchFact(info protocol.AuthenticatorGetInfoResponse) model.Fact {
 func forcePINChangeFact(force bool) model.Fact {
 	state := model.FactStateNotRequired
 	origin := model.FactOriginSpecDefault
+
 	if force {
 		state = model.FactStateWarning
 		origin = model.FactOriginReported
@@ -211,6 +221,7 @@ func certificationsFact(certifications map[string]uint64) model.Fact {
 	for key := range certifications {
 		keys = append(keys, key)
 	}
+
 	sort.Strings(keys)
 
 	values := make([]string, 0, len(keys))
@@ -227,36 +238,52 @@ func certificationsFact(certifications map[string]uint64) model.Fact {
 }
 
 func unknownFact(id model.FactID, source string, kind model.FactValueKind) model.Fact {
-	return newFact(id, source, model.FactStateUnknown, model.FactOriginAbsent, model.FactValue{Kind: kind})
+	return model.Fact{
+		ID:     id,
+		Source: model.FactSource(source),
+		State:  model.FactStateUnknown,
+		Origin: model.FactOriginAbsent,
+		Value:  model.FactValue{Kind: kind},
+	}
 }
 
 func boolFact(id model.FactID, source string, state model.FactState, origin model.FactOrigin, value bool) model.Fact {
-	return newFact(id, source, state, origin, model.FactValue{Kind: model.FactValueBoolean, Boolean: new(value)})
-}
-
-func integerFact(id model.FactID, source string, state model.FactState, origin model.FactOrigin, value uint64, unit model.FactUnit) model.Fact {
-	return newFact(id, source, state, origin, model.FactValue{Kind: model.FactValueInteger, Integer: new(value), Unit: unit})
-}
-
-func textFact(id model.FactID, source string, state model.FactState, origin model.FactOrigin, value string) model.Fact {
-	return newFact(id, source, state, origin, model.FactValue{Kind: model.FactValueText, Text: new(value)})
-}
-
-func listFact(id model.FactID, source string, state model.FactState, origin model.FactOrigin, value []string) model.Fact {
-	if value == nil {
-		value = []string{}
-	}
-
-	return newFact(id, source, state, origin, model.FactValue{Kind: model.FactValueList, List: &value})
-}
-
-func newFact(id model.FactID, source string, state model.FactState, origin model.FactOrigin, value model.FactValue) model.Fact {
 	return model.Fact{
 		ID:     id,
 		Source: model.FactSource(source),
 		State:  state,
 		Origin: origin,
-		Value:  value,
+		Value:  model.FactValue{Kind: model.FactValueBoolean, Boolean: new(value)},
+	}
+}
+
+func integerFact(id model.FactID, source string, state model.FactState, origin model.FactOrigin, value uint64, unit model.FactUnit) model.Fact {
+	return model.Fact{
+		ID:     id,
+		Source: model.FactSource(source),
+		State:  state,
+		Origin: origin,
+		Value:  model.FactValue{Kind: model.FactValueInteger, Integer: new(value), Unit: unit},
+	}
+}
+
+func textFact(id model.FactID, source string, state model.FactState, origin model.FactOrigin, value string) model.Fact {
+	return model.Fact{
+		ID:     id,
+		Source: model.FactSource(source),
+		State:  state,
+		Origin: origin,
+		Value:  model.FactValue{Kind: model.FactValueText, Text: new(value)},
+	}
+}
+
+func listFact(id model.FactID, source string, state model.FactState, origin model.FactOrigin, value []string) model.Fact {
+	return model.Fact{
+		ID:     id,
+		Source: model.FactSource(source),
+		State:  state,
+		Origin: origin,
+		Value:  model.FactValue{Kind: model.FactValueList, List: &value},
 	}
 }
 
@@ -264,6 +291,7 @@ func stateFor(value bool, trueState, falseState model.FactState) model.FactState
 	if value {
 		return trueState
 	}
+
 	return falseState
 }
 

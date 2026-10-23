@@ -25,6 +25,7 @@ import (
 
 func TestMakeCredentialDryRunDoesNotConfirmAcquireTokenOrMutate(t *testing.T) {
 	a := &webauthnTestAuthenticator{}
+
 	session := openContractAuthenticator(t, nil, a)
 	defer func() { _ = session.Close() }()
 
@@ -56,11 +57,13 @@ func TestMakeCredentialDryRunDoesNotConfirmAcquireTokenOrMutate(t *testing.T) {
 
 func TestGetAssertionDryRunDoesNotAcquireTokenOrCallAuthenticator(t *testing.T) {
 	a := &webauthnTestAuthenticator{alwaysUV: true}
+
 	session := openContractAuthenticator(t, nil, a)
 	defer func() { _ = session.Close() }()
 
 	op := sampleGetAssertionOperation()
 	op.DryRun = true
+
 	result, err := session.GetAssertion(context.Background(), op, session.operationOptions()...)
 	if err != nil {
 		t.Fatalf("GetAssertion: %v", err)
@@ -85,6 +88,7 @@ func TestGetAssertionDryRunDoesNotAcquireTokenOrCallAuthenticator(t *testing.T) 
 
 func TestGetAssertionLargeBlobWriteExecutesWithoutRuntimeConfirmation(t *testing.T) {
 	a := &webauthnTestAuthenticator{}
+
 	session := openContractAuthenticator(t, nil, a)
 	defer func() { _ = session.Close() }()
 
@@ -107,6 +111,7 @@ func TestGetAssertionLargeBlobWriteExecutesWithoutRuntimeConfirmation(t *testing
 
 func TestMakeCredentialMapsRequestAndUsesRawClientDataJSON(t *testing.T) {
 	a := &webauthnTestAuthenticator{makeCredentialUvNotRequired: true}
+
 	session := openContractAuthenticator(t, nil, a)
 	defer func() { _ = session.Close() }()
 
@@ -152,6 +157,7 @@ func TestMakeCredentialMapsRequestAndUsesRawClientDataJSON(t *testing.T) {
 		a.makeCredentialExcludeList[0].Transports[0] != credential.AuthenticatorTransportUSB {
 		t.Fatalf("mapped excludeList = %#v", a.makeCredentialExcludeList)
 	}
+
 	wantOptions := map[protocol.Option]bool{
 		protocol.OptionResidentKeys:     false,
 		protocol.OptionUserVerification: true,
@@ -179,6 +185,7 @@ func TestMakeCredentialMapsRequestAndUsesRawClientDataJSON(t *testing.T) {
 
 func TestMakeCredentialAcquiresScopedTokenWhenCTAPRequiresIt(t *testing.T) {
 	a := &webauthnTestAuthenticator{makeCredentialRequiresToken: true}
+
 	session := openContractAuthenticator(t, nil, a)
 	defer func() { _ = session.Close() }()
 
@@ -211,6 +218,7 @@ func TestMakeCredentialReturnsNoPartialResultAndInvalidatesInventoryOnRefreshFai
 		makeCredentialErr:                   refreshErr,
 		returnMakeCredentialResponseOnError: true,
 	}
+
 	session := openContractAuthenticator(t, nil, a)
 	defer func() { _ = session.Close() }()
 
@@ -227,7 +235,9 @@ func TestMakeCredentialReturnsNoPartialResultAndInvalidatesInventoryOnRefreshFai
 		record.ThirdPartyPayment == nil || *record.ThirdPartyPayment {
 		t.Fatalf("optional inventory fields = %#v", record)
 	}
+
 	op := sampleMakeCredentialOperation(false)
+
 	result, err := session.MakeCredential(context.Background(), op, session.operationOptions()...)
 	if !errors.Is(err, refreshErr) {
 		t.Fatalf("MakeCredential error = %v, want refresh error", err)
@@ -236,6 +246,7 @@ func TestMakeCredentialReturnsNoPartialResultAndInvalidatesInventoryOnRefreshFai
 	requireZero(t, result)
 
 	a.makeCredentialErr = nil
+
 	if _, err := session.ListCredentials(
 		context.Background(),
 		session.operationOptions(WithInteractionHandler(userVerificationHandler(t)))...,
@@ -250,6 +261,7 @@ func TestMakeCredentialReturnsNoPartialResultAndInvalidatesInventoryOnRefreshFai
 
 func TestCredentialInventoryAlwaysReadsFreshStateAroundMakeCredential(t *testing.T) {
 	a := &webauthnTestAuthenticator{makeCredentialUvNotRequired: true}
+
 	session := openContractAuthenticator(t, nil, a)
 	defer func() { _ = session.Close() }()
 
@@ -290,11 +302,13 @@ func TestCredentialInventoryAlwaysReadsFreshStateAroundMakeCredential(t *testing
 
 func TestGetAssertionReturnsAllAssertionsInOrder(t *testing.T) {
 	a := &webauthnTestAuthenticator{}
+
 	session := openContractAuthenticator(t, nil, a)
 	defer func() { _ = session.Close() }()
 
 	op := sampleGetAssertionOperation()
 	op.AllowList = []credential.PublicKeyCredentialDescriptor{{ID: []byte{0xc0, 0x5e}}}
+
 	output, err := session.GetAssertion(context.Background(), op, session.operationOptions()...)
 	if err != nil {
 		t.Fatalf("GetAssertion: %v", err)
@@ -338,6 +352,7 @@ func TestGetAssertionWorkflowReturnsZeroAfterMidstreamFailure(t *testing.T) {
 		getAssertionErr:           cause,
 		getAssertionErrAfterFirst: true,
 	}
+
 	session := openContractAuthenticator(t, nil, a)
 	defer func() { _ = session.Close() }()
 
@@ -348,16 +363,19 @@ func TestGetAssertionWorkflowReturnsZeroAfterMidstreamFailure(t *testing.T) {
 	if !errors.Is(err, cause) {
 		t.Fatalf("GetAssertion error = %v, want %v", err, cause)
 	}
+
 	requireZero(t, output)
 }
 
 func TestGetAssertionUsesBuiltInUVWhenRequested(t *testing.T) {
 	a := &webauthnTestAuthenticator{}
+
 	session := openContractAuthenticator(t, nil, a)
 	defer func() { _ = session.Close() }()
 
 	op := sampleGetAssertionOperation()
 	op.Options.UserVerification = new(true)
+
 	_, err := session.GetAssertion(
 		context.Background(),
 		op,
@@ -382,6 +400,7 @@ func TestGetAssertionUsesBuiltInUVWhenRequested(t *testing.T) {
 
 func TestGetAssertionAcquiresScopedTokenWhenCTAPRequiresIt(t *testing.T) {
 	a := &webauthnTestAuthenticator{getAssertionRequiresToken: true}
+
 	session := openContractAuthenticator(t, nil, a)
 	defer func() { _ = session.Close() }()
 
@@ -409,6 +428,7 @@ func TestGetAssertionAcquiresScopedTokenWhenCTAPRequiresIt(t *testing.T) {
 
 func TestGetAssertionAcquiresScopedTokenWhenCTAPRequiresBuiltInUV(t *testing.T) {
 	a := &webauthnTestAuthenticator{getAssertionRequiresBuiltInUV: true}
+
 	session := openContractAuthenticator(t, nil, a)
 	defer func() { _ = session.Close() }()
 
@@ -432,6 +452,7 @@ func TestGetAssertionAcquiresScopedTokenWhenCTAPRequiresBuiltInUV(t *testing.T) 
 
 func TestWebAuthnDelegatesPRFRoutingToCTAP(t *testing.T) {
 	a := &webauthnTestAuthenticator{makeCredentialUvNotRequired: true}
+
 	session := openContractAuthenticator(t, nil, a)
 	defer func() { _ = session.Close() }()
 
@@ -456,6 +477,7 @@ func TestWebAuthnDelegatesPRFRoutingToCTAP(t *testing.T) {
 	}
 
 	getOperation := sampleGetAssertionOperation()
+
 	getOperation.Extensions = &webauthn.GetAuthenticationExtensionsClientInputs{
 		PRFInputs: &webauthn.PRFInputs{PRF: webauthn.AuthenticationExtensionsPRFInputs{
 			Eval: webauthn.AuthenticationExtensionsPRFValues{First: []byte("get")},
@@ -480,10 +502,12 @@ func TestWebAuthnDelegatesPreviewSignToCTAP(t *testing.T) {
 		makeCredentialUvNotRequired: true,
 		extensions:                  []extension.ExtensionIdentifier{extension.ExtensionIdentifierPreviewSign},
 	}
+
 	session := openContractAuthenticator(t, nil, a)
 	defer func() { _ = session.Close() }()
 
 	makeOperation := sampleMakeCredentialOperation(false)
+
 	makeOperation.Extensions = &webauthn.CreateAuthenticationExtensionsClientInputs{
 		PreviewSignInputs: &webauthn.PreviewSignInputs{
 			PreviewSign: webauthn.AuthenticationExtensionsPreviewSignInputs{
@@ -509,6 +533,7 @@ func TestWebAuthnDelegatesPreviewSignToCTAP(t *testing.T) {
 
 	getOperation := sampleGetAssertionOperation()
 	getOperation.AllowList = []credential.PublicKeyCredentialDescriptor{{ID: []byte{0xc0, 0x5e}}}
+
 	getOperation.Extensions = &webauthn.GetAuthenticationExtensionsClientInputs{
 		PreviewSignInputs: &webauthn.PreviewSignInputs{
 			PreviewSign: webauthn.AuthenticationExtensionsPreviewSignInputs{
@@ -543,6 +568,7 @@ func TestMakeCredentialAcquiresTokenForRegistrationPRFEvaluation(t *testing.T) {
 			extension.ExtensionIdentifierHMACSecretMC,
 		},
 	}
+
 	session := openContractAuthenticator(t, nil, a)
 	defer func() { _ = session.Close() }()
 
@@ -564,9 +590,11 @@ func TestMakeCredentialAcquiresTokenForRegistrationPRFEvaluation(t *testing.T) {
 	if !slices.Equal(a.tokenRPIDs, []string{"example.com"}) {
 		t.Fatalf("token rpIDs = %v, want scoped RP ID", a.tokenRPIDs)
 	}
+
 	if string(a.makeCredentialToken) != "token:example.com" {
 		t.Fatalf("MakeCredential token = %q, want scoped token", a.makeCredentialToken)
 	}
+
 	if a.makeCredentialCalls != 1 {
 		t.Fatalf("MakeCredential calls = %d, want one authorized call", a.makeCredentialCalls)
 	}
@@ -625,6 +653,7 @@ func TestWebAuthnCTAPStatusMapsCodes(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			a := &webauthnTestAuthenticator{makeCredentialUvNotRequired: true}
 			tt.setupErr(a)
+
 			session := openContractAuthenticator(t, nil, a)
 			defer func() { _ = session.Close() }()
 
@@ -766,6 +795,7 @@ func (a *webauthnTestAuthenticator) MakeCredential(
 	a.makeCredentialUser = user
 	a.makeCredentialParams = pubKeyCredParams
 	a.makeCredentialExcludeList = excludeList
+
 	a.makeCredentialExtensions = extensions
 	if options != nil {
 		a.makeCredentialOptions = maps.Clone(options)

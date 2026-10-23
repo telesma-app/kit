@@ -22,14 +22,11 @@ import (
 func inspectPreviewSignGeneratedKey(
 	generated *ctapwebauthn.PreviewSignGeneratedKey,
 ) (*appwebauthn.PreviewSignGeneratedKeyInspection, error) {
-	if generated == nil {
-		return nil, nil
-	}
-
 	var key cose.Key
 	if err := cbor.Unmarshal(generated.PublicKey, &key); err != nil {
 		return nil, fmt.Errorf("decode previewSign COSE key: %w", err)
 	}
+
 	keyInspection, err := inspectPreviewSignCOSEKey(key)
 	if err != nil {
 		return nil, err
@@ -39,10 +36,12 @@ func inspectPreviewSignGeneratedKey(
 	if err != nil {
 		return nil, fmt.Errorf("decode previewSign attestation object: %w", err)
 	}
+
 	authData, err := protocol.ParseMakeCredentialAuthData(object.AuthData)
 	if err != nil {
 		return nil, fmt.Errorf("decode previewSign attestation authData: %w", err)
 	}
+
 	if authData.AttestedCredentialData == nil || authData.Extensions == nil ||
 		authData.Extensions.PreviewSign == nil || authData.Extensions.PreviewSign.Flags == nil {
 		return nil, errors.New("decode previewSign attestation: required signing-key data is absent")
@@ -50,12 +49,14 @@ func inspectPreviewSignGeneratedKey(
 
 	attestationType := attestation.TypeUnsupported
 	certificateCount := 0
+
 	if currentType, chain, typeErr := object.TypeAndCertificateChain(); typeErr == nil {
 		attestationType = currentType
 		certificateCount = len(chain)
 	}
 
 	attested := authData.AttestedCredentialData
+
 	return &appwebauthn.PreviewSignGeneratedKeyInspection{
 		Key: *keyInspection,
 		Attestation: appwebauthn.PreviewSignAttestationInspection{
@@ -75,10 +76,12 @@ func previewSignCOSEKeysEqual(left, right cose.Key) bool {
 	if err != nil {
 		return false
 	}
+
 	leftEncoded, err := encMode.Marshal(left)
 	if err != nil {
 		return false
 	}
+
 	rightEncoded, err := encMode.Marshal(right)
 	if err != nil {
 		return false
@@ -97,11 +100,13 @@ func inspectPreviewSignCOSEKey(key cose.Key) (*appwebauthn.PreviewSignCOSEKeyIns
 		Kind:    appwebauthn.PreviewSignKeyMaterialPublicKey,
 		KeyType: keyType,
 	}
+
 	if value, found := key[cose.KeyParameterAlg]; found {
 		algorithm, valid := previewSignInteger(value)
 		if !valid {
 			return nil, errors.New("decode previewSign COSE key: alg is not an integer")
 		}
+
 		inspection.Algorithm = new(cose.Algorithm(algorithm))
 	}
 
@@ -114,11 +119,13 @@ func inspectPreviewSignCOSEKey(key cose.Key) (*appwebauthn.PreviewSignCOSEKeyIns
 
 	if keyType == cose.KeyTypeARKGPublicSeedPlaceholder {
 		inspection.Kind = appwebauthn.PreviewSignKeyMaterialARKGPublicSeed
+
 		if value, found := key[-3]; found {
 			algorithm, valid := previewSignInteger(value)
 			if !valid {
 				return nil, errors.New("decode previewSign ARKG public seed: dkalg is not an integer")
 			}
+
 			inspection.DerivedAlgorithm = new(cose.Algorithm(algorithm))
 		}
 
@@ -126,6 +133,7 @@ func inspectPreviewSignCOSEKey(key cose.Key) (*appwebauthn.PreviewSignCOSEKeyIns
 		if err != nil {
 			return nil, fmt.Errorf("decode previewSign ARKG blinding key: %w", err)
 		}
+
 		inspection.BlindingKey, err = inspectPreviewSignCOSEKey(blindingKey)
 		if err != nil {
 			return nil, fmt.Errorf("decode previewSign ARKG blinding key: %w", err)
@@ -135,6 +143,7 @@ func inspectPreviewSignCOSEKey(key cose.Key) (*appwebauthn.PreviewSignCOSEKeyIns
 		if err != nil {
 			return nil, fmt.Errorf("decode previewSign ARKG KEM key: %w", err)
 		}
+
 		inspection.KEMKey, err = inspectPreviewSignCOSEKey(kemKey)
 		if err != nil {
 			return nil, fmt.Errorf("decode previewSign ARKG KEM key: %w", err)
@@ -147,10 +156,12 @@ func inspectPreviewSignCOSEKey(key cose.Key) (*appwebauthn.PreviewSignCOSEKeyIns
 	if err != nil {
 		return inspection, nil
 	}
+
 	spki, err := x509.MarshalPKIXPublicKey(publicKey)
 	if err != nil {
 		return inspection, nil
 	}
+
 	inspection.PublicKeyPEM = string(pem.EncodeToMemory(&pem.Block{Type: "PUBLIC KEY", Bytes: spki}))
 
 	return inspection, nil
@@ -160,6 +171,7 @@ func previewSignSigningPolicy(flags protocol.AuthDataFlag) appwebauthn.PreviewSi
 	if flags.UserVerified() {
 		return appwebauthn.PreviewSignSigningPolicyUserVerification
 	}
+
 	if flags.UserPresent() {
 		return appwebauthn.PreviewSignSigningPolicyUserPresence
 	}
@@ -174,30 +186,32 @@ func inspectPreviewSignSignature(
 	inspection := &appwebauthn.PreviewSignSignatureInspection{
 		Encoding: appwebauthn.PreviewSignSignatureEncodingOpaque,
 	}
-	if response.ExtensionOutputs == nil || response.ExtensionOutputs.PreviewSignOutputs == nil {
-		return nil
-	}
 
 	algorithm := previewSignAlgorithmFromInput(input, response)
 	if algorithm == nil {
 		return inspection
 	}
+
 	inspection.Algorithm = algorithm
 
 	verificationAlgorithm, scalarSize, ecdsaSignature := previewSignECDSASignature(*algorithm)
 	if !ecdsaSignature {
 		return inspection
 	}
+
 	inspection.VerificationAlgorithm = new(verificationAlgorithm)
 	inspection.Encoding = appwebauthn.PreviewSignSignatureEncodingASN1DERECDSA
 
 	valid := false
 	inspection.StructureValid = &valid
+
 	var signature struct {
 		R *big.Int
 		S *big.Int
 	}
+
 	raw := response.ExtensionOutputs.PreviewSign.Signature
+
 	rest, err := asn1.Unmarshal(raw, &signature)
 	if err != nil || len(rest) != 0 || !validECDSAScalar(signature.R, scalarSize) ||
 		!validECDSAScalar(signature.S, scalarSize) {
@@ -218,7 +232,9 @@ func previewSignAlgorithmFromInput(
 	if input == nil || input.PreviewSignInputs == nil || response.Credential.ID == nil {
 		return nil
 	}
+
 	encodedCredentialID := base64.RawURLEncoding.EncodeToString(response.Credential.ID)
+
 	signInput, found := input.PreviewSign.SignByCredential[encodedCredentialID]
 	if !found || len(signInput.AdditionalArguments) == 0 {
 		return nil
@@ -228,6 +244,7 @@ func previewSignAlgorithmFromInput(
 	if err := cbor.Unmarshal(signInput.AdditionalArguments, &arguments); err != nil {
 		return nil
 	}
+
 	value, ok := previewSignInteger(arguments[3])
 	if !ok {
 		return nil
@@ -274,6 +291,7 @@ func previewSignNestedKey(value any) (cose.Key, error) {
 			if !ok {
 				return nil, fmt.Errorf("parameter label has type %T", rawLabel)
 			}
+
 			key[int(label)] = parameter
 		}
 

@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/telesma-app/ctap/protocol"
+	"github.com/telesma-app/kit/internal/authenticator"
 	rtconfig "github.com/telesma-app/kit/internal/config"
 	"github.com/telesma-app/kit/internal/errornorm"
 	rtruntime "github.com/telesma-app/kit/internal/runtime"
@@ -14,7 +15,7 @@ import (
 
 func (r Runner) EnableLongTouchForReset(
 	ctx context.Context,
-	device ConfigDevice,
+	device authenticator.ConfigDevice,
 	req appconfig.EnableLongTouchForResetOperation,
 ) (appconfig.AuthenticatorConfigOutput, error) {
 	mode := safety.PreviewModeDryRun
@@ -26,7 +27,8 @@ func (r Runner) EnableLongTouchForReset(
 	if err != nil {
 		return appconfig.AuthenticatorConfigOutput{}, err
 	}
-	preview, err := rtconfig.BuildEnableLongTouchForResetPreview(rtconfig.BuildStatusReport(r.env.Selected, info), mode)
+
+	preview, err := rtconfig.BuildEnableLongTouchForResetPreview(rtconfig.BuildStatusReport(r.Selected, info), mode)
 	if err != nil {
 		return appconfig.AuthenticatorConfigOutput{}, err
 	}
@@ -35,7 +37,7 @@ func (r Runner) EnableLongTouchForReset(
 		return appconfig.AuthenticatorConfigOutput{Preview: preview}, nil
 	}
 
-	err = r.env.Tokens.Use(ctx, rtruntime.TokenUse{
+	err = r.Tokens.Use(ctx, rtruntime.TokenUse{
 		Permission:      protocol.PermissionAuthenticatorConfiguration,
 		TryWithoutToken: true,
 	}, func(token []byte) error {
@@ -47,11 +49,12 @@ func (r Runner) EnableLongTouchForReset(
 			protocol.ConfigSubCommandEnableLongTouchForReset,
 		))
 	}
+
 	return appconfig.AuthenticatorConfigOutput{
 		Preview: preview,
 		Result: &appconfig.AuthenticatorConfigResult{
 			Operation:    appconfig.AuthenticatorConfigLongTouch,
-			AttachmentID: r.env.Selected.Attachment.ID,
+			AttachmentID: r.Selected.Attachment.ID,
 			State:        appconfig.StateConfigured,
 		},
 	}, nil

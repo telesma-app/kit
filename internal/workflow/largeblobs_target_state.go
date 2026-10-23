@@ -12,7 +12,7 @@ import (
 )
 
 type targetBlobState struct {
-	selected                  report.DeviceReport
+	selected                  report.EndpointReport
 	support                   applargeblobs.SupportReport
 	target                    appcredentials.CredentialTarget
 	key                       []byte
@@ -44,13 +44,14 @@ func (r Runner) loadTargetBlobState(
 			failure.WithPhase(failure.PhaseDiscovery),
 		)
 	}
+
 	sizeBefore, err := serializedLargeBlobArraySize(inventory.blobs)
 	if err != nil {
 		return targetBlobState{}, err
 	}
 
 	state := targetBlobState{
-		selected:                  r.env.Selected,
+		selected:                  r.Selected,
 		support:                   support,
 		target:                    target,
 		key:                       largeBlobKey,
@@ -68,6 +69,7 @@ func (r Runner) loadTargetBlobState(
 		if err != nil {
 			continue
 		}
+
 		secret.Zero(compressed)
 
 		state.currentBlobIndex = index

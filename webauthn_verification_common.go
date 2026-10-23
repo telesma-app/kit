@@ -17,10 +17,6 @@ type verificationOutcome struct {
 	issues []appwebauthn.VerificationIssueCode
 }
 
-func newVerificationOutcome() verificationOutcome {
-	return verificationOutcome{status: appwebauthn.VerificationStatusVerified}
-}
-
 func (o *verificationOutcome) fail(issue appwebauthn.VerificationIssueCode) {
 	o.addIssue(issue)
 	o.status = appwebauthn.VerificationStatusFailed
@@ -28,6 +24,7 @@ func (o *verificationOutcome) fail(issue appwebauthn.VerificationIssueCode) {
 
 func (o *verificationOutcome) unavailable(issue appwebauthn.VerificationIssueCode) {
 	o.addIssue(issue)
+
 	if o.status == appwebauthn.VerificationStatusVerified {
 		o.status = appwebauthn.VerificationStatusUnavailable
 	}
@@ -48,6 +45,7 @@ func decodeCredentialKey(raw []byte) (cose.Key, error) {
 	if err := cbor.Unmarshal(raw, &key); err != nil {
 		return nil, err
 	}
+
 	if key == nil {
 		return nil, errors.New("nil COSE key")
 	}
@@ -138,6 +136,7 @@ func aggregateStatus(current, candidate appwebauthn.VerificationStatus) appwebau
 	if current == appwebauthn.VerificationStatusFailed || candidate == appwebauthn.VerificationStatusFailed {
 		return appwebauthn.VerificationStatusFailed
 	}
+
 	if current == appwebauthn.VerificationStatusUnavailable || candidate == appwebauthn.VerificationStatusUnavailable {
 		return appwebauthn.VerificationStatusUnavailable
 	}

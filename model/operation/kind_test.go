@@ -7,7 +7,8 @@ func TestParseCanonicalKinds(t *testing.T) {
 		kind Kind
 		wire string
 	}{
-		{Inspect, "inspect"},
+		{GetInfo, "getInfo"},
+		{ReadSources, "sources.read"},
 		{ListCredentials, "credentials.list"},
 		{CredentialStoreState, "credentials.storeState"},
 		{DeleteCredential, "credentials.delete"},

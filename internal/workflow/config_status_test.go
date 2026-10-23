@@ -76,6 +76,7 @@ func TestConfigStatusRetryFailureReturnsZeroReport(t *testing.T) {
 			if err == nil {
 				t.Fatal("ConfigStatus error = nil")
 			}
+
 			if !jsonValuesEqual(t, report, appconfig.StatusReport{}) {
 				t.Fatalf("ConfigStatus report = %#v, want zero", report)
 			}
@@ -84,9 +85,11 @@ func TestConfigStatusRetryFailureReturnsZeroReport(t *testing.T) {
 			if snapshot == nil || snapshot.Code != failure.CodePINInvalid {
 				t.Fatalf("failure = %#v, want %s", snapshot, failure.CodePINInvalid)
 			}
+
 			if snapshot.Phase != failure.PhaseAuthenticatorCommand {
 				t.Fatalf("failure phase = %q, want %q", snapshot.Phase, failure.PhaseAuthenticatorCommand)
 			}
+
 			if snapshot.CTAP == nil ||
 				snapshot.CTAP.SubCommandCode == nil ||
 				*snapshot.CTAP.SubCommandCode != uint64(tt.subCommand) {
@@ -110,12 +113,15 @@ func TestConfigStatusSkipsPINRetriesWhenPINIsNotConfigured(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ConfigStatus: %v", err)
 	}
+
 	if pinCalls != 0 {
 		t.Fatalf("GetPINRetries calls = %d, want 0", pinCalls)
 	}
+
 	if !report.PIN.Supported || report.PIN.Configured == nil || *report.PIN.Configured {
 		t.Fatalf("PIN status = %#v, want supported and not configured", report.PIN)
 	}
+
 	if report.PIN.Retries.State != appconfig.StateUnknown {
 		t.Fatalf("PIN retry state = %q, want %q", report.PIN.Retries.State, appconfig.StateUnknown)
 	}

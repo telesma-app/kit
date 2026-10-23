@@ -16,6 +16,7 @@ func TestReadLargeBlobArrayTreatsChecksumFailureAsInitialArray(t *testing.T) {
 	if err != nil {
 		t.Fatalf("readLargeBlobArray: %v", err)
 	}
+
 	if blobs == nil || len(blobs) != 0 {
 		t.Fatalf("blobs = %#v, want non-nil initial empty array", blobs)
 	}

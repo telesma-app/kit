@@ -1,6 +1,7 @@
 package webauthn
 
 import (
+	"slices"
 	"strings"
 
 	"github.com/telesma-app/ctap/attestation"
@@ -13,7 +14,7 @@ import (
 )
 
 func BuildMakeCredentialPreview(
-	device report.DeviceReport,
+	device report.EndpointReport,
 	info protocol.AuthenticatorGetInfoResponse,
 	input appwebauthn.MakeCredentialInput,
 ) appwebauthn.MakeCredentialPreview {
@@ -29,6 +30,7 @@ func BuildMakeCredentialPreview(
 			Message:  "With rk=true, an existing discoverable credential for the same RP ID and user ID is overwritten; its old credential ID stops resolving, and its large blob may be erased or orphaned.",
 		})
 	}
+
 	warnings = append(warnings, makeCredentialExtensionWarnings(info, input.Extensions)...)
 
 	return appwebauthn.MakeCredentialPreview{
@@ -39,7 +41,7 @@ func BuildMakeCredentialPreview(
 }
 
 func BuildGetAssertionPreview(
-	device report.DeviceReport,
+	device report.EndpointReport,
 	info protocol.AuthenticatorGetInfoResponse,
 	input appwebauthn.GetAssertionInput,
 ) appwebauthn.GetAssertionPreview {
@@ -54,12 +56,14 @@ func NormalizeMakeCredentialInput(
 	input appwebauthn.MakeCredentialInput,
 ) (appwebauthn.MakeCredentialInput, error) {
 	input.RP.ID = strings.TrimSpace(input.RP.ID)
+
 	input.RP.Name = strings.TrimSpace(input.RP.Name)
 	if input.RP.ID == "" {
 		return appwebauthn.MakeCredentialInput{}, validationFailure(failure.CodeRelyingPartyIDRequired)
 	}
 
 	input.User.Name = strings.TrimSpace(input.User.Name)
+
 	input.User.DisplayName = strings.TrimSpace(input.User.DisplayName)
 	if len(input.User.ID) == 0 {
 		return appwebauthn.MakeCredentialInput{}, validationFailure(failure.CodeUserIDRequired)
@@ -80,6 +84,7 @@ func NormalizeMakeCredentialInput(
 	}
 
 	seenParameters := make(map[credential.PublicKeyCredentialParameters]struct{}, len(input.PubKeyCredParams))
+
 	pubKeyCredParams := make([]credential.PublicKeyCredentialParameters, len(input.PubKeyCredParams))
 	for i, param := range input.PubKeyCredParams {
 		param.Type = credentialTypeOrDefault(param.Type)
@@ -92,6 +97,7 @@ func NormalizeMakeCredentialInput(
 		if _, duplicate := seenParameters[param]; duplicate {
 			return appwebauthn.MakeCredentialInput{}, validationFailure(failure.CodeCTAPParameterInvalid)
 		}
+
 		seenParameters[param] = struct{}{}
 
 		pubKeyCredParams[i] = param
@@ -106,18 +112,23 @@ func NormalizeMakeCredentialInput(
 		return appwebauthn.MakeCredentialInput{}, validationFailure(failure.CodeCTAPOptionInvalid)
 	}
 
-	for index, format := range input.AttestationFormatsPreference {
+	formats := slices.Clone(input.AttestationFormatsPreference)
+	for index, format := range formats {
 		normalized := attestation.AttestationStatementFormatIdentifier(strings.TrimSpace(string(format)))
 		if normalized == "" {
 			return appwebauthn.MakeCredentialInput{}, validationFailure(failure.CodeCTAPParameterInvalid)
 		}
-		input.AttestationFormatsPreference[index] = normalized
+
+		formats[index] = normalized
 	}
+
+	input.AttestationFormatsPreference = formats
 
 	excludeList, err := normalizeDescriptors(input.ExcludeList)
 	if err != nil {
 		return appwebauthn.MakeCredentialInput{}, err
 	}
+
 	input.ExcludeList = excludeList
 
 	return input, nil
@@ -139,6 +150,7 @@ func NormalizeGetAssertionInput(
 	if err != nil {
 		return appwebauthn.GetAssertionInput{}, err
 	}
+
 	input.AllowList = allowList
 
 	return input, nil

@@ -5,6 +5,7 @@ import (
 
 	"github.com/telesma-app/ctap/crypto"
 	"github.com/telesma-app/ctap/protocol"
+	"github.com/telesma-app/kit/internal/authenticator"
 	"github.com/telesma-app/kit/internal/secret"
 	appcredentials "github.com/telesma-app/kit/model/credentials"
 	applargeblobs "github.com/telesma-app/kit/model/largeblobs"
@@ -12,7 +13,7 @@ import (
 
 func (r Runner) ListLargeBlobs(
 	ctx context.Context,
-	device LargeBlobDevice,
+	device authenticator.LargeBlobDevice,
 	largeBlobState *LargeBlobState,
 ) (applargeblobs.ListReport, error) {
 	inventory, err := r.refreshLargeBlobInventory(ctx, device, largeBlobState, protocol.PermissionNone)
@@ -33,7 +34,9 @@ func (r Runner) listLargeBlobsFromInventory(
 ) applargeblobs.ListReport {
 	support := inventory.support
 	summary := applargeblobs.ListArraySummary{}
+
 	var entries []applargeblobs.ArrayEntry
+
 	if support.LargeBlobs {
 		keys := listCredentialKeys(inventory)
 		entries = make([]applargeblobs.ArrayEntry, 0, len(inventory.blobs))
@@ -58,7 +61,7 @@ func (r Runner) listLargeBlobsFromInventory(
 	}
 
 	return applargeblobs.ListReport{
-		Device:  r.env.Selected,
+		Device:  r.Selected,
 		Support: support,
 		Array:   summary,
 		Entries: entries,
@@ -120,6 +123,7 @@ func classifyLargeBlobEntry(
 		entry.Target = &candidate.target
 		raw, err := crypto.DecompressLargeBlobData(compressed, blob.OrigSize)
 		secret.Zero(compressed)
+
 		if err != nil {
 			entry.State = applargeblobs.EntryStateCorrupt
 

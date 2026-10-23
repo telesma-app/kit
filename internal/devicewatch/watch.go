@@ -11,7 +11,6 @@ import (
 
 	directhid "github.com/telesma-app/ctap/backend/hid"
 	"github.com/telesma-app/ctap/backend/hidproxy"
-	ctapiso7816 "github.com/telesma-app/ctap/transport/iso7816"
 	ghid "github.com/telesma-app/hid"
 	"github.com/telesma-app/kit/model/failure"
 	"github.com/telesma-app/kit/transport"
@@ -21,20 +20,33 @@ import (
 const hidSettleDelay = 100 * time.Millisecond
 
 type Candidate struct {
-	Transport          transport.Mode
-	Path               string
-	HID                *ghid.DeviceInfo
-	SmartCard          *pcsc.ReaderInfo
-	SmartCardInterface transport.SmartCardInterface
+	Transport      transport.Mode
+	Path           string
+	HID            *ghid.DeviceInfo
+	HIDMetadataErr error
+	SmartCard      *pcsc.ReaderInfo
 }
 
+type EventType string
+
+const (
+	EventConnected    EventType = "connected"
+	EventUpdated      EventType = "updated"
+	EventDisconnected EventType = "disconnected"
+)
+
+// Type and Candidate describe topology changes. Transport and Err report a
+// stopped discovery source independently of endpoint events.
 type Event struct {
-	Connected bool
+	Type      EventType
 	Candidate Candidate
+	Transport transport.Mode // Set with Err when a discovery source stops.
+	Err       error
 }
 
 type Snapshot struct {
 	Candidates []Candidate
+	Errors     map[transport.Mode]error
 }
 
 type Watcher interface {
@@ -61,11 +73,6 @@ type watcher struct {
 	pcscWatcher   pcsc.Watcher
 	reconcileOnce bool
 
-	probeSmartCard func(
-		context.Context,
-		string,
-	) (transport.SmartCardInterface, error)
-
 	closeOnce sync.Once
 	runErr    error
 	closeErr  error
@@ -88,11 +95,12 @@ func Watch(ctx context.Context, requested transport.Mode) (Watcher, error) {
 		events: make(chan Event),
 		done:   make(chan struct{}),
 
-		pcscCurrent:    make(map[string]Candidate),
-		probeSmartCard: probeSmartCard,
+		snapshot:    Snapshot{Errors: make(map[transport.Mode]error)},
+		pcscCurrent: make(map[string]Candidate),
 	}
 
 	var sourceErr error
+
 	for _, mode := range modes {
 		switch mode {
 		case transport.ModeHID, transport.ModeWindowsProxy:
@@ -100,10 +108,13 @@ func Watch(ctx context.Context, requested transport.Mode) (Watcher, error) {
 		case transport.ModeSmartCard:
 			err = result.openSmartCards()
 		}
+
 		if err != nil {
+			result.snapshot.Errors[mode] = discoveryFailure(mode, err)
 			sourceErr = errors.Join(sourceErr, err)
 		}
 	}
+
 	if result.hidEvents == nil &&
 		result.proxyEvents == nil &&
 		result.pcscEvents == nil {
@@ -128,12 +139,15 @@ func (w *watcher) Listen() <-chan Event {
 func (w *watcher) Close() error {
 	w.closeOnce.Do(func() {
 		w.cancel()
+
 		if w.hidWatcher != nil {
 			w.closeErr = errors.Join(w.closeErr, w.hidWatcher.Close())
 		}
+
 		if w.pcscWatcher != nil {
 			w.closeErr = errors.Join(w.closeErr, w.pcscWatcher.Close())
 		}
+
 		<-w.done
 	})
 
@@ -148,8 +162,9 @@ func (w *watcher) run() {
 		if !w.waitHID() {
 			return
 		}
-		if !w.reconcileHID() {
-			w.stopHID()
+
+		if err := w.refreshHID(); err != nil {
+			w.stopHID(err)
 		}
 	}
 
@@ -162,37 +177,50 @@ func (w *watcher) run() {
 
 		case event, ok := <-w.hidEvents:
 			if !ok {
-				w.stopHID()
+				w.stopHID(nil)
 				continue
 			}
+
 			if event.Type == ghid.DeviceEventDisconnected &&
 				event.DeviceInfo != nil &&
 				event.DeviceInfo.Path != "" {
 				if candidate, exists := w.hidCurrent[event.DeviceInfo.Path]; exists {
 					delete(w.hidCurrent, candidate.Path)
-					if !w.send(Event{Candidate: candidate}) {
+
+					if !w.send(Event{Type: EventDisconnected, Candidate: candidate}) {
 						return
 					}
 
 					continue
 				}
 			}
-			if !w.waitHID() || !w.reconcileHID() {
-				w.stopHID()
+
+			if !w.waitHID() {
+				return
+			}
+
+			if err := w.refreshHID(); err != nil {
+				w.stopHID(err)
 			}
 
 		case event, ok := <-w.proxyEvents:
 			if !ok {
-				w.stopHID()
+				w.stopHID(nil)
 				continue
 			}
+
 			if event.Err != nil {
-				w.runErr = errors.Join(w.runErr, event.Err)
-				w.stopHID()
+				w.stopHID(event.Err)
+
 				continue
 			}
-			if !w.waitHID() || !w.reconcileHID() {
-				w.stopHID()
+
+			if !w.waitHID() {
+				return
+			}
+
+			if err := w.refreshHID(); err != nil {
+				w.stopHID(err)
 			}
 
 		case event, ok := <-w.pcscEvents:
@@ -200,18 +228,19 @@ func (w *watcher) run() {
 				w.stopPCSC()
 				continue
 			}
+
 			switch event.Type {
 			case pcsc.DeviceEventCardInserted:
-				candidate, ok := w.connectSmartCard(event.ReaderInfo)
-				if ok && !w.send(Event{
-					Connected: true,
+				candidate := w.connectSmartCard(event.ReaderInfo)
+				if !w.send(Event{
+					Type:      EventConnected,
 					Candidate: candidate,
 				}) {
 					return
 				}
 			case pcsc.DeviceEventCardRemoved:
 				candidate, ok := w.disconnectSmartCard(event.ReaderInfo.Name)
-				if ok && !w.send(Event{Candidate: candidate}) {
+				if ok && !w.send(Event{Type: EventDisconnected, Candidate: candidate}) {
 					return
 				}
 			}
@@ -223,12 +252,14 @@ func (w *watcher) openHID(mode transport.Mode) error {
 	w.hidMode = mode
 	if mode == transport.ModeWindowsProxy {
 		proxyCtx, cancel := context.WithCancel(w.ctx)
+
 		events, err := hidproxy.Events(proxyCtx)
 		if err != nil {
 			cancel()
 
 			return err
 		}
+
 		w.proxyEvents = events
 		w.proxyCancel = cancel
 	} else {
@@ -236,7 +267,9 @@ func (w *watcher) openHID(mode transport.Mode) error {
 		if err != nil {
 			return err
 		}
+
 		w.hidWatcher = raw
+
 		w.hidEvents = raw.Listen()
 		for _, device := range raw.Snapshot().Devices {
 			w.reconcileOnce = w.reconcileOnce ||
@@ -252,15 +285,18 @@ func (w *watcher) openHID(mode transport.Mode) error {
 			w.hidWatcher = nil
 			w.hidEvents = nil
 		}
+
 		if w.proxyCancel != nil {
 			w.proxyCancel()
 			w.proxyCancel = nil
 		}
+
 		w.proxyEvents = nil
 		w.reconcileOnce = false
 
 		return err
 	}
+
 	w.hidCurrent = current
 	for _, path := range slices.Sorted(maps.Keys(current)) {
 		w.snapshot.Candidates = append(w.snapshot.Candidates, current[path])
@@ -274,33 +310,28 @@ func (w *watcher) openSmartCards() error {
 	if err != nil {
 		return err
 	}
+
 	w.pcscWatcher = raw
+
 	w.pcscEvents = raw.Listen()
 	for _, reader := range raw.Snapshot().Readers {
 		if reader.State&pcsc.ReaderStatePresent != 0 {
-			candidate, ok := w.connectSmartCard(reader)
-			if ok {
-				w.snapshot.Candidates = append(
-					w.snapshot.Candidates,
-					candidate,
-				)
-			}
+			w.snapshot.Candidates = append(w.snapshot.Candidates, w.connectSmartCard(reader))
 		}
 	}
 
 	return nil
 }
 
-func (w *watcher) connectSmartCard(reader *pcsc.ReaderInfo) (Candidate, bool) {
-	cardInterface, err := w.probeSmartCard(w.ctx, reader.Name)
-	if err != nil {
-		return Candidate{}, false
+func (w *watcher) connectSmartCard(reader *pcsc.ReaderInfo) Candidate {
+	candidate := Candidate{
+		Transport: transport.ModeSmartCard,
+		Path:      reader.Name,
+		SmartCard: reader,
 	}
-
-	candidate := smartCardCandidate(reader, cardInterface)
 	w.pcscCurrent[candidate.Path] = candidate
 
-	return candidate, true
+	return candidate
 }
 
 func (w *watcher) disconnectSmartCard(reader string) (Candidate, bool) {
@@ -312,50 +343,125 @@ func (w *watcher) disconnectSmartCard(reader string) (Candidate, bool) {
 	return candidate, ok
 }
 
-func (w *watcher) reconcileHID() bool {
+func (w *watcher) refreshHID() error {
 	next, err := enumerateHID(w.ctx, w.hidMode)
 	if err != nil {
-		if w.ctx.Err() == nil {
-			w.runErr = errors.Join(w.runErr, err)
+		return err
+	}
+
+	return w.reconcileHID(next)
+}
+
+func (w *watcher) reconcileHID(next map[string]Candidate) error {
+	for _, path := range slices.Sorted(maps.Keys(w.hidCurrent)) {
+		if _, present := next[path]; !present &&
+			!w.send(Event{Type: EventDisconnected, Candidate: w.hidCurrent[path]}) {
+			return w.ctx.Err()
+		}
+	}
+
+	for _, path := range slices.Sorted(maps.Keys(next)) {
+		previous, present := w.hidCurrent[path]
+		kind := EventConnected
+
+		if present {
+			if equalHIDObservations(previous, next[path]) {
+				continue
+			}
+
+			kind = EventUpdated
 		}
 
+		if !w.send(Event{Type: kind, Candidate: next[path]}) {
+			return w.ctx.Err()
+		}
+	}
+
+	w.hidCurrent = next
+
+	return nil
+}
+
+func equalHIDObservations(left, right Candidate) bool {
+	a, b := left.HID, right.HID
+
+	return a.Path == b.Path &&
+		a.ReleaseNbr == b.ReleaseNbr &&
+		a.UsagePage == b.UsagePage &&
+		a.Usage == b.Usage &&
+		a.InterfaceNbr == b.InterfaceNbr &&
+		a.InstanceID == b.InstanceID &&
+		a.ParentDeviceID == b.ParentDeviceID &&
+		equalDescriptor(a.VendorID, b.VendorID) &&
+		equalDescriptor(a.ProductID, b.ProductID) &&
+		equalDescriptor(a.SerialNbr, b.SerialNbr) &&
+		equalDescriptor(a.MfrStr, b.MfrStr) &&
+		equalDescriptor(a.ProductStr, b.ProductStr) &&
+		equalDescriptor(a.HIDName, b.HIDName) &&
+		equalDescriptor(a.HIDUnique, b.HIDUnique) &&
+		equalMetadataError(left.HIDMetadataErr, right.HIDMetadataErr)
+}
+
+func equalDescriptor[T comparable](left, right ghid.Descriptor[T]) bool {
+	if (left.Value == nil) != (right.Value == nil) {
 		return false
 	}
 
-	for _, path := range slices.Sorted(maps.Keys(w.hidCurrent)) {
-		if next[path].Path == "" &&
-			!w.send(Event{Candidate: w.hidCurrent[path]}) {
-			return false
-		}
-	}
-	for _, path := range slices.Sorted(maps.Keys(next)) {
-		if w.hidCurrent[path].Path == "" &&
-			!w.send(Event{Connected: true, Candidate: next[path]}) {
-			return false
-		}
-	}
-	w.hidCurrent = next
-
-	return true
+	return (left.Value == nil || *left.Value == *right.Value) && equalMetadataError(left.Err, right.Err)
 }
 
-func (w *watcher) stopHID() {
-	if w.ctx.Err() == nil && w.hidWatcher != nil {
-		w.runErr = errors.Join(w.runErr, w.hidWatcher.Close())
+// Repeated native reads may allocate equivalent errors independently.
+func equalMetadataError(left, right error) bool {
+	if left == nil || right == nil {
+		return left == nil && right == nil
 	}
+
+	return left.Error() == right.Error()
+}
+
+func (w *watcher) stopHID(err error) {
+	if w.ctx.Err() == nil && w.hidWatcher != nil {
+		err = errors.Join(err, w.hidWatcher.Close())
+	}
+
 	if w.proxyCancel != nil {
 		w.proxyCancel()
 		w.proxyCancel = nil
 	}
+
 	w.hidEvents = nil
 	w.proxyEvents = nil
+	w.reportFailure(w.hidMode, err)
 }
 
 func (w *watcher) stopPCSC() {
+	var err error
+
 	if w.ctx.Err() == nil && w.pcscWatcher != nil {
-		w.runErr = errors.Join(w.runErr, w.pcscWatcher.Close())
+		err = w.pcscWatcher.Close()
 	}
+
 	w.pcscEvents = nil
+	w.reportFailure(transport.ModeSmartCard, err)
+}
+
+func (w *watcher) reportFailure(mode transport.Mode, err error) {
+	if w.ctx.Err() != nil {
+		return
+	}
+
+	err = discoveryFailure(mode, err)
+	w.runErr = errors.Join(w.runErr, err)
+	w.send(Event{Transport: mode, Err: err})
+}
+
+func discoveryFailure(mode transport.Mode, err error) error {
+	code := failure.CodeTransportFailure
+	if mode == transport.ModeWindowsProxy {
+		code = failure.CodeTransportProxyUnavailable
+	}
+
+	return failure.Wrap(code, err, failure.WithPhase(failure.PhaseDiscovery))
 }
 
 func (w *watcher) waitHID() bool {
@@ -384,6 +490,7 @@ func enumerateHID(
 	mode transport.Mode,
 ) (map[string]Candidate, error) {
 	var enumerate func(context.Context) iter.Seq2[*ghid.DeviceInfo, error]
+
 	switch mode {
 	case transport.ModeHID:
 		enumerate = directhid.Devices
@@ -394,67 +501,21 @@ func enumerateHID(
 	}
 
 	candidates := make(map[string]Candidate)
+
 	for info, err := range enumerate(ctx) {
-		if err != nil {
+		if info == nil {
 			return nil, err
 		}
+
 		candidates[info.Path] = Candidate{
-			Transport: mode,
-			Path:      info.Path,
-			HID:       info,
+			Transport:      mode,
+			Path:           info.Path,
+			HID:            info,
+			HIDMetadataErr: err,
 		}
 	}
 
 	return candidates, nil
-}
-
-func smartCardCandidate(
-	reader *pcsc.ReaderInfo,
-	cardInterface transport.SmartCardInterface,
-) Candidate {
-	return Candidate{
-		Transport:          transport.ModeSmartCard,
-		Path:               reader.Name,
-		SmartCard:          reader,
-		SmartCardInterface: cardInterface,
-	}
-}
-
-func probeSmartCard(
-	ctx context.Context,
-	reader string,
-) (transport.SmartCardInterface, error) {
-	card, err := pcsc.Open(
-		reader,
-		pcsc.WithShareMode(pcsc.ShareModeExclusive),
-		pcsc.WithDisconnectDisposition(pcsc.DispositionResetCard),
-	)
-	if err != nil {
-		return "", err
-	}
-
-	cardInterface := smartCardInterface(card.Interface())
-	ctapTransport, err := ctapiso7816.New(ctx, card)
-	if err != nil {
-		return "", errors.Join(err, card.Close())
-	}
-
-	// Successful applet selection proves that this is a CTAP attachment.
-	// Cleanup errors do not change that fact.
-	_ = ctapTransport.Close()
-
-	return cardInterface, nil
-}
-
-func smartCardInterface(value pcsc.CardInterface) transport.SmartCardInterface {
-	switch value {
-	case pcsc.CardInterfaceContact:
-		return transport.SmartCardInterfaceContact
-	case pcsc.CardInterfaceContactless:
-		return transport.SmartCardInterfaceContactless
-	default:
-		return transport.SmartCardInterfaceUnknown
-	}
 }
 
 func incompleteHID(info *ghid.DeviceInfo) bool {

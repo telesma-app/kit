@@ -20,10 +20,12 @@ import (
 func TestCredentialInventoryReadsFreshStateAndReusesToken(t *testing.T) {
 	events := &recordingEventSink{}
 	a := &refreshCredentialAuthenticator{revision: 1}
+
 	session := openContractAuthenticator(t, events, a)
 	defer func() { _ = session.Close() }()
 
 	first := runCredentialList(t, session)
+
 	second := runCredentialList(t, session)
 	if got := credentialIDFromInventory(t, first); got != "01" {
 		t.Fatalf("first credential ID = %q, want 01", got)
@@ -34,6 +36,7 @@ func TestCredentialInventoryReadsFreshStateAndReusesToken(t *testing.T) {
 	}
 
 	a.revision = 2
+
 	refreshed := runCredentialList(t, session)
 	if got := credentialIDFromInventory(t, refreshed); got != "02" {
 		t.Fatalf("refreshed credential ID = %q, want 02", got)
@@ -59,6 +62,7 @@ func TestCredentialInventoryReadsFreshStateAndReusesToken(t *testing.T) {
 
 func TestCredentialInventoryReturnsEmptyReportWithoutEnumeratingRPs(t *testing.T) {
 	a := &emptyCredentialAuthenticator{}
+
 	session := openContractAuthenticator(t, nil, a)
 	defer func() { _ = session.Close() }()
 
@@ -79,6 +83,7 @@ func TestCredentialInventoryReturnsEmptyReportWithoutEnumeratingRPs(t *testing.T
 func TestCredentialInventoryRejectedToken(t *testing.T) {
 	t.Run("reacquires once", func(t *testing.T) {
 		a := &rejectedCredentialTokenAuthenticator{}
+
 		session := openContractAuthenticator(t, nil, a)
 		defer func() { _ = session.Close() }()
 
@@ -92,6 +97,7 @@ func TestCredentialInventoryRejectedToken(t *testing.T) {
 
 	t.Run("stops after replacement is rejected", func(t *testing.T) {
 		a := &rejectedCredentialTokenAuthenticator{rejectEveryToken: true}
+
 		session := openContractAuthenticator(t, nil, a)
 		defer func() { _ = session.Close() }()
 
@@ -102,6 +108,7 @@ func TestCredentialInventoryRejectedToken(t *testing.T) {
 		if !failure.IsCode(err, failure.CodePINUVAuthInvalid) {
 			t.Fatalf("ListCredentials error = %v, want %s", err, failure.CodePINUVAuthInvalid)
 		}
+
 		requireZero(t, output)
 
 		assertRejectedCredentialTokens(t, a)
@@ -110,11 +117,13 @@ func TestCredentialInventoryRejectedToken(t *testing.T) {
 
 func TestCredentialMutationUsesInventoryFromSuccessfulRefresh(t *testing.T) {
 	a := &refreshCredentialAuthenticator{revision: 1}
+
 	session := openContractAuthenticator(t, nil, a)
 	defer func() { _ = session.Close() }()
 
 	_ = runCredentialList(t, session)
 	a.revision = 2
+
 	refreshed := runCredentialList(t, session)
 	if got := credentialIDFromInventory(t, refreshed); got != "02" {
 		t.Fatalf("refreshed credential ID = %q, want 02", got)
@@ -133,6 +142,7 @@ func TestCredentialMutationUsesInventoryFromSuccessfulRefresh(t *testing.T) {
 
 func TestCredentialInventoryProgressEventsIncludeCounts(t *testing.T) {
 	events := &recordingEventSink{}
+
 	session := openContractAuthenticator(t, events, &progressCredentialAuthenticator{})
 	defer func() { _ = session.Close() }()
 
@@ -159,6 +169,7 @@ func TestCredentialInventoryWorkflowReturnsZeroAfterMidstreamFailureAndWipesStag
 		credentialErr:      cause,
 		stagedLargeBlobKey: stagedKey,
 	}
+
 	session := openContractAuthenticator(t, nil, a)
 	defer func() { _ = session.Close() }()
 
@@ -169,6 +180,7 @@ func TestCredentialInventoryWorkflowReturnsZeroAfterMidstreamFailureAndWipesStag
 	if !errors.Is(err, cause) {
 		t.Fatalf("ListCredentials error = %v, want %v", err, cause)
 	}
+
 	requireZero(t, output)
 
 	if !bytes.Equal(stagedKey, make([]byte, len(stagedKey))) {
@@ -179,6 +191,7 @@ func TestCredentialInventoryWorkflowReturnsZeroAfterMidstreamFailureAndWipesStag
 func TestCredentialInventoryRejectsInvalidLargeBlobKey(t *testing.T) {
 	stagedKey := []byte{0x5a}
 	a := &progressCredentialAuthenticator{stagedLargeBlobKey: stagedKey}
+
 	session := openContractAuthenticator(t, nil, a)
 	defer func() { _ = session.Close() }()
 
@@ -202,6 +215,7 @@ func TestCredentialInventoryRejectsDuplicateLargeBlobKeyBinding(t *testing.T) {
 		secondLargeBlobKey:  secondKey,
 		duplicateKeyBinding: true,
 	}
+
 	session := openContractAuthenticator(t, nil, a)
 	defer func() { _ = session.Close() }()
 
@@ -244,6 +258,7 @@ func TestCredentialMutationsUseUnscopedGrant(t *testing.T) {
 				_, err := session.DeleteCredential(context.Background(), appcredentials.DeleteOperation{
 					CredentialIDHex: "c05e",
 				}, session.operationOptions(WithInteractionHandler(userVerificationHandler(t)))...)
+
 				return err
 			},
 			used:              func(a *credentialMutationTokenAuthenticator) []string { return a.deleteTokens },
@@ -254,6 +269,7 @@ func TestCredentialMutationsUseUnscopedGrant(t *testing.T) {
 			run: func(t *testing.T, session *contractAuthenticatorHandle) error {
 				_, err := session.UpdateCredentialUser(context.Background(), credentialUpdate(false),
 					session.operationOptions(WithInteractionHandler(userVerificationHandler(t)))...)
+
 				return err
 			},
 			used:              func(a *credentialMutationTokenAuthenticator) []string { return a.updateTokens },
@@ -264,6 +280,7 @@ func TestCredentialMutationsUseUnscopedGrant(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			a := &credentialMutationTokenAuthenticator{}
+
 			session := openContractAuthenticator(t, nil, a)
 			defer func() { _ = session.Close() }()
 
@@ -272,6 +289,7 @@ func TestCredentialMutationsUseUnscopedGrant(t *testing.T) {
 			}
 
 			assertCredentialMutationToken(t, a.tokenRPIDs, tt.used(a))
+
 			if got := a.metadataCalls.Load(); got != tt.wantMetadataCalls {
 				t.Fatalf("metadata calls = %d, want %d", got, tt.wantMetadataCalls)
 			}
@@ -282,6 +300,7 @@ func TestCredentialMutationsUseUnscopedGrant(t *testing.T) {
 func TestCredentialMutationErrorDoesNotRefreshGetInfo(t *testing.T) {
 	mutationErr := errors.New("credential mutation failed")
 	a := &failingCredentialMutationAuthenticator{mutationErr: mutationErr}
+
 	session := openContractAuthenticator(t, nil, a)
 	defer func() { _ = session.Close() }()
 
@@ -293,6 +312,7 @@ func TestCredentialMutationErrorDoesNotRefreshGetInfo(t *testing.T) {
 	if !errors.Is(err, mutationErr) {
 		t.Fatalf("UpdateCredentialUser error = %v, want mutation error", err)
 	}
+
 	if got := a.freshInfoCalls.Load(); got != 0 {
 		t.Fatalf("fresh GetInfo calls = %d, want 0", got)
 	}
@@ -300,6 +320,7 @@ func TestCredentialMutationErrorDoesNotRefreshGetInfo(t *testing.T) {
 
 func TestCredentialUpdateUserDryRunUsesTargetWithoutAuthenticatorCommands(t *testing.T) {
 	a := &credentialMutationTokenAuthenticator{}
+
 	session := openContractAuthenticator(t, nil, a)
 	defer func() { _ = session.Close() }()
 
@@ -416,9 +437,11 @@ func assertRejectedCredentialTokens(t *testing.T, a *rejectedCredentialTokenAuth
 	if got := a.tokenCalls.Load(); got != 2 {
 		t.Fatalf("token calls = %d, want 2", got)
 	}
+
 	if got := a.metadataCalls.Load(); got != 2 {
 		t.Fatalf("metadata calls = %d, want 2", got)
 	}
+
 	if len(a.metadataTokens) != 2 || !bytes.Equal(a.metadataTokens[0], []byte{1}) || !bytes.Equal(a.metadataTokens[1], []byte{2}) {
 		t.Fatalf("metadata tokens = %#v, want [[1] [2]]", a.metadataTokens)
 	}
@@ -438,6 +461,7 @@ func (a *emptyCredentialAuthenticator) GetCredsMetadata(context.Context, []byte)
 
 func (a *emptyCredentialAuthenticator) EnumerateRPs(context.Context, []byte) iter.Seq2[protocol.AuthenticatorCredentialManagementResponse, error] {
 	a.rpEnumerations.Add(1)
+
 	return func(yield func(protocol.AuthenticatorCredentialManagementResponse, error) bool) {
 		yield(protocol.AuthenticatorCredentialManagementResponse{}, &ctaptransport.CTAPError{
 			Command:    protocol.AuthenticatorCredentialManagement,
@@ -482,6 +506,7 @@ func (a *refreshCredentialAuthenticator) EnumerateRPs(context.Context, []byte) i
 		if a.cancelEnumeration != nil {
 			a.cancelEnumeration()
 		}
+
 		yield(protocol.AuthenticatorCredentialManagementResponse{
 			RP:       credential.PublicKeyCredentialRpEntity{ID: "example.com", Name: "Example"},
 			RPIDHash: []byte("rp-hash"),
@@ -527,6 +552,7 @@ func runCredentialList(t *testing.T, session *contractAuthenticatorHandle) appcr
 	if session.events != nil {
 		opts = append(opts, WithEventSink(session.events))
 	}
+
 	opts = append(opts, WithInteractionHandler(userVerificationHandler(t)))
 
 	output, err := session.ListCredentials(context.Background(), opts...)
@@ -584,6 +610,7 @@ func (a *progressCredentialAuthenticator) EnumerateCredentials(
 	return func(yield func(protocol.AuthenticatorCredentialManagementResponse, error) bool) {
 		if bytes.Equal(rpIDHash, []byte("alpha-rp-hash")) {
 			first := progressCredentialResponse("alpha-user-1", []byte{0xa1}, 2)
+
 			first.LargeBlobKey = a.stagedLargeBlobKey
 			if !yield(first, nil) {
 				return
@@ -599,6 +626,7 @@ func (a *progressCredentialAuthenticator) EnumerateCredentials(
 			if a.duplicateKeyBinding {
 				secondCredentialID = []byte{0xa1}
 			}
+
 			second := progressCredentialResponse("alpha-user-2", secondCredentialID, 0)
 			second.LargeBlobKey = a.secondLargeBlobKey
 			yield(second, nil)
@@ -768,6 +796,7 @@ func assertCredentialProgress(t *testing.T, events []model.OperationEvent, want 
 	t.Helper()
 
 	var got []credentialProgress
+
 	for _, event := range events {
 		if event.Stage != model.OperationStageEnumeratingRPs &&
 			event.Stage != model.OperationStageEnumeratingCredentials {

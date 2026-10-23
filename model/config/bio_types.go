@@ -26,17 +26,17 @@ const (
 )
 
 type BioSensorReport struct {
-	Device                             report.DeviceReport `json:"device"`
-	Supported                          bool                `json:"supported"`
-	PreviewOnly                        bool                `json:"previewOnly"`
-	Modality                           BioModality         `json:"modality,omitempty"`
-	FingerprintKind                    FingerprintKind     `json:"fingerprintKind,omitempty"`
-	MaxCaptureSamplesRequiredForEnroll *uint               `json:"maxCaptureSamplesRequiredForEnroll,omitempty"`
-	MaxTemplateFriendlyName            *uint               `json:"maxTemplateFriendlyName,omitempty"`
+	Device                             report.EndpointReport `json:"device"`
+	Supported                          bool                  `json:"supported"`
+	PreviewOnly                        bool                  `json:"previewOnly"`
+	Modality                           BioModality           `json:"modality,omitempty"`
+	FingerprintKind                    FingerprintKind       `json:"fingerprintKind,omitempty"`
+	MaxCaptureSamplesRequiredForEnroll *uint                 `json:"maxCaptureSamplesRequiredForEnroll,omitempty"`
+	MaxTemplateFriendlyName            *uint                 `json:"maxTemplateFriendlyName,omitempty"`
 }
 
 type BioListReport struct {
-	Device      report.DeviceReport   `json:"device"`
+	Device      report.EndpointReport `json:"device"`
 	Supported   bool                  `json:"supported"`
 	PreviewOnly bool                  `json:"previewOnly"`
 	Enrollments []BioEnrollmentRecord `json:"enrollments"`
@@ -52,11 +52,11 @@ type BioEnrollRequest struct {
 }
 
 type BioEnrollPreview struct {
-	Device              report.DeviceReport `json:"device"`
-	PreviewOnly         bool                `json:"previewOnly"`
-	TimeoutMilliseconds uint                `json:"timeoutMilliseconds"`
-	Mode                safety.PreviewMode  `json:"mode"`
-	Warnings            []safety.Warning    `json:"warnings,omitempty"`
+	Device              report.EndpointReport `json:"device"`
+	PreviewOnly         bool                  `json:"previewOnly"`
+	TimeoutMilliseconds uint                  `json:"timeoutMilliseconds"`
+	Mode                safety.PreviewMode    `json:"mode"`
+	Warnings            []safety.Warning      `json:"warnings,omitempty"`
 }
 
 type BioEnrollSample struct {
@@ -74,13 +74,13 @@ type BioEnrollResult struct {
 }
 
 type BioMutationPreview struct {
-	Operation     BioMutationOperation `json:"operation"`
-	Device        report.DeviceReport  `json:"device"`
-	PreviewOnly   bool                 `json:"previewOnly"`
-	TemplateIDHex string               `json:"templateIDHex"`
-	FriendlyName  string               `json:"friendlyName,omitempty"`
-	Mode          safety.PreviewMode   `json:"mode"`
-	Warnings      []safety.Warning     `json:"warnings,omitempty"`
+	Operation     BioMutationOperation  `json:"operation"`
+	Device        report.EndpointReport `json:"device"`
+	PreviewOnly   bool                  `json:"previewOnly"`
+	TemplateIDHex string                `json:"templateIDHex"`
+	FriendlyName  string                `json:"friendlyName,omitempty"`
+	Mode          safety.PreviewMode    `json:"mode"`
+	Warnings      []safety.Warning      `json:"warnings,omitempty"`
 }
 
 type BioMutationResult struct {

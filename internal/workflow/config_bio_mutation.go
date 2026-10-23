@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 
 	"github.com/telesma-app/ctap/protocol"
+	"github.com/telesma-app/kit/internal/authenticator"
 	rtconfig "github.com/telesma-app/kit/internal/config"
 	"github.com/telesma-app/kit/internal/errornorm"
 	rtruntime "github.com/telesma-app/kit/internal/runtime"
@@ -15,20 +16,22 @@ import (
 
 func (r Runner) BioRename(
 	ctx context.Context,
-	device BioDevice,
+	device authenticator.BioDevice,
 	req appconfig.BioRenameOperation,
 ) (appconfig.BioMutationOutput, error) {
 	templateID, err := rtconfig.DecodeTemplateID(req.TemplateIDHex)
 	if err != nil {
 		return appconfig.BioMutationOutput{}, err
 	}
+
 	templateIDHex := hex.EncodeToString(templateID)
 
 	info, err := r.getAuthenticatorInfo(ctx, device)
 	if err != nil {
 		return appconfig.BioMutationOutput{}, err
 	}
-	status := rtconfig.BuildStatusReport(r.env.Selected, info)
+
+	status := rtconfig.BuildStatusReport(r.Selected, info)
 
 	mode := safety.PreviewModeExecute
 	if req.DryRun {
@@ -50,7 +53,7 @@ func (r Runner) BioRename(
 		return appconfig.BioMutationOutput{Preview: preview}, nil
 	}
 
-	err = r.env.Tokens.Use(ctx, rtruntime.TokenUse{
+	err = r.Tokens.Use(ctx, rtruntime.TokenUse{
 		Permission: protocol.PermissionBioEnrollment,
 	}, func(token []byte) error {
 		return device.SetFriendlyName(ctx, token, templateID, req.FriendlyName)
@@ -67,7 +70,7 @@ func (r Runner) BioRename(
 		Preview: preview,
 		Result: &appconfig.BioMutationResult{
 			Operation:     appconfig.BioMutationRename,
-			AttachmentID:  r.env.Selected.Attachment.ID,
+			AttachmentID:  r.Selected.Attachment.ID,
 			PreviewOnly:   preview.PreviewOnly,
 			TemplateIDHex: templateIDHex,
 			FriendlyName:  req.FriendlyName,
@@ -77,20 +80,22 @@ func (r Runner) BioRename(
 
 func (r Runner) BioRemove(
 	ctx context.Context,
-	device BioDevice,
+	device authenticator.BioDevice,
 	req appconfig.BioRemoveOperation,
 ) (appconfig.BioMutationOutput, error) {
 	templateID, err := rtconfig.DecodeTemplateID(req.TemplateIDHex)
 	if err != nil {
 		return appconfig.BioMutationOutput{}, err
 	}
+
 	templateIDHex := hex.EncodeToString(templateID)
 
 	info, err := r.getAuthenticatorInfo(ctx, device)
 	if err != nil {
 		return appconfig.BioMutationOutput{}, err
 	}
-	status := rtconfig.BuildStatusReport(r.env.Selected, info)
+
+	status := rtconfig.BuildStatusReport(r.Selected, info)
 
 	mode := safety.PreviewModeExecute
 	if req.DryRun {
@@ -112,7 +117,7 @@ func (r Runner) BioRemove(
 		return appconfig.BioMutationOutput{Preview: preview}, nil
 	}
 
-	err = r.env.Tokens.Use(ctx, rtruntime.TokenUse{
+	err = r.Tokens.Use(ctx, rtruntime.TokenUse{
 		Permission: protocol.PermissionBioEnrollment,
 	}, func(token []byte) error {
 		return device.RemoveEnrollment(ctx, token, templateID)
@@ -124,11 +129,12 @@ func (r Runner) BioRemove(
 			protocol.BioEnrollmentSubCommandRemoveEnrollment,
 		))
 	}
+
 	return appconfig.BioMutationOutput{
 		Preview: preview,
 		Result: &appconfig.BioMutationResult{
 			Operation:     appconfig.BioMutationRemove,
-			AttachmentID:  r.env.Selected.Attachment.ID,
+			AttachmentID:  r.Selected.Attachment.ID,
 			PreviewOnly:   preview.PreviewOnly,
 			TemplateIDHex: templateIDHex,
 		},

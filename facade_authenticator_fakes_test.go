@@ -333,11 +333,13 @@ func (a *largeBlobWriteEventAuthenticator) GetCredsMetadata(context.Context, []b
 func (a *largeBlobWriteEventAuthenticator) EnumerateRPs(context.Context, []byte) iter.Seq2[protocol.AuthenticatorCredentialManagementResponse, error] {
 	return func(yield func(protocol.AuthenticatorCredentialManagementResponse, error) bool) {
 		a.rpEnumerations.Add(1)
+
 		if a.rpErr != nil {
 			yield(protocol.AuthenticatorCredentialManagementResponse{}, a.rpErr)
 
 			return
 		}
+
 		yield(protocol.AuthenticatorCredentialManagementResponse{
 			RP:       credential.PublicKeyCredentialRpEntity{ID: "id.example", Name: "Example"},
 			RPIDHash: []byte("rp-hash"),
@@ -349,10 +351,12 @@ func (a *largeBlobWriteEventAuthenticator) EnumerateRPs(context.Context, []byte)
 func (a *largeBlobWriteEventAuthenticator) EnumerateCredentials(context.Context, []byte, []byte) iter.Seq2[protocol.AuthenticatorCredentialManagementResponse, error] {
 	return func(yield func(protocol.AuthenticatorCredentialManagementResponse, error) bool) {
 		a.credentialEnumerations.Add(1)
+
 		var largeBlobKey []byte
 		if !a.omitLargeBlobKey {
 			largeBlobKey = bytes.Repeat([]byte{0x01}, 32)
 		}
+
 		a.lastEnumeratedLargeBlobKey = largeBlobKey
 		yield(protocol.AuthenticatorCredentialManagementResponse{
 			User: credential.PublicKeyCredentialUserEntity{

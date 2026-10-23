@@ -5,6 +5,7 @@ import (
 
 	"github.com/telesma-app/ctap/crypto"
 	"github.com/telesma-app/ctap/protocol"
+	"github.com/telesma-app/kit/internal/authenticator"
 	"github.com/telesma-app/kit/internal/errornorm"
 	rtruntime "github.com/telesma-app/kit/internal/runtime"
 	"github.com/telesma-app/kit/internal/secret"
@@ -27,7 +28,7 @@ type garbageCollectState struct {
 
 func (r Runner) GarbageCollectLargeBlobs(
 	ctx context.Context,
-	device LargeBlobDevice,
+	device authenticator.LargeBlobDevice,
 	largeBlobState *LargeBlobState,
 	req applargeblobs.GarbageCollectOperation,
 ) (applargeblobs.MutationOutput, error) {
@@ -54,10 +55,10 @@ func (r Runner) GarbageCollectLargeBlobs(
 		}, nil
 	}
 
-	err = r.env.Tokens.Use(ctx, rtruntime.TokenUse{
+	err = r.Tokens.Use(ctx, rtruntime.TokenUse{
 		Permission: state.mutationPermission,
 	}, func(token []byte) error {
-		r.env.Effects.Record(rtruntime.StateEffectLargeBlobArrayChanged)
+		r.Effects.Record(rtruntime.StateEffectLargeBlobArrayChanged)
 
 		return device.SetLargeBlobs(ctx, token, state.replacement)
 	})
@@ -69,7 +70,7 @@ func (r Runner) GarbageCollectLargeBlobs(
 	}
 
 	largeBlobState.replaceBlobs(state.replacement)
-	r.env.Effects.Record(rtruntime.StateEffectLargeBlobSnapshotSynchronized)
+	r.Effects.Record(rtruntime.StateEffectLargeBlobSnapshotSynchronized)
 
 	return applargeblobs.MutationOutput{
 		Preview: preview,
@@ -79,7 +80,7 @@ func (r Runner) GarbageCollectLargeBlobs(
 
 func (r Runner) loadGarbageCollectState(
 	ctx context.Context,
-	device LargeBlobDevice,
+	device authenticator.LargeBlobDevice,
 	largeBlobState *LargeBlobState,
 	requiredPermission protocol.Permission,
 ) (garbageCollectState, error) {
@@ -102,10 +103,13 @@ func (r Runner) loadGarbageCollectState(
 
 	keys := listCredentialKeys(inventory)
 	replacement := make([]protocol.LargeBlob, 0, len(inventory.blobs))
+
 	var matchedCount, orphanedCount, nonconformingCount int
+
 	for _, blob := range inventory.blobs {
 		if !largeBlobMapConforming(blob) {
 			nonconformingCount++
+
 			replacement = append(replacement, blob)
 
 			continue
@@ -113,6 +117,7 @@ func (r Runner) loadGarbageCollectState(
 
 		if largeBlobAuthenticatesWithAnyKey(blob, keys) {
 			matchedCount++
+
 			replacement = append(replacement, blob)
 
 			continue
@@ -159,7 +164,7 @@ func (r Runner) buildGarbageCollectPreview(state garbageCollectState) applargebl
 
 	return applargeblobs.MutationPreview{
 		Operation:                          applargeblobs.MutationGC,
-		Device:                             r.env.Selected,
+		Device:                             r.Selected,
 		Support:                            state.support,
 		SerializedLargeBlobArraySizeBefore: state.sizeBefore,
 		SerializedLargeBlobArraySizeAfter:  state.sizeAfter,
@@ -177,7 +182,7 @@ func (r Runner) buildGarbageCollectPreview(state garbageCollectState) applargebl
 func (r Runner) buildGarbageCollectResult(state garbageCollectState) *applargeblobs.MutationResult {
 	return &applargeblobs.MutationResult{
 		Operation:                          applargeblobs.MutationGC,
-		AttachmentID:                       r.env.Selected.Attachment.ID,
+		AttachmentID:                       r.Selected.Attachment.ID,
 		SerializedLargeBlobArraySizeBefore: state.sizeBefore,
 		SerializedLargeBlobArraySizeAfter:  state.sizeAfter,
 		SerializedLargeBlobArrayLimit:      state.support.MaxSerializedLargeBlobArray,

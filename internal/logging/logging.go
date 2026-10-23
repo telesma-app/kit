@@ -46,10 +46,12 @@ func RecorderFrom(ctx context.Context) Recorder {
 
 func CBORDiagnosticPayload(message diagnostic.Message) *model.LogPayload {
 	stored := message.Notation
+
 	truncated := len(stored) > MaxPayloadBytes
 	if truncated {
 		stored = safePreview([]byte(stored), previewBytes)
 	}
+
 	return &model.LogPayload{
 		CBORDiagnostic:  stored,
 		DiagnosticError: safePreview([]byte(message.Error), previewBytes),

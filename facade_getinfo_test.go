@@ -5,17 +5,18 @@ import (
 	"testing"
 )
 
-func TestInspectEmitsNoEventsWithoutProgressOrStateChanges(t *testing.T) {
+func TestGetInfoEmitsNoEventsWithoutProgressOrStateChanges(t *testing.T) {
 	events := &recordingEventSink{}
+
 	session := openContractAuthenticator(t, events, nil)
 	defer func() { _ = session.Close() }()
 
-	output, err := session.Inspect(context.Background(), WithInteractionHandler(nil))
+	output, err := session.GetInfo(context.Background(), WithInteractionHandler(nil))
 	if err != nil {
-		t.Fatalf("Inspect: %v", err)
+		t.Fatalf("GetInfo: %v", err)
 	}
 
-	if output.Device.Attachment.ID == "" {
+	if len(output.Assessment.Facts) == 0 {
 		t.Fatalf("unexpected output: %#v", output)
 	}
 

@@ -81,6 +81,7 @@ func TestAuthenticatorConfigPreviewFailuresUseStableCodes(t *testing.T) {
 			State:     StateUnknown,
 		},
 	}}
+
 	_, err = BuildAlwaysUVPreview(status, AlwaysUVTargetEnable, true, safety.PreviewModeDryRun)
 	if !failure.IsCode(err, failure.CodeAlwaysUVStateUnknown) {
 		t.Fatalf("BuildAlwaysUVPreview(unknown) error = %v, want %s", err, failure.CodeAlwaysUVStateUnknown)
@@ -88,6 +89,7 @@ func TestAuthenticatorConfigPreviewFailuresUseStableCodes(t *testing.T) {
 
 	status.AuthenticatorConfig.AlwaysUV.State = StateConfigured
 	status.AuthenticatorConfig.AlwaysUV.Configured = new(true)
+
 	_, err = BuildAlwaysUVPreview(status, AlwaysUVTargetEnable, true, safety.PreviewModeDryRun)
 	if !failure.IsCode(err, failure.CodeAlwaysUVAlreadyTarget) {
 		t.Fatalf("BuildAlwaysUVPreview(already target) error = %v, want %s", err, failure.CodeAlwaysUVAlreadyTarget)
@@ -136,6 +138,7 @@ func TestMinPINLengthPreviewUsesZeroValuesAsAbsent(t *testing.T) {
 	}
 
 	operation.NewMinPINLength = nil
+
 	preview, err = BuildMinPINLengthPreview(status, operation, safety.PreviewModeDryRun)
 	if !failure.IsCode(err, failure.CodeCTAPParameterMissing) {
 		t.Fatalf("zero-value request error = %v, want parameter missing", err)
@@ -144,6 +147,7 @@ func TestMinPINLengthPreviewUsesZeroValuesAsAbsent(t *testing.T) {
 	operation.MinPINLengthRPIDs = []string{"example.com"}
 	operation.ForceChangePIN = true
 	operation.PINComplexityPolicy = true
+
 	preview, err = BuildMinPINLengthPreview(status, operation, safety.PreviewModeDryRun)
 	if err != nil {
 		t.Fatalf("BuildMinPINLengthPreview: %v", err)
@@ -152,7 +156,6 @@ func TestMinPINLengthPreviewUsesZeroValuesAsAbsent(t *testing.T) {
 	if len(preview.MinPINLengthRPIDs) != 1 || !preview.ForceChangePIN || !preview.PINComplexityPolicy {
 		t.Fatalf("preview = %#v", preview)
 	}
-
 }
 
 func TestEnableLongTouchForResetPreviewValidation(t *testing.T) {
@@ -167,6 +170,7 @@ func TestEnableLongTouchForResetPreviewValidation(t *testing.T) {
 	}
 
 	base.AuthenticatorConfig.LongTouchForReset.Configured = new(false)
+
 	preview, err := BuildEnableLongTouchForResetPreview(base, safety.PreviewModeDryRun)
 	if err != nil {
 		t.Fatalf("BuildEnableLongTouchForResetPreview: %v", err)

@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/telesma-app/ctap/protocol"
+	"github.com/telesma-app/kit/internal/authenticator"
 	rtcredentials "github.com/telesma-app/kit/internal/credentials"
 	"github.com/telesma-app/kit/internal/errornorm"
 	rtruntime "github.com/telesma-app/kit/internal/runtime"
@@ -13,7 +14,7 @@ import (
 
 func (r Runner) WriteLargeBlob(
 	ctx context.Context,
-	device LargeBlobDevice,
+	device authenticator.LargeBlobDevice,
 	largeBlobState *LargeBlobState,
 	req applargeblobs.WriteOperation,
 ) (applargeblobs.MutationOutput, error) {
@@ -47,10 +48,10 @@ func (r Runner) WriteLargeBlob(
 		return applargeblobs.MutationOutput{Preview: preview}, nil
 	}
 
-	err = r.env.Tokens.Use(ctx, rtruntime.TokenUse{
+	err = r.Tokens.Use(ctx, rtruntime.TokenUse{
 		Permission: inventory.permissionFor(protocol.PermissionLargeBlobWrite),
 	}, func(token []byte) error {
-		r.env.Effects.Record(rtruntime.StateEffectLargeBlobArrayChanged)
+		r.Effects.Record(rtruntime.StateEffectLargeBlobArrayChanged)
 
 		return device.SetLargeBlobs(ctx, token, plan.replacement)
 	})
@@ -62,7 +63,7 @@ func (r Runner) WriteLargeBlob(
 	}
 
 	largeBlobState.replaceBlobs(plan.replacement)
-	r.env.Effects.Record(rtruntime.StateEffectLargeBlobSnapshotSynchronized)
+	r.Effects.Record(rtruntime.StateEffectLargeBlobSnapshotSynchronized)
 
 	return applargeblobs.MutationOutput{
 		Preview: preview,
@@ -72,7 +73,7 @@ func (r Runner) WriteLargeBlob(
 
 func (r Runner) DeleteLargeBlob(
 	ctx context.Context,
-	device LargeBlobDevice,
+	device authenticator.LargeBlobDevice,
 	largeBlobState *LargeBlobState,
 	req applargeblobs.DeleteOperation,
 ) (applargeblobs.MutationOutput, error) {
@@ -113,10 +114,10 @@ func (r Runner) DeleteLargeBlob(
 		}, nil
 	}
 
-	err = r.env.Tokens.Use(ctx, rtruntime.TokenUse{
+	err = r.Tokens.Use(ctx, rtruntime.TokenUse{
 		Permission: inventory.permissionFor(protocol.PermissionLargeBlobWrite),
 	}, func(token []byte) error {
-		r.env.Effects.Record(rtruntime.StateEffectLargeBlobArrayChanged)
+		r.Effects.Record(rtruntime.StateEffectLargeBlobArrayChanged)
 
 		return device.SetLargeBlobs(ctx, token, plan.replacement)
 	})
@@ -128,7 +129,7 @@ func (r Runner) DeleteLargeBlob(
 	}
 
 	largeBlobState.replaceBlobs(plan.replacement)
-	r.env.Effects.Record(rtruntime.StateEffectLargeBlobSnapshotSynchronized)
+	r.Effects.Record(rtruntime.StateEffectLargeBlobSnapshotSynchronized)
 
 	return applargeblobs.MutationOutput{
 		Preview: preview,

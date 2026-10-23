@@ -17,7 +17,7 @@ func VerifyMakeCredential(
 	input appwebauthn.MakeCredentialInput,
 	result appwebauthn.MakeCredentialResult,
 ) appwebauthn.MakeCredentialVerification {
-	outcome := newVerificationOutcome()
+	outcome := verificationOutcome{status: appwebauthn.VerificationStatusVerified}
 	verification := appwebauthn.MakeCredentialVerification{
 		Status:            appwebauthn.VerificationStatusVerified,
 		AttestationFormat: result.Format,
@@ -33,6 +33,7 @@ func VerifyMakeCredential(
 		outcome.fail(appwebauthn.VerificationIssueResultMalformed)
 		return finishMakeCredentialVerification(verification, outcome)
 	}
+
 	authData, err := protocol.ParseMakeCredentialAuthData(authDataRaw)
 	if err != nil {
 		outcome.fail(appwebauthn.VerificationIssueAuthenticatorDataMalformed)
@@ -40,10 +41,12 @@ func VerifyMakeCredential(
 	}
 
 	expectedRPIDHash := sha256.Sum256([]byte(input.RP.ID))
+
 	verification.RPIDHashMatches = bytes.Equal(authData.RPIDHash, expectedRPIDHash[:])
 	if !verification.RPIDHashMatches {
 		outcome.fail(appwebauthn.VerificationIssueRPIDHashMismatch)
 	}
+
 	verification.UserPresenceRequirementMet = requirementMet(
 		optionRequired(input.Options.UserPresence, true),
 		authData.Flags.UserPresent(),
@@ -51,6 +54,7 @@ func VerifyMakeCredential(
 	if !verification.UserPresenceRequirementMet {
 		outcome.fail(appwebauthn.VerificationIssueUserPresenceMissing)
 	}
+
 	verification.UserVerificationRequirementMet = requirementMet(
 		optionRequired(input.Options.UserVerification, false),
 		authData.Flags.UserVerified(),
@@ -63,6 +67,7 @@ func VerifyMakeCredential(
 		outcome.fail(appwebauthn.VerificationIssueAttestedCredentialDataMissing)
 		return finishMakeCredentialVerification(verification, outcome)
 	}
+
 	attested := authData.AttestedCredentialData
 	if !makeCredentialResultMatches(result, authData, attested.CredentialID, attested.CredentialPublicKey) {
 		outcome.fail(appwebauthn.VerificationIssueResultMismatch)
@@ -73,6 +78,7 @@ func VerifyMakeCredential(
 		outcome.fail(appwebauthn.VerificationIssueCredentialKeyMalformed)
 		return finishMakeCredentialVerification(verification, outcome)
 	}
+
 	verification.CredentialAlgorithmAllowed = algorithmAllowed(input.PubKeyCredParams, algorithm)
 	if !verification.CredentialAlgorithmAllowed {
 		outcome.fail(appwebauthn.VerificationIssueCredentialAlgorithmDisallowed)
@@ -85,6 +91,7 @@ func VerifyMakeCredential(
 		} else {
 			outcome.fail(appwebauthn.VerificationIssueCredentialKeyMalformed)
 		}
+
 		return finishMakeCredentialVerification(verification, outcome)
 	}
 
@@ -93,14 +100,17 @@ func VerifyMakeCredential(
 		outcome.fail(appwebauthn.VerificationIssueAttestationObjectMalformed)
 		return finishMakeCredentialVerification(verification, outcome)
 	}
+
 	object, err := attestation.ParseObject(objectRaw)
 	if err != nil {
 		outcome.fail(appwebauthn.VerificationIssueAttestationObjectMalformed)
 		return finishMakeCredentialVerification(verification, outcome)
 	}
+
 	if object.Format != result.Format || !bytes.Equal(object.AuthData, authDataRaw) {
 		outcome.fail(appwebauthn.VerificationIssueAttestationObjectMismatch)
 	}
+
 	verification.AttestationFormat = object.Format
 
 	clientDataHash := sha256.Sum256(input.ClientDataJSON)
@@ -115,6 +125,7 @@ func VerifyMakeCredential(
 			outcome.fail(appwebauthn.VerificationIssueAttestationStatementMalformed)
 			break
 		}
+
 		_, ecdaaPresent := object.Statement["ecdaaKeyId"]
 		statementVerification, err := attestation.VerifyPacked(
 			statement,
@@ -130,6 +141,7 @@ func VerifyMakeCredential(
 			outcome.fail(appwebauthn.VerificationIssueAttestationStatementMalformed)
 			break
 		}
+
 		statementVerification, err := attestation.VerifyFIDOU2F(
 			statement,
 			credentialPublicKey,
@@ -141,11 +153,13 @@ func VerifyMakeCredential(
 		applyAttestationStatementVerification(&verification, &outcome, statementVerification, err)
 	case attestation.AttestationStatementFormatIdentifierNone:
 		verification.AttestationType = appwebauthn.AttestationTypeNone
+
 		if len(object.Statement) != 0 {
 			outcome.fail(appwebauthn.VerificationIssueAttestationStatementMalformed)
 		}
 	default:
 		verification.AttestationType = appwebauthn.AttestationTypeUnsupported
+
 		outcome.unavailable(appwebauthn.VerificationIssueAttestationFormatUnsupported)
 	}
 
@@ -162,6 +176,7 @@ func makeCredentialResultMatches(
 	if err != nil || !bytes.Equal(resultCredentialID, credentialID) {
 		return false
 	}
+
 	resultKey, err := decodeCredentialKeyHex(result.PublicKeyCOSEHex)
 	if err != nil || !credentialKeysEqual(resultKey, credentialKey) {
 		return false
@@ -178,10 +193,12 @@ func credentialKeysEqual(left, right cose.Key) bool {
 	if err != nil {
 		return false
 	}
+
 	leftEncoded, err := encMode.Marshal(left)
 	if err != nil {
 		return false
 	}
+
 	rightEncoded, err := encMode.Marshal(right)
 	if err != nil {
 		return false
@@ -198,6 +215,7 @@ func applyAttestationStatementVerification(
 ) {
 	verification.AttestationType = appwebauthn.AttestationType(statementVerification.Type)
 	verification.SignatureValid = statementVerification.SignatureValid
+
 	switch {
 	case err == nil:
 	case errors.Is(err, attestation.ErrFormatUnsupported):

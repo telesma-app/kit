@@ -8,30 +8,47 @@ import (
 	ctapdevice "github.com/telesma-app/ctap/authenticator"
 	directhid "github.com/telesma-app/ctap/backend/hid"
 	"github.com/telesma-app/ctap/backend/hidproxy"
-	ctappcsc "github.com/telesma-app/ctap/backend/pcsc"
 	"github.com/telesma-app/ctap/options"
 	ctaptransport "github.com/telesma-app/ctap/transport"
+	"github.com/telesma-app/ctap/transport/ctaphid"
 	kitlog "github.com/telesma-app/kit/internal/logging"
 	"github.com/telesma-app/kit/model/failure"
 	"github.com/telesma-app/kit/transport"
 	"github.com/telesma-app/pcsc"
 )
 
-// Open opens the private CTAP authenticator implementation for a transport path.
 func Open(ctx context.Context, mode transport.Mode, path string) (*Opened, error) {
 	var (
 		deviceTransport ctaptransport.Device
+		smartCard       *SmartCard
 		err             error
 	)
+
 	switch mode {
 	case transport.ModeHID:
 		deviceTransport, err = directhid.Open(ctx, path)
 	case transport.ModeWindowsProxy:
 		deviceTransport, err = hidproxy.Open(ctx, path)
 	case transport.ModeSmartCard:
-		deviceTransport, err = ctappcsc.Open(ctx, path)
+		var card *pcsc.Card
+
+		card, err = pcsc.Open(path, pcsc.WithShareMode(pcsc.ShareModeShared), pcsc.WithDisconnectDisposition(pcsc.DispositionResetCard))
+		if err == nil {
+			smartCard = &SmartCard{Card: card, Interface: card.Interface()}
+			deviceTransport = smartCard
+		}
 	default:
 		panic("authenticator: invalid transport mode: " + string(mode))
+	}
+
+	if err != nil {
+		return nil, openFailure(mode, err)
+	}
+
+	opened := &Opened{Lifecycle: deviceTransport, Card: smartCard}
+	if hid, ok := deviceTransport.(*ctaphid.Transport); ok {
+		opened.Vendor = hid
+		opened.HIDInit = new(hid.InitResponse())
 	}
 
 	var opts []options.Option
@@ -39,28 +56,34 @@ func Open(ctx context.Context, mode transport.Mode, path string) (*Opened, error
 		opts = append(opts, options.WithDiagnosticSink(kitlog.NewCTAPSink(recorder)))
 	}
 
+	device, err := ctapdevice.New(ctx, deviceTransport, opts...)
 	if err == nil {
-		device, newErr := ctapdevice.New(ctx, deviceTransport, opts...)
-		if newErr != nil {
-			err = errors.Join(newErr, deviceTransport.Close())
-		} else {
-			return &Opened{
-				Lifecycle:           device,
-				Info:                device,
-				Vendor:              device,
-				Tokens:              device,
-				CredentialInventory: device,
-				Credentials:         device,
-				WebAuthn:            device,
-				LargeBlobs:          device,
-				ConfigStatus:        device,
-				Config:              device,
-				Bio:                 device,
-			}, nil
-		}
+		opened.Lifecycle = device
+		opened.Info = device
+		opened.Tokens = device
+		opened.CredentialInventory = device
+		opened.Credentials = device
+		opened.WebAuthn = device
+		opened.LargeBlobs = device
+		opened.ConfigStatus = device
+		opened.Config = device
+		opened.Bio = device
 	}
 
+	if smartCard != nil {
+		err = errors.Join(err, smartCard.EndFIDO(ctx))
+	}
+
+	if err != nil {
+		return opened, openFailure(mode, err)
+	}
+
+	return opened, nil
+}
+
+func openFailure(mode transport.Mode, err error) error {
 	code := failure.CodeTransportFailure
+
 	switch {
 	case errors.Is(err, context.Canceled):
 		code = failure.CodeOperationCanceled
@@ -72,7 +95,7 @@ func Open(ctx context.Context, mode transport.Mode, path string) (*Opened, error
 		code = failure.CodeTransportProxyUnavailable
 	}
 
-	return nil, failure.Wrap(
+	return failure.Wrap(
 		code,
 		err,
 		failure.WithPhase(failure.PhaseAuthenticator),

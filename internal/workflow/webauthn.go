@@ -32,18 +32,20 @@ func (r Runner) MakeCredential(
 	if err != nil {
 		return appwebauthn.MakeCredentialOutput{}, err
 	}
-	preview := rtwebauthn.BuildMakeCredentialPreview(r.env.Selected, info, input)
+
+	preview := rtwebauthn.BuildMakeCredentialPreview(r.Selected, info, input)
 	if req.DryRun {
 		return appwebauthn.MakeCredentialOutput{Preview: preview}, nil
 	}
 
 	var response protocol.AuthenticatorMakeCredentialResponse
-	err = r.env.Tokens.Use(ctx, rtruntime.TokenUse{
+
+	err = r.Tokens.Use(ctx, rtruntime.TokenUse{
 		Permission:      protocol.PermissionMakeCredential,
 		RPID:            input.RP.ID,
 		TryWithoutToken: makeCredentialShouldTryWithoutToken(info, input),
 	}, func(token []byte) error {
-		r.env.Effects.Record(rtruntime.StateEffectCredentialInventoryChanged)
+		r.Effects.Record(rtruntime.StateEffectCredentialInventoryChanged)
 
 		current, err := device.MakeCredential(
 			ctx,
@@ -72,10 +74,12 @@ func (r Runner) MakeCredential(
 			protocol.AuthenticatorMakeCredential,
 		))
 	}
-	result, err := makeCredentialResult(r.env.Selected.Attachment.ID, input.RP.ID, input.Extensions, response)
+
+	result, err := makeCredentialResult(r.Selected.Attachment.ID, input.RP.ID, input.Extensions, response)
 	if err != nil {
 		return appwebauthn.MakeCredentialOutput{}, err
 	}
+
 	r.afterUserPresence(result.UserPresent)
 
 	return appwebauthn.MakeCredentialOutput{
@@ -92,6 +96,7 @@ func makeCredentialShouldTryWithoutToken(
 	if extensions == nil || extensions.PRFInputs == nil || extensions.PRF.Eval.First == nil {
 		return true
 	}
+
 	if !slices.Contains(info.Extensions, extension.ExtensionIdentifierHMACSecret) ||
 		!slices.Contains(info.Extensions, extension.ExtensionIdentifierHMACSecretMC) {
 		return true
@@ -117,14 +122,15 @@ func (r Runner) GetAssertion(
 	if err != nil {
 		return appwebauthn.GetAssertionOutput{}, err
 	}
-	preview := rtwebauthn.BuildGetAssertionPreview(r.env.Selected, info, input)
+
+	preview := rtwebauthn.BuildGetAssertionPreview(r.Selected, info, input)
 	if req.DryRun {
 		return appwebauthn.GetAssertionOutput{Preview: preview}, nil
 	}
 
 	var responses []protocol.AuthenticatorGetAssertionResponse
 
-	if err := r.env.Tokens.Use(ctx, rtruntime.TokenUse{
+	if err := r.Tokens.Use(ctx, rtruntime.TokenUse{
 		Permission:      protocol.PermissionGetAssertion,
 		RPID:            input.RPID,
 		TryWithoutToken: true,
@@ -132,10 +138,11 @@ func (r Runner) GetAssertion(
 		if input.Extensions != nil &&
 			input.Extensions.LargeBlobInputs != nil &&
 			input.Extensions.LargeBlob.Write != nil {
-			r.env.Effects.Record(rtruntime.StateEffectLargeBlobArrayChanged)
+			r.Effects.Record(rtruntime.StateEffectLargeBlobArrayChanged)
 		}
 
 		var current []protocol.AuthenticatorGetAssertionResponse
+
 		for response, err := range device.GetAssertion(
 			ctx,
 			token,
@@ -163,13 +170,14 @@ func (r Runner) GetAssertion(
 	}
 
 	result := appwebauthn.GetAssertionResult{
-		AttachmentID: r.env.Selected.Attachment.ID,
+		AttachmentID: r.Selected.Attachment.ID,
 		RPID:         input.RPID,
 		Assertions:   make([]appwebauthn.Assertion, 0, len(responses)),
 	}
 	for index, response := range responses {
 		result.Assertions = append(result.Assertions, assertionResult(uint(index), input.Extensions, response))
 	}
+
 	for _, assertion := range result.Assertions {
 		if assertion.UserPresent {
 			r.afterUserPresence(true)
@@ -186,7 +194,7 @@ func (r Runner) GetAssertion(
 
 func (r Runner) afterUserPresence(present bool) {
 	if present {
-		r.env.Tokens.InvalidateUnlessPermission(protocol.PermissionLargeBlobWrite)
+		r.Tokens.InvalidateUnlessPermission(protocol.PermissionLargeBlobWrite)
 	}
 }
 
@@ -230,6 +238,7 @@ func makeCredentialResult(
 				errornorm.WithPhase(failure.PhaseDecode),
 			)
 		}
+
 		extensionResults.Client.PreviewSign.GeneratedKey.Inspection = inspection
 	}
 
@@ -281,6 +290,7 @@ func assertionResult(
 	assertion := appwebauthn.Assertion{
 		Index:                index,
 		Credential:           response.Credential,
+		User:                 response.User,
 		AuthenticatorDataHex: hex.EncodeToString(response.AuthDataRaw),
 		SignatureHex:         hex.EncodeToString(response.Signature),
 		NumberOfCredentials:  response.NumberOfCredentials,
@@ -292,10 +302,6 @@ func assertionResult(
 		assertion.SignCount = response.AuthData.SignCount
 		assertion.UserPresent = response.AuthData.Flags.UserPresent()
 		assertion.UserVerified = response.AuthData.Flags.UserVerified()
-	}
-
-	if response.User != nil {
-		assertion.User = response.User
 	}
 
 	return assertion

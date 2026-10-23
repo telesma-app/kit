@@ -52,6 +52,7 @@ func TestFailedMutationInvalidatesRetainedLargeBlobSnapshot(t *testing.T) {
 	primeLargeBlobSnapshot(t, session, handler)
 
 	a.deleteErr = errors.New("delete result unknown")
+
 	_, err := session.DeleteCredential(t.Context(), appcredentials.DeleteOperation{
 		CredentialIDHex: "c05e",
 	}, session.operationOptions(WithInteractionHandler(handler))...)
@@ -67,6 +68,7 @@ func TestFailedLargeBlobWriteInvalidatesRetainedSnapshot(t *testing.T) {
 	primeLargeBlobSnapshot(t, session, handler)
 
 	a.setErr = errors.New("large blob write result unknown")
+
 	_, err := session.WriteLargeBlob(t.Context(), applargeblobs.WriteOperation{
 		CredentialIDHex: "c05e",
 		Payload:         []byte("updated"),
@@ -154,6 +156,7 @@ func openStateEffectAuthenticator(
 	a := &stateEffectAuthenticator{}
 	session := openContractAuthenticator(t, nil, a)
 	t.Cleanup(func() { _ = session.Close() })
+
 	handler := interactionHandlerFunc(func(model.InteractionRequest) (model.InteractionResponse, error) {
 		return model.InteractionResponse{}, nil
 	})
@@ -187,11 +190,13 @@ func assertNextLargeBlobReadRefreshes(
 
 	credentialReads := a.credentialEnumerations.Load()
 	largeBlobReads := a.largeBlobReads.Load()
+
 	readLargeBlob(t, session, handler)
 
 	if got := a.credentialEnumerations.Load(); got != credentialReads+1 {
 		t.Fatalf("credential enumerations = %d, want %d", got, credentialReads+1)
 	}
+
 	if got := a.largeBlobReads.Load(); got != largeBlobReads+1 {
 		t.Fatalf("large blob reads = %d, want %d", got, largeBlobReads+1)
 	}
@@ -207,11 +212,13 @@ func assertNextLargeBlobReadUsesSnapshot(
 
 	credentialReads := a.credentialEnumerations.Load()
 	largeBlobReads := a.largeBlobReads.Load()
+
 	readLargeBlob(t, session, handler)
 
 	if got := a.credentialEnumerations.Load(); got != credentialReads {
 		t.Fatalf("credential enumerations = %d, want %d", got, credentialReads)
 	}
+
 	if got := a.largeBlobReads.Load(); got != largeBlobReads {
 		t.Fatalf("large blob reads = %d, want %d", got, largeBlobReads)
 	}

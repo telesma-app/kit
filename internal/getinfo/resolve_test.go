@@ -70,9 +70,11 @@ func TestResolveVersionsAndExtensions(t *testing.T) {
 	if fact := requireFact(t, absent, model.FactIDVersionFIDO23); fact.State != model.FactStateUnknown {
 		t.Fatalf("absent version = %#v, want unknown", fact)
 	}
+
 	if fact := requireFact(t, absent, model.FactIDExtensionLargeBlobKey); fact.State != model.FactStateUnknown {
 		t.Fatalf("absent extension = %#v, want unknown", fact)
 	}
+
 	if fact := requireFact(t, absent, model.FactIDExtensionPreviewSign); fact.State != model.FactStateUnknown {
 		t.Fatalf("absent previewSign extension = %#v, want unknown", fact)
 	}
@@ -116,10 +118,12 @@ func TestResolveListsAndJSONAreDeterministic(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Marshal first assessment: %v", err)
 	}
+
 	secondJSON, err := json.Marshal(second)
 	if err != nil {
 		t.Fatalf("Marshal second assessment: %v", err)
 	}
+
 	if string(firstJSON) != string(secondJSON) {
 		t.Fatalf("JSON differs:\n%s\n%s", firstJSON, secondJSON)
 	}
@@ -133,17 +137,21 @@ func TestResolveListsAndJSONAreDeterministic(t *testing.T) {
 func TestResolveReturnsStableUniqueFactInventory(t *testing.T) {
 	first := Resolve(protocol.AuthenticatorGetInfoResponse{})
 	second := Resolve(protocol.AuthenticatorGetInfoResponse{})
+
 	if len(first.Facts) == 0 {
 		t.Fatal("facts must be non-empty")
 	}
+
 	firstJSON, err := json.Marshal(first.Facts)
 	if err != nil {
 		t.Fatalf("Marshal first fact inventory: %v", err)
 	}
+
 	secondJSON, err := json.Marshal(second.Facts)
 	if err != nil {
 		t.Fatalf("Marshal second fact inventory: %v", err)
 	}
+
 	if string(firstJSON) != string(secondJSON) {
 		t.Fatal("fact order is not deterministic")
 	}
@@ -153,6 +161,7 @@ func TestResolveReturnsStableUniqueFactInventory(t *testing.T) {
 		if _, duplicate := seen[fact.ID]; duplicate {
 			t.Fatalf("duplicate fact ID %q", fact.ID)
 		}
+
 		seen[fact.ID] = struct{}{}
 		if fact.Source == "" {
 			t.Fatalf("fact %q has an empty source", fact.ID)
@@ -192,7 +201,7 @@ func assertIntegerFact(t *testing.T, assessment model.Assessment, id model.FactI
 func assertListFact(t *testing.T, fact model.Fact, want []string) {
 	t.Helper()
 
-	if fact.Value.List == nil || !((*fact.Value.List == nil) == (want == nil) && slices.Equal(*fact.Value.List, want)) {
+	if fact.Value.List == nil || (*fact.Value.List == nil) != (want == nil) || !slices.Equal(*fact.Value.List, want) {
 		t.Fatalf("fact %q list = %#v, want %#v", fact.ID, fact.Value.List, want)
 	}
 }

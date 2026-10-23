@@ -99,6 +99,44 @@ func TestNormalizeMakeCredentialInputRequiresCoreFields(t *testing.T) {
 	}
 }
 
+func TestNormalizeMakeCredentialInputPreservesCallerAttestationFormats(t *testing.T) {
+	tests := []struct {
+		name   string
+		second attestation.AttestationStatementFormatIdentifier
+	}{
+		{name: "success", second: attestation.AttestationStatementFormatIdentifierNone},
+		{name: "validation failure", second: " "},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			formats := []attestation.AttestationStatementFormatIdentifier{" packed ", tt.second}
+			input := validMakeCredentialInput(nil)
+			input.AttestationFormatsPreference = formats
+
+			normalized, err := NormalizeMakeCredentialInput(input)
+
+			if tt.second == " " {
+				assertValidationFailure(t, err, failure.CodeCTAPParameterInvalid)
+			} else {
+				if err != nil {
+					t.Fatalf("NormalizeMakeCredentialInput: %v", err)
+				}
+
+				want := []attestation.AttestationStatementFormatIdentifier{attestation.AttestationStatementFormatIdentifierPacked, tt.second}
+				if !slices.Equal(normalized.AttestationFormatsPreference, want) {
+					t.Errorf("normalized formats = %v, want %v", normalized.AttestationFormatsPreference, want)
+				}
+			}
+
+			want := []attestation.AttestationStatementFormatIdentifier{" packed ", tt.second}
+			if !slices.Equal(formats, want) {
+				t.Errorf("caller formats = %v, want %v", formats, want)
+			}
+		})
+	}
+}
+
 func TestNormalizeInputsTrimAndDefaultCredentialTypes(t *testing.T) {
 	userID := []byte{0x0a, 0x0b}
 	credentialID := []byte{0xc0, 0x5e}
@@ -107,6 +145,7 @@ func TestNormalizeInputsTrimAndDefaultCredentialTypes(t *testing.T) {
 		attestation.AttestationStatementFormatIdentifierPacked,
 		attestation.AttestationStatementFormatIdentifierNone,
 	}
+
 	input, err := NormalizeMakeCredentialInput(MakeCredentialInput{
 		RP:             credential.PublicKeyCredentialRpEntity{ID: " example.com "},
 		User:           credential.PublicKeyCredentialUserEntity{ID: userID},
@@ -197,6 +236,7 @@ func assertValidationFailure(t *testing.T, err error, wantCode failure.Code) {
 	if !failure.IsCode(err, wantCode) {
 		t.Fatalf("error = %v, want %s", err, wantCode)
 	}
+
 	if got := failure.Snapshot(err).Phase; got != failure.PhaseValidation {
 		t.Fatalf("failure phase = %q, want %q", got, failure.PhaseValidation)
 	}

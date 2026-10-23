@@ -36,6 +36,7 @@ func NewJournal(entryLimit, byteLimit int) *Journal {
 
 func (j *Journal) Append(entry model.LogEntry) {
 	size := entrySize(entry)
+
 	j.mu.Lock()
 	j.sequence++
 	j.records = append(j.records, journalRecord{

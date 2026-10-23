@@ -3,9 +3,11 @@ package workflow
 import (
 	"context"
 	"encoding/hex"
+	"errors"
 	"time"
 
 	"github.com/telesma-app/ctap/protocol"
+	"github.com/telesma-app/kit/internal/authenticator"
 	rtconfig "github.com/telesma-app/kit/internal/config"
 	"github.com/telesma-app/kit/internal/errornorm"
 	rtruntime "github.com/telesma-app/kit/internal/runtime"
@@ -19,14 +21,15 @@ const bioEnrollmentCancelTimeout = 2 * time.Second
 
 func (r Runner) BioEnroll(
 	ctx context.Context,
-	device BioDevice,
+	device authenticator.BioDevice,
 	req appconfig.BioEnrollOperation,
 ) (appconfig.BioEnrollOutput, error) {
 	info, err := r.getAuthenticatorInfo(ctx, device)
 	if err != nil {
 		return appconfig.BioEnrollOutput{}, err
 	}
-	status := rtconfig.BuildStatusReport(r.env.Selected, info)
+
+	status := rtconfig.BuildStatusReport(r.Selected, info)
 
 	mode := safety.PreviewModeExecute
 	if req.DryRun {
@@ -43,7 +46,8 @@ func (r Runner) BioEnroll(
 	}
 
 	var responses []protocol.AuthenticatorBioEnrollmentResponse
-	err = r.env.Tokens.Use(ctx, rtruntime.TokenUse{
+
+	err = r.Tokens.Use(ctx, rtruntime.TokenUse{
 		Permission: protocol.PermissionBioEnrollment,
 	}, func(token []byte) error {
 		current, err := r.runBioEnrollment(
@@ -58,6 +62,7 @@ func (r Runner) BioEnroll(
 		if err != nil {
 			return err
 		}
+
 		responses = current
 
 		return nil
@@ -89,13 +94,14 @@ func (r Runner) bioEnrollmentProgress(
 			total := completed + uint64(*response.RemainingSamples)
 			event.Total = new(total)
 		}
-		r.env.Events.Emit(ctx, event)
+
+		r.Events.Emit(ctx, event)
 	}
 }
 
 func (r Runner) runBioEnrollment(
 	ctx context.Context,
-	device BioDevice,
+	device authenticator.BioDevice,
 	req appconfig.BioEnrollRequest,
 	command protocol.Command,
 	token []byte,
@@ -105,9 +111,10 @@ func (r Runner) runBioEnrollment(
 	cancelAfterFailure := func(cause error) ([]protocol.AuthenticatorBioEnrollmentResponse, error) {
 		cancelCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), bioEnrollmentCancelTimeout)
 		defer cancel()
-		_ = device.CancelCurrentEnrollment(cancelCtx)
 
-		return nil, cause
+		cleanupErr := device.CancelCurrentEnrollment(cancelCtx)
+
+		return nil, errors.Join(cause, cleanupErr)
 	}
 
 	begin, err := device.EnrollBegin(ctx, token, req.TimeoutMilliseconds)

@@ -23,6 +23,7 @@ func PrepareUpdateUser(operation appcredentials.UpdateUserOperation) (UpdateUser
 	if err != nil {
 		return UpdateUserPlan{}, err
 	}
+
 	target.Record.CredentialIDHex = credentialIDHex
 
 	target.RP.ID = strings.TrimSpace(target.RP.ID)
@@ -41,6 +42,7 @@ func PrepareUpdateUser(operation appcredentials.UpdateUserOperation) (UpdateUser
 			failure.WithPhase(failure.PhaseValidation),
 		)
 	}
+
 	target.User.UserIDHex = hex.EncodeToString(userID)
 	operation.Target = target
 

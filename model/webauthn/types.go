@@ -37,15 +37,15 @@ type GetAssertionInput struct {
 }
 
 type MakeCredentialPreview struct {
-	Device   report.DeviceReport `json:"device"`
-	Input    MakeCredentialInput `json:"input"`
-	Warnings []safety.Warning    `json:"warnings,omitempty"`
+	Device   report.EndpointReport `json:"device"`
+	Input    MakeCredentialInput   `json:"input"`
+	Warnings []safety.Warning      `json:"warnings,omitempty"`
 }
 
 type GetAssertionPreview struct {
-	Device   report.DeviceReport `json:"device"`
-	Input    GetAssertionInput   `json:"input"`
-	Warnings []safety.Warning    `json:"warnings,omitempty"`
+	Device   report.EndpointReport `json:"device"`
+	Input    GetAssertionInput     `json:"input"`
+	Warnings []safety.Warning      `json:"warnings,omitempty"`
 }
 
 type MakeCredentialResult struct {

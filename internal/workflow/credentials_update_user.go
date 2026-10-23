@@ -35,10 +35,10 @@ func (r Runner) UpdateCredentialUser(
 		return appcredentials.UpdateUserOutput{}, err
 	}
 
-	err = r.env.Tokens.Use(ctx, rtruntime.TokenUse{
+	err = r.Tokens.Use(ctx, rtruntime.TokenUse{
 		Permission: access.mutationPermission,
 	}, func(token []byte) error {
-		r.env.Effects.Record(rtruntime.StateEffectCredentialInventoryChanged)
+		r.Effects.Record(rtruntime.StateEffectCredentialInventoryChanged)
 
 		return device.UpdateUserInformation(ctx, token, plan.Descriptor, plan.User)
 	})
@@ -49,10 +49,11 @@ func (r Runner) UpdateCredentialUser(
 			protocol.CredentialManagementSubCommandUpdateUserInformation,
 		))
 	}
+
 	return appcredentials.UpdateUserOutput{
 		Preview: plan.Preview,
 		Result: &appcredentials.UpdateUserResult{
-			AttachmentID:    r.env.Selected.Attachment.ID,
+			AttachmentID:    r.Selected.Attachment.ID,
 			CredentialIDHex: plan.Preview.CredentialIDHex,
 			RPID:            plan.Preview.RPID,
 			RPName:          plan.Preview.RPName,

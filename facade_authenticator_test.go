@@ -184,6 +184,7 @@ func TestAuthenticatorCloseClosesAuthenticatorOnce(t *testing.T) {
 		closeStarted: make(chan struct{}),
 		releaseClose: make(chan struct{}),
 	}
+
 	opened := openContractAuthenticator(t, nil, a)
 	defer func() { _ = opened.Close() }()
 
@@ -282,10 +283,12 @@ func TestAuthenticatorCloseCancelsActiveRunAndClosesAuthenticatorOnce(t *testing
 
 func TestAuthenticatorCloseCancelsBlockedAuthenticatorCommand(t *testing.T) {
 	a := &blockingConfigAuthenticator{commandEntered: make(chan struct{})}
+
 	opened := openContractAuthenticator(t, nil, a)
 	defer func() { _ = opened.Close() }()
 
 	runDone := make(chan error, 1)
+
 	go func() {
 		_, err := opened.SetAlwaysUV(
 			context.Background(),
@@ -323,6 +326,7 @@ func TestAuthenticatorCloseReleasesTransportBeforeWaitingForBlockedCommand(t *te
 	opened := openContractAuthenticator(t, nil, a)
 
 	runDone := make(chan error, 1)
+
 	go func() {
 		_, err := opened.SetAlwaysUV(
 			context.Background(),
@@ -457,6 +461,7 @@ func TestCanceledTransmitWithoutDeviceInvalidationKeepsAuthenticatorOpen(t *test
 		operation: ctaptransport.IOTransmit,
 		cause:     context.Canceled,
 	}
+
 	opened := openContractAuthenticator(t, nil, a)
 	defer func() { _ = opened.Close() }()
 
@@ -496,6 +501,7 @@ func (a *transportFailureAuthenticator) SetPIN(context.Context, string) error {
 	if cause == nil {
 		cause = io.ErrClosedPipe
 	}
+
 	err := &ctaptransport.IOError{
 		Operation: a.operation,
 		Err:       cause,
@@ -521,7 +527,7 @@ func TestAuthenticatorEventSinksAreScopedToRun(t *testing.T) {
 	opened := openContractAuthenticator(t, nil, &progressCredentialAuthenticator{})
 	defer func() { _ = opened.Close() }()
 
-	if _, err := opened.Authenticator.ListCredentials(
+	if _, err := opened.ListCredentials(
 		context.Background(),
 		WithInteractionHandler(userVerificationHandler(t)),
 		WithEventSink(firstEvents),
@@ -538,7 +544,7 @@ func TestAuthenticatorEventSinksAreScopedToRun(t *testing.T) {
 		t.Fatalf("second sink events before second run = %d, want 0", got)
 	}
 
-	if _, err := opened.Authenticator.ListCredentials(
+	if _, err := opened.ListCredentials(
 		context.Background(),
 		WithInteractionHandler(userVerificationHandler(t)),
 		WithEventSink(secondEvents),

@@ -30,14 +30,17 @@ func TestListLargeBlobsClassifiesEveryArrayEntry(t *testing.T) {
 	if len(report.Entries) != len(wantStates) {
 		t.Fatalf("entries = %d, want %d", len(report.Entries), len(wantStates))
 	}
+
 	for index, want := range wantStates {
 		if report.Entries[index].Index != index || report.Entries[index].State != want {
 			t.Fatalf("entry %d = %#v, want state %q", index, report.Entries[index], want)
 		}
 	}
+
 	if report.Entries[0].Target == nil || report.Entries[0].Target.CredentialIDHex != "c05e" {
 		t.Fatalf("matched target = %#v", report.Entries[0].Target)
 	}
+
 	if report.Entries[3].Target == nil || report.Entries[3].Target.CredentialIDHex != "c05e" {
 		t.Fatalf("corrupt target = %#v", report.Entries[3].Target)
 	}
@@ -63,6 +66,7 @@ func TestListLargeBlobsIgnoresMissingCredentialKeysWhenClassifyingOrphans(t *tes
 	if len(report.Entries) != 1 || report.Entries[0].State != applargeblobs.EntryStateOrphaned {
 		t.Fatalf("entries = %#v, want orphaned", report.Entries)
 	}
+
 	if report.Array.OrphanedBlobCount != 1 {
 		t.Fatalf("array summary = %#v", report.Array)
 	}

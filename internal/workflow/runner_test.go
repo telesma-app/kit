@@ -2,11 +2,9 @@ package workflow
 
 import (
 	"context"
-	"reflect"
 	"testing"
 
 	"github.com/telesma-app/ctap/protocol"
-	"github.com/telesma-app/kit/internal/runtime"
 	"github.com/telesma-app/kit/model/report"
 )
 
@@ -22,44 +20,19 @@ func (s inspectDeviceStub) GetInfo(context.Context) (protocol.AuthenticatorGetIn
 	return s.info, nil
 }
 
-func TestWorkflowEnvironmentContainsOnlySharedServices(t *testing.T) {
-	environmentType := reflect.TypeOf(Environment{})
-	wantFields := map[string]reflect.Type{
-		"Selected":     reflect.TypeOf(report.DeviceReport{}),
-		"Events":       reflect.TypeOf((*EventEmitter)(nil)).Elem(),
-		"Interactions": reflect.TypeOf((*InteractionRequester)(nil)).Elem(),
-		"Tokens":       reflect.TypeOf((*TokenService)(nil)).Elem(),
-		"Effects":      reflect.TypeOf((*runtime.StateEffects)(nil)),
-	}
-	if environmentType.NumField() != len(wantFields) {
-		t.Fatalf("workflow Environment has %d fields, want %d", environmentType.NumField(), len(wantFields))
+func TestGetInfoAcceptsInfoCapabilityOnly(t *testing.T) {
+	runner := Runner{
+		Selected: report.EndpointReport{Attachment: report.AttachmentReport{ID: "inspect-capability"}},
 	}
 
-	for index := range environmentType.NumField() {
-		field := environmentType.Field(index)
-		wantType, ok := wantFields[field.Name]
-		if !ok {
-			t.Fatalf("workflow Environment contains unexpected field %s", field.Name)
-		}
-		if field.Type != wantType {
-			t.Fatalf("workflow Environment field %s has type %s, want %s", field.Name, field.Type, wantType)
-		}
-	}
-}
-
-func TestInspectAcceptsInfoCapabilityOnly(t *testing.T) {
-	runner := NewRunner(Environment{
-		Selected: report.DeviceReport{Attachment: report.AttachmentReport{ID: "inspect-capability"}},
-	})
-
-	result, err := runner.Inspect(t.Context(), inspectDeviceStub{
+	result, err := runner.GetInfo(t.Context(), inspectDeviceStub{
 		info: protocol.AuthenticatorGetInfoResponse{Options: map[protocol.Option]bool{}},
 	})
 	if err != nil {
-		t.Fatalf("Inspect: %v", err)
+		t.Fatalf("GetInfo: %v", err)
 	}
 
-	if result.Device.Attachment.ID != "inspect-capability" {
-		t.Fatalf("attachment ID = %q, want inspect-capability", result.Device.Attachment.ID)
+	if len(result.Assessment.Facts) == 0 {
+		t.Fatal("missing assessment")
 	}
 }

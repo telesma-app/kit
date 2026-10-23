@@ -29,29 +29,36 @@ func TestDerivePreviewSignARKGP256(t *testing.T) {
 	}
 
 	additionalArguments := previewSignDecodeHex(t, prepared.AdditionalArgumentsHex)
+
 	var arguments map[int]any
 	if err := cbor.Unmarshal(additionalArguments, &arguments); err != nil {
 		t.Fatalf("decode additional arguments: %v", err)
 	}
+
 	if got := arguments[3]; got != int64(cose.AlgorithmESP256SplitARKGPlaceholder) {
 		t.Fatalf("algorithm = %#v, want %d", got, cose.AlgorithmESP256SplitARKGPlaceholder)
 	}
+
 	if got := arguments[-2]; !bytes.Equal(got.([]byte), context) {
 		t.Fatalf("context = %x, want %x", got, context)
 	}
+
 	if got := arguments[-1].([]byte); len(got) == 0 {
 		t.Fatal("ARKG key handle is empty")
 	}
 
 	encodedVerificationKey := previewSignDecodeHex(t, prepared.VerificationKeyCOSEHex)
+
 	var verificationKey cose.Key
 	if err := cbor.Unmarshal(encodedVerificationKey, &verificationKey); err != nil {
 		t.Fatalf("decode verification key: %v", err)
 	}
+
 	algorithm, err := verificationKey.Algorithm()
 	if err != nil {
 		t.Fatalf("verification key algorithm: %v", err)
 	}
+
 	if algorithm != cose.AlgorithmESP256 {
 		t.Fatalf("verification key algorithm = %d, want %d", algorithm, cose.AlgorithmESP256)
 	}
@@ -107,6 +114,7 @@ func previewSignGeneratedKey(t *testing.T) appwebauthn.PreviewSignGeneratedKey {
 		},
 		-3: cose.AlgorithmESP256,
 	}
+
 	encoded, err := cbor.Marshal(seed)
 	if err != nil {
 		t.Fatalf("encode public seed: %v", err)
@@ -120,10 +128,12 @@ func previewSignGeneratedKey(t *testing.T) appwebauthn.PreviewSignGeneratedKey {
 
 func previewSignDecodeHex(t *testing.T, value string) []byte {
 	t.Helper()
+
 	decoded, err := hex.DecodeString(value)
 	if err != nil {
 		t.Fatalf("decode hex: %v", err)
 	}
+
 	return decoded
 }
 

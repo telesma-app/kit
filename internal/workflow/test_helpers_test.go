@@ -13,6 +13,7 @@ func jsonValuesEqual(t testing.TB, got, want any) bool {
 	if err != nil {
 		t.Fatalf("encode actual JSON value: %v", err)
 	}
+
 	wantJSON, err := json.Marshal(want)
 	if err != nil {
 		t.Fatalf("encode expected JSON value: %v", err)

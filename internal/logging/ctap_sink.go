@@ -35,6 +35,7 @@ func setSubCommand(entry *model.LogEntry, command protocol.Command, code uint64)
 	}
 
 	entry.SubCommandCode = &code
+
 	switch command {
 	case protocol.AuthenticatorClientPIN:
 		entry.SubCommand, _ = protocol.ClientPINSubCommand(code).Name()

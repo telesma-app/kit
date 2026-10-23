@@ -41,10 +41,12 @@ func (r Runner) DeleteCredential(
 	if err != nil {
 		return appcredentials.DeleteOutput{}, err
 	}
+
 	publicTarget, err := rtcredentials.FindByCanonicalID(report, credentialIDHex)
 	if err != nil {
 		return appcredentials.DeleteOutput{}, err
 	}
+
 	preview := rtcredentials.BuildDeletePreview(publicTarget)
 
 	if req.DryRun {
@@ -55,10 +57,11 @@ func (r Runner) DeleteCredential(
 	for _, transport := range publicTarget.Record.CredentialTransports {
 		transports = append(transports, credential.AuthenticatorTransport(transport))
 	}
-	err = r.env.Tokens.Use(ctx, rtruntime.TokenUse{
+
+	err = r.Tokens.Use(ctx, rtruntime.TokenUse{
 		Permission: access.mutationPermission,
 	}, func(token []byte) error {
-		r.env.Effects.Record(rtruntime.StateEffectCredentialInventoryChanged)
+		r.Effects.Record(rtruntime.StateEffectCredentialInventoryChanged)
 
 		return device.DeleteCredential(ctx, token, credential.PublicKeyCredentialDescriptor{
 			Type:       credential.PublicKeyCredentialType(publicTarget.Record.CredentialType),
@@ -73,10 +76,11 @@ func (r Runner) DeleteCredential(
 			protocol.CredentialManagementSubCommandDeleteCredential,
 		))
 	}
+
 	return appcredentials.DeleteOutput{
 		Preview: preview,
 		Result: &appcredentials.DeleteResult{
-			AttachmentID:    r.env.Selected.Attachment.ID,
+			AttachmentID:    r.Selected.Attachment.ID,
 			CredentialIDHex: publicTarget.Record.CredentialIDHex,
 			RPID:            publicTarget.RP.ID,
 			RPName:          publicTarget.RP.Name,

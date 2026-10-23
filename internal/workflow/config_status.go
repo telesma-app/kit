@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/telesma-app/ctap/protocol"
+	"github.com/telesma-app/kit/internal/authenticator"
 	rtconfig "github.com/telesma-app/kit/internal/config"
 	"github.com/telesma-app/kit/internal/errornorm"
 	appconfig "github.com/telesma-app/kit/model/config"
@@ -12,7 +13,7 @@ import (
 
 func (r Runner) ConfigStatus(
 	ctx context.Context,
-	device ConfigStatusDevice,
+	device authenticator.ConfigStatusDevice,
 ) (appconfig.StatusReport, error) {
 	if err := ctx.Err(); err != nil {
 		return appconfig.StatusReport{}, errornorm.Annotate(err, errornorm.WithPhase(failure.PhaseAuthenticatorCommand))
@@ -22,7 +23,8 @@ func (r Runner) ConfigStatus(
 	if err != nil {
 		return appconfig.StatusReport{}, err
 	}
-	rep := rtconfig.BuildStatusReport(r.env.Selected, info)
+
+	rep := rtconfig.BuildStatusReport(r.Selected, info)
 	if rep.PIN.Configured != nil && *rep.PIN.Configured {
 		retries, powerCycle, err := device.GetPINRetries(ctx)
 		if err != nil {
@@ -34,6 +36,7 @@ func (r Runner) ConfigStatus(
 				),
 			)
 		}
+
 		rep.PIN.Retries = appconfig.RetryState{
 			State:           appconfig.StateSupported,
 			Remaining:       new(retries),
@@ -54,6 +57,7 @@ func (r Runner) ConfigStatus(
 				),
 			)
 		}
+
 		rep.UV.Retries = appconfig.RetryState{
 			State:     appconfig.StateSupported,
 			Remaining: new(retries),

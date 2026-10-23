@@ -26,6 +26,7 @@ func TestCredentialInventoryDoesNotExposeLargeBlobKey(t *testing.T) {
 	}
 
 	a := &largeBlobWriteEventAuthenticator{}
+
 	session := openContractAuthenticator(t, nil, a)
 	defer func() { _ = session.Close() }()
 
@@ -60,6 +61,7 @@ func TestCredentialInventoryDoesNotExposeLargeBlobKey(t *testing.T) {
 func TestLargeBlobWriteEventsFollowInteractionAndInventoryOrder(t *testing.T) {
 	events := &recordingEventSink{}
 	a := &largeBlobWriteEventAuthenticator{}
+
 	session := openContractAuthenticator(t, events, a)
 	defer func() { _ = session.Close() }()
 
@@ -103,6 +105,7 @@ func TestLargeBlobWriteEventsFollowInteractionAndInventoryOrder(t *testing.T) {
 
 func TestLargeBlobWriteUsesSeparateGrantForReadOnlyInventory(t *testing.T) {
 	a := &largeBlobWriteEventAuthenticator{credentialManagementReadOnly: true}
+
 	session := openContractAuthenticator(t, nil, a)
 	defer func() { _ = session.Close() }()
 
@@ -117,6 +120,7 @@ func TestLargeBlobWriteUsesSeparateGrantForReadOnlyInventory(t *testing.T) {
 	if got := a.tokenCalls.Load(); got != 2 {
 		t.Fatalf("token calls = %d, want 2", got)
 	}
+
 	wantPermissions := []protocol.Permission{
 		protocol.PermissionPersistentCredentialManagementReadOnly,
 		protocol.PermissionLargeBlobWrite,
@@ -129,6 +133,7 @@ func TestLargeBlobWriteUsesSeparateGrantForReadOnlyInventory(t *testing.T) {
 
 func TestLargeBlobWriteCapacityErrorReturnsNoPartialPreview(t *testing.T) {
 	a := &largeBlobWriteEventAuthenticator{maxSerializedLargeBlobArray: 16}
+
 	session := openContractAuthenticator(t, nil, a)
 	defer func() { _ = session.Close() }()
 
@@ -144,6 +149,7 @@ func TestLargeBlobWriteCapacityErrorReturnsNoPartialPreview(t *testing.T) {
 
 func TestLargeBlobWriteZeroCapacityMeansUnknownLimit(t *testing.T) {
 	a := &largeBlobWriteEventAuthenticator{}
+
 	session := openContractAuthenticator(t, nil, a)
 	defer func() { _ = session.Close() }()
 
@@ -163,6 +169,7 @@ func TestLargeBlobWriteZeroCapacityMeansUnknownLimit(t *testing.T) {
 
 func TestLargeBlobEditUsesOneInventoryReadBeforeRefresh(t *testing.T) {
 	a := &largeBlobWriteEventAuthenticator{}
+
 	session := openContractAuthenticator(t, nil, a)
 	defer func() { _ = session.Close() }()
 
@@ -239,6 +246,7 @@ func TestLargeBlobEditUsesOneInventoryReadBeforeRefresh(t *testing.T) {
 
 func TestLargeBlobReadWithMissingKeyDoesNotFetchSharedArray(t *testing.T) {
 	a := &largeBlobWriteEventAuthenticator{omitLargeBlobKey: true}
+
 	session := openContractAuthenticator(t, nil, a)
 	defer func() { _ = session.Close() }()
 
@@ -250,9 +258,11 @@ func TestLargeBlobReadWithMissingKeyDoesNotFetchSharedArray(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ReadLargeBlob: %v", err)
 	}
+
 	if report.State != applargeblobs.ReadStateMissing {
 		t.Fatalf("state = %q, want %q", report.State, applargeblobs.ReadStateMissing)
 	}
+
 	if got := a.largeBlobReads.Load(); got != 0 {
 		t.Fatalf("large-blob array reads = %d, want 0", got)
 	}
@@ -260,6 +270,7 @@ func TestLargeBlobReadWithMissingKeyDoesNotFetchSharedArray(t *testing.T) {
 
 func TestLargeBlobListReadsFreshReport(t *testing.T) {
 	a := &largeBlobWriteEventAuthenticator{}
+
 	session := openContractAuthenticator(t, nil, a)
 	defer func() { _ = session.Close() }()
 
@@ -286,6 +297,7 @@ func TestLargeBlobListReadsFreshReport(t *testing.T) {
 
 func TestLargeBlobListAlwaysObservesCurrentAuthenticatorState(t *testing.T) {
 	a := &largeBlobWriteEventAuthenticator{}
+
 	session := openContractAuthenticator(t, nil, a)
 	defer func() { _ = session.Close() }()
 
@@ -297,6 +309,7 @@ func TestLargeBlobListAlwaysObservesCurrentAuthenticatorState(t *testing.T) {
 	if err != nil {
 		t.Fatalf("encrypt refreshed blob: %v", err)
 	}
+
 	a.largeBlobs = []protocol.LargeBlob{added}
 
 	output, err := session.ListLargeBlobs(context.Background(), session.operationOptions(WithInteractionHandler(userVerificationHandler(t)))...)
@@ -338,6 +351,7 @@ func TestLargeBlobDeleteLastBlobWritesEmptyArray(t *testing.T) {
 	a := &largeBlobWriteEventAuthenticator{
 		largeBlobs: []protocol.LargeBlob{encryptedLargeBlob(t, 0x01, "current")},
 	}
+
 	session := openContractAuthenticator(t, nil, a)
 	defer func() { _ = session.Close() }()
 
@@ -393,6 +407,7 @@ func TestLargeBlobWriteReplacesAuthenticatedEntryWithCorruptCompressedData(t *te
 			authenticatedCorruptLargeBlob(t, 0x01, []byte("not-deflate"), 7),
 		},
 	}
+
 	session := openContractAuthenticator(t, nil, a)
 	defer func() { _ = session.Close() }()
 
@@ -407,20 +422,24 @@ func TestLargeBlobWriteReplacesAuthenticatedEntryWithCorruptCompressedData(t *te
 	if err != nil {
 		t.Fatalf("WriteLargeBlob: %v", err)
 	}
+
 	if output.Result == nil {
 		t.Fatal("result = nil")
 	}
+
 	if output.Result.Operation != applargeblobs.MutationReplace ||
 		output.Result.CurrentByteCount != 7 ||
 		output.Result.BlobCountAfter != 1 {
 		t.Fatalf("result = %#v, want one replaced entry with declared previous size 7", output.Result)
 	}
+
 	if output.Preview.Operation != output.Result.Operation ||
 		output.Preview.ProposedByteCount != output.Result.ProposedByteCount ||
 		output.Preview.SerializedLargeBlobArraySizeAfter != output.Result.SerializedLargeBlobArraySizeAfter ||
 		output.Preview.BlobCountAfter != output.Result.BlobCountAfter {
 		t.Fatalf("preview/result diverged: %#v / %#v", output.Preview, output.Result)
 	}
+
 	if len(a.lastSetLargeBlobs) != 1 {
 		t.Fatalf("written blobs = %d, want 1", len(a.lastSetLargeBlobs))
 	}
@@ -429,6 +448,7 @@ func TestLargeBlobWriteReplacesAuthenticatedEntryWithCorruptCompressedData(t *te
 	if err != nil {
 		t.Fatalf("DecryptLargeBlob replacement: %v", err)
 	}
+
 	if !bytes.Equal(raw, []byte("replacement")) {
 		t.Fatalf("replacement payload = %q", raw)
 	}
@@ -500,6 +520,7 @@ func TestLargeBlobGarbageCollectResults(t *testing.T) {
 			if err != nil {
 				t.Fatalf("GarbageCollectLargeBlobs: %v", err)
 			}
+
 			if output.Result == nil {
 				t.Fatal("result = nil")
 			}
@@ -527,18 +548,23 @@ func TestLargeBlobGarbageCollectResults(t *testing.T) {
 					tt.wantNonconforming,
 				)
 			}
+
 			if got := a.largeBlobWrites.Load(); got != tt.wantWrites {
 				t.Fatalf("large blob writes = %d, want %d", got, tt.wantWrites)
 			}
+
 			if got := len(a.lastSetLargeBlobs); got != tt.wantAfter && tt.wantWrites != 0 {
 				t.Fatalf("replacement blob count = %d, want %d", got, tt.wantAfter)
 			}
+
 			if got := a.rpEnumerations.Load(); got != 1 {
 				t.Fatalf("RP enumerations = %d, want 1", got)
 			}
+
 			if got := a.credentialEnumerations.Load(); got != 1 {
 				t.Fatalf("credential enumerations = %d, want 1", got)
 			}
+
 			if got := a.largeBlobReads.Load(); got != 1 {
 				t.Fatalf("large blob reads = %d, want 1", got)
 			}
@@ -591,9 +617,11 @@ func TestLargeBlobGarbageCollectWireMutation(t *testing.T) {
 			if err != nil {
 				t.Fatalf("GarbageCollectLargeBlobs: %v", err)
 			}
+
 			if output.Result == nil {
 				t.Fatal("result = nil")
 			}
+
 			if output.Result.Noop || output.Result.DeletedBlobCount != 1 || output.Result.BlobCountAfter != tt.wantAfter {
 				t.Fatalf(
 					"result = {noop:%t deleted:%d after:%d}, want {noop:false deleted:1 after:%d}",
@@ -603,9 +631,11 @@ func TestLargeBlobGarbageCollectWireMutation(t *testing.T) {
 					tt.wantAfter,
 				)
 			}
+
 			if got := a.largeBlobWrites.Load(); got != 1 {
 				t.Fatalf("large blob writes = %d, want 1", got)
 			}
+
 			if got := len(a.lastSetLargeBlobs); got != tt.wantAfter {
 				t.Fatalf("replacement blob count = %d, want %d", got, tt.wantAfter)
 			}
@@ -638,6 +668,7 @@ func authenticatedCorruptLargeBlob(
 	if err != nil {
 		t.Fatalf("NewCipher: %v", err)
 	}
+
 	gcm, err := cipher.NewGCM(block)
 	if err != nil {
 		t.Fatalf("NewGCM: %v", err)
@@ -660,6 +691,7 @@ func TestLargeBlobWritePINOnlyFlowDoesNotRequestUserVerification(t *testing.T) {
 	a := &pinOnlyLargeBlobWriteEventAuthenticator{
 		largeBlobWriteEventAuthenticator: largeBlobWriteEventAuthenticator{},
 	}
+
 	session := openContractAuthenticator(t, events, a)
 	defer func() { _ = session.Close() }()
 
@@ -721,10 +753,12 @@ func TestLargeBlobWritePreparedRefreshRequestsPINOnce(t *testing.T) {
 	a := &pinOnlyLargeBlobWriteEventAuthenticator{
 		largeBlobWriteEventAuthenticator: largeBlobWriteEventAuthenticator{},
 	}
+
 	session := openContractAuthenticator(t, nil, a)
 	defer func() { _ = session.Close() }()
 
 	var requests []model.InteractionRequest
+
 	handler := interactionHandlerFunc(func(req model.InteractionRequest) (model.InteractionResponse, error) {
 		requests = append(requests, req)
 
@@ -764,6 +798,7 @@ func TestLargeBlobWritePINVerificationFlowSkipsUVForUVCapableAuthenticator(t *te
 	a := &pinPreferredLargeBlobWriteEventAuthenticator{
 		largeBlobWriteEventAuthenticator: largeBlobWriteEventAuthenticator{},
 	}
+
 	session := openContractAuthenticator(t, events, a)
 	defer func() { _ = session.Close() }()
 

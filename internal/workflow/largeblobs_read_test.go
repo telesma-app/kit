@@ -74,6 +74,7 @@ func TestReadLargeBlobFollowsPerCredentialReadAlgorithm(t *testing.T) {
 			device := &largeBlobReadDeviceStub{
 				blobs: tt.blobs,
 			}
+
 			report, err := (Runner{}).readLargeBlobFromInventory(
 				t.Context(),
 				device,
@@ -83,23 +84,28 @@ func TestReadLargeBlobFollowsPerCredentialReadAlgorithm(t *testing.T) {
 			if device.reads != tt.wantReads {
 				t.Fatalf("large-blob array reads = %d, want %d", device.reads, tt.wantReads)
 			}
+
 			if tt.wantFailure != "" {
 				if !failure.IsCode(err, tt.wantFailure) {
 					t.Fatalf("error = %v, want code %q", err, tt.wantFailure)
 				}
+
 				if !jsonValuesEqual(t, report, applargeblobs.ReadReport{}) {
 					t.Fatalf("report = %#v, want zero value", report)
 				}
 
 				return
 			}
+
 			if err != nil {
 				t.Fatalf("ReadLargeBlob: %v", err)
 			}
+
 			if report.State != tt.wantState {
 				t.Fatalf("state = %q, want %q", report.State, tt.wantState)
 			}
-			if !((report.RawBytes == nil) == (tt.wantPayload == nil) && bytes.Equal(report.RawBytes, tt.wantPayload)) {
+
+			if (report.RawBytes == nil) != (tt.wantPayload == nil) || !bytes.Equal(report.RawBytes, tt.wantPayload) {
 				t.Fatalf("raw bytes = %x, want %x", report.RawBytes, tt.wantPayload)
 			}
 		})
@@ -172,6 +178,7 @@ func authenticatedCorruptWorkflowLargeBlob(
 	if err != nil {
 		t.Fatalf("NewCipher: %v", err)
 	}
+
 	gcm, err := cipher.NewGCM(block)
 	if err != nil {
 		t.Fatalf("NewGCM: %v", err)

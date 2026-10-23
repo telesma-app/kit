@@ -42,6 +42,7 @@ func TestDecodeLargeBlob(t *testing.T) {
 				if !failure.IsCode(err, tt.wantFailure) {
 					t.Fatalf("Decode error = %v, want %s", err, tt.wantFailure)
 				}
+
 				if result.Mode != "" || result.Text != "" || result.Value != nil {
 					t.Fatalf("Decode result = %#v, want zero", result)
 				}
@@ -57,12 +58,15 @@ func TestDecodeLargeBlob(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Decode: %v", err)
 			}
+
 			if result.Mode != tt.mode {
 				t.Fatalf("Mode = %q, want %q", result.Mode, tt.mode)
 			}
+
 			if result.Text != tt.wantText {
 				t.Fatalf("Text = %q, want %q", result.Text, tt.wantText)
 			}
+
 			if !jsonValuesEqual(t, result.Value, tt.wantValue) {
 				t.Fatalf("Value = %#v, want %#v", result.Value, tt.wantValue)
 			}
@@ -77,6 +81,7 @@ func jsonValuesEqual(t testing.TB, got, want any) bool {
 	if err != nil {
 		t.Fatalf("encode actual JSON value: %v", err)
 	}
+
 	wantJSON, err := json.Marshal(want)
 	if err != nil {
 		t.Fatalf("encode expected JSON value: %v", err)
