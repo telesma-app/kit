@@ -46,4 +46,4 @@
 - Keep file splits coarse and domain-shaped; keep hardware-dependent behavior out of default no-hardware tests.
 
 ## Verification
-- Run `GOWORK=off go test ./... -count=1` and `GOWORK=off go vet ./...` before handoff; add `GOWORK=off go test -race ./... -count=1` for runtime lifecycle/session changes.
+- Run `go test ./... -count=1` and `go vet ./...` before handoff; add `go test -race ./... -count=1` for runtime lifecycle/session changes.

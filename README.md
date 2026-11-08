@@ -169,20 +169,20 @@ More lifecycle details are available in
 Run the default checks with:
 
 ```sh
-GOWORK=off go test ./... -count=1
-GOWORK=off go vet ./...
+go test ./... -count=1
+go vet ./...
 ```
 
 Run the standard linters and `wsl_v5` with [golangci-lint v2](https://golangci-lint.run/docs/welcome/install/):
 
 ```sh
-GOWORK=off golangci-lint run ./...
+golangci-lint run ./...
 ```
 
 For authenticator lifecycle, interaction, token, or synchronization changes, also run:
 
 ```sh
-GOWORK=off go test -race ./... -count=1
+go test -race ./... -count=1
 ```
 
 Hardware-dependent behavior must not be required by the default test suite.
