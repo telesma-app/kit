@@ -264,7 +264,10 @@ func TestPendingHotplugRemovalAndShutdownDoNotWaitForWorkflow(t *testing.T) {
 			}
 
 			select {
-			case <-done:
+			case err := <-done:
+				if !errors.Is(err, context.Canceled) {
+					t.Fatalf("workflow error = %v, want context.Canceled", err)
+				}
 			case <-time.After(time.Second):
 				t.Fatal("workflow did not finish")
 			}

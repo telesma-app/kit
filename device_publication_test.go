@@ -69,9 +69,11 @@ func TestDevicePublicationWaitsForFirstInspection(t *testing.T) {
 			if state.Snapshot.Devices[0].ID != tc.wantID || state.Snapshot.Selected != tc.wantID {
 				t.Fatalf("inspected device = %#v, want %q", state.Snapshot, tc.wantID)
 			}
+
 			if tc.openErr != nil && (state.Error == nil || state.Selected != nil) {
 				t.Fatal("failed inspection must publish the device and its error without a ready authenticator")
 			}
+
 			if tc.openErr == nil && state.Selected == nil {
 				t.Fatal("first usable device was not automatically selected")
 			}
@@ -115,6 +117,7 @@ func TestDevicePublicationResolvesPendingEndpointBeforeAddingPhysicalDevice(t *t
 			if len(pending.Snapshot.Devices) != 1 || len(pending.Snapshot.Devices[0].EndpointIDs) != 1 {
 				t.Fatalf("pending arrival changed physical topology: %#v", pending.Snapshot.Devices)
 			}
+
 			if pending.Selected != selected || pending.Snapshot.Selected != deviceID {
 				t.Fatal("pending arrival changed the selected authenticator")
 			}
@@ -128,9 +131,11 @@ func TestDevicePublicationResolvesPendingEndpointBeforeAddingPhysicalDevice(t *t
 			if len(state.Snapshot.Devices) != tc.wantDevices {
 				t.Fatalf("physical devices = %#v, want %d", state.Snapshot.Devices, tc.wantDevices)
 			}
+
 			if state.Selected != selected || selected.Closed() || state.Snapshot.Selected != deviceID {
 				t.Fatal("initial inspection replaced the selected authenticator")
 			}
+
 			if tc.wantDevices == 1 && len(state.Snapshot.Devices[0].EndpointIDs) != 2 {
 				t.Fatal("confirmed sibling was not attached to the existing physical device")
 			}
@@ -156,6 +161,7 @@ func TestDevicePublicationDropsRemovedPendingEndpointWithoutInspectingIt(t *test
 	waitForGroupingState(t, manager, func(update DeviceUpdate) bool {
 		return len(update.Snapshot.Endpoints) == 2
 	})
+
 	watcher.events <- devicewatch.Event{Type: devicewatch.EventDisconnected, Candidate: candidate}
 
 	state := waitForGroupingState(t, manager, func(update DeviceUpdate) bool {

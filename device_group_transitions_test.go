@@ -53,6 +53,7 @@ func TestSelectPendingEndpointReconcilesPhysicalIdentity(t *testing.T) {
 	if state.Snapshot.Selected != deviceID || len(state.Snapshot.Devices) != 1 {
 		t.Fatalf("selection did not reconcile physical identity: %#v", state.Snapshot)
 	}
+
 	if state.Selected == nil || state.Selected == previous || !previous.Closed() {
 		t.Fatal("selection did not replace the previous authenticator")
 	}
@@ -61,14 +62,17 @@ func TestSelectPendingEndpointReconcilesPhysicalIdentity(t *testing.T) {
 	if !slices.Equal(state.Snapshot.Devices[0].EndpointIDs, wantEndpoints) {
 		t.Fatalf("group endpoints = %v, want %v", state.Snapshot.Devices[0].EndpointIDs, wantEndpoints)
 	}
+
 	if calls.Load() != 2 {
 		t.Fatalf("vendor reads = %d, want 2", calls.Load())
 	}
 
 	selected := state.Selected
+
 	if err := manager.Select(ctx, deviceID); err != nil {
 		t.Fatal(err)
 	}
+
 	if manager.State().Selected != selected {
 		t.Fatal("physical selection reopened the current endpoint")
 	}
@@ -90,6 +94,7 @@ func TestFallbackPhysicalIdentityDoesNotDependOnArrivalTiming(t *testing.T) {
 			var calls atomic.Int32
 
 			manager := physicalManager(t, watcher, false, &calls)
+
 			var workflowDone <-chan error
 			if pending {
 				_, workflowDone = holdWorkflow(t, manager.State().Selected)
@@ -115,6 +120,7 @@ func TestFallbackPhysicalIdentityDoesNotDependOnArrivalTiming(t *testing.T) {
 			}
 
 			wantIdentity := report.DeviceIdentity{Vendor: report.VendorToken2, SerialNumber: "a"}
+
 			want := []report.DeviceReport{{
 				ID:          "token2:a",
 				Identity:    &wantIdentity,
@@ -123,9 +129,11 @@ func TestFallbackPhysicalIdentityDoesNotDependOnArrivalTiming(t *testing.T) {
 			if !reflect.DeepEqual(state.Snapshot.Devices, want) {
 				t.Fatalf("fallback groups = %#v, want %#v", state.Snapshot.Devices, want)
 			}
+
 			if state.Snapshot.Selected != "token2:a" || state.Snapshot.SelectedEndpoint != want[0].EndpointIDs[0] {
 				t.Fatalf("fallback selection = %q/%q, want token2:a/%q", state.Snapshot.Selected, state.Snapshot.SelectedEndpoint, want[0].EndpointIDs[0])
 			}
+
 			if calls.Load() != 2 {
 				t.Fatalf("vendor reads = %d, want 2", calls.Load())
 			}
@@ -181,6 +189,7 @@ func TestPhysicalGroupingIgnoresEndpointInsertionOrder(t *testing.T) {
 				for _, device := range sortedDevices(manager.devices) {
 					got = append(got, device.snapshot())
 				}
+
 				if !reflect.DeepEqual(got, tc.want) {
 					t.Fatalf("insertion order %v: groups = %#v, want %#v", order, got, tc.want)
 				}
@@ -206,13 +215,16 @@ func TestInitialPhysicalGroupsIgnoreSnapshotOrder(t *testing.T) {
 			var calls atomic.Int32
 
 			manager := physicalManager(t, watcher, false, &calls)
+
 			state := manager.State()
 			if !reflect.DeepEqual(state.Snapshot.Devices, want) {
 				t.Fatalf("snapshot order %v: groups = %#v, want %#v", order, state.Snapshot.Devices, want)
 			}
+
 			if state.Snapshot.Selected != "token2:a" || state.Snapshot.SelectedEndpoint != attachmentID(transport.ModeHID, "hid-a") {
 				t.Fatalf("snapshot order %v: selection = %q/%q", order, state.Snapshot.Selected, state.Snapshot.SelectedEndpoint)
 			}
+
 			if calls.Load() != 4 {
 				t.Fatalf("vendor reads = %d, want 4", calls.Load())
 			}
@@ -225,6 +237,7 @@ func TestInitialDeviceErrorUsesSortedEndpointOrder(t *testing.T) {
 
 	for trial := range 100 {
 		ctx, cancel := context.WithTimeout(t.Context(), time.Second)
+
 		candidates := []devicewatch.Candidate{hidCandidate("a"), hidCandidate("b")}
 		if trial%2 != 0 {
 			slices.Reverse(candidates)
@@ -239,6 +252,7 @@ func TestInitialDeviceErrorUsesSortedEndpointOrder(t *testing.T) {
 
 			return nil, failure.New(code)
 		}, noSourceReader, nil)
+
 		t.Cleanup(func() {
 			if err := manager.Close(); err != nil {
 				t.Error(err)
@@ -255,6 +269,7 @@ func TestInitialDeviceErrorUsesSortedEndpointOrder(t *testing.T) {
 		if state.Error == nil {
 			t.Fatal("failed endpoints did not produce a startup error")
 		}
+
 		codes[state.Error.Code]++
 
 		if err := manager.Close(); err != nil {
@@ -283,6 +298,7 @@ func waitForGroupingState(t *testing.T, manager *DeviceManager, condition func(D
 			if !ok {
 				t.Fatal("device manager stopped before the expected grouping update")
 			}
+
 			if condition(update) {
 				return update
 			}
@@ -311,8 +327,11 @@ func groupingPermutations(count int) [][]int {
 		order[i] = i
 	}
 
-	var result [][]int
-	var visit func(int)
+	var (
+		result [][]int
+		visit  func(int)
+	)
+
 	visit = func(index int) {
 		if index == len(order) {
 			result = append(result, slices.Clone(order))

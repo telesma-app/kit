@@ -207,6 +207,7 @@ func TestNormalizePCSCErrorPreservesSpecificClassification(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			invalidated := &ctaptransport.DeviceInvalidatedError{Err: test.cause}
+
 			err := Normalize(invalidated, "getInfo")
 			if err.Code != test.code || !errors.Is(err, invalidated) || !errors.Is(err, raw) {
 				t.Fatalf("normalized PC/SC error = %#v", err.Failure)
